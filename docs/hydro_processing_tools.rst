@@ -12,10 +12,18 @@ hydro\_processing\_tools.cli module
    :undoc-members:
    :show-inheritance:
 
-hydro\_processing\_tools.hydro\_processing\_tools module
---------------------------------------------------------
+hydro\_processing\_tools.data\_acquisition module
+-------------------------------------------------
 
-.. automodule:: hydro_processing_tools.hydro_processing_tools
+.. automodule:: hydro_processing_tools.data_acquisition
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+hydro\_processing\_tools.smooth module
+--------------------------------------
+
+.. automodule:: hydro_processing_tools.smooth
    :members:
    :undoc-members:
    :show-inheritance:
