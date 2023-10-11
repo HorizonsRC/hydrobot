@@ -20,12 +20,11 @@ if __name__ == "__main__":
     low_clip = -1000
     delta = 500
     cleaned_data = smooth.remove_spikes(data["Value"], span, high_clip, low_clip, delta)
-    print(cleaned_data)
 
     # Plot the data before and after spike removal
     plt.figure(figsize=(10, 6))
     plt.subplot(2, 1, 1)
-    plt.plot(data, label="Original Data")
+    plt.plot(data["Value"], label="Original Data")
     plt.title("Data Before Spike Removal")
     plt.legend()
 
