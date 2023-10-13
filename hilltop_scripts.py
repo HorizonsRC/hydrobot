@@ -1,6 +1,7 @@
-import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.smooth as smooth
 import matplotlib.pyplot as plt
+import hydro_processing_tools.data_acquisition as data_acquisition
+import hydro_processing_tools.utilities as utilities
+
 
 if __name__ == "__main__":
     base_url = "http://tsdata.horizons.govt.nz/"
@@ -12,7 +13,9 @@ if __name__ == "__main__":
     dtl_method = "trend"
 
     # Acquire the data
-    data = data_acquisition.get_data(base_url, hts, site, measurement, from_date, to_date, dtl_method)
+    data = data_acquisition.get_data(
+        base_url, hts, site, measurement, from_date, to_date, dtl_method
+    )
 
     plt.figure(figsize=(10, 6))
     plt.subplot(1, 1, 1)
@@ -25,7 +28,9 @@ if __name__ == "__main__":
     high_clip = 1000
     low_clip = -1000
     delta = 500
-    cleaned_data = smooth.remove_spikes(data["Value"], span, high_clip, low_clip, delta)
+    cleaned_data = utilities.remove_spikes(
+        data["Value"], span, high_clip, low_clip, delta
+    )
 
     # Plot the data before and after spike removal
     # plt.figure(figsize=(10, 6))

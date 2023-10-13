@@ -2,6 +2,7 @@
 
 from hilltoppy import web_service as ws
 
+
 def get_data(
     base_url,
     hts,

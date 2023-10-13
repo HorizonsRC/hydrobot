@@ -1,11 +1,8 @@
 import numpy as np
 import pandas as pd
 
-def clip(
-    unclipped,
-    high_clip,
-    low_clip
-):
+
+def clip(unclipped, high_clip, low_clip):
     """
     Clip values in a pandas Series within a specified range.
 
@@ -26,18 +23,18 @@ def clip(
         A Series containing the clipped values with the same index as the input Series.
     """
     print(unclipped.head())
-    
+
     unclipped_arr = unclipped.values
-    
+
     # Create a boolean condition for values that need to be clipped
     clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
-    
+
     # Use pandas' where function to clip values to NaN where the condition is True
     clipped_series = unclipped.where(~clip_cond, np.nan)
     print(type(clipped_series))
-    
+
     return clipped_series
-    
+
 
 def fbewma(input_data, span):
     """
@@ -58,10 +55,10 @@ def fbewma(input_data, span):
     """
     # Calculate the Forward EWMA.
     fwd = input_data.ewm(span=span).mean()
-    
+
     # Calculate the Backward EWMA. (x[::-1] is the reverse of x)
     bwd = input_data[::-1].ewm(span=span).mean()
-    
+
     # Stack fwd and the reverse of bwd on top of each other.
     stacked_ewma = pd.concat([fwd, bwd[::-1]])
 
@@ -82,7 +79,7 @@ def remove_outliers(input_data, span, delta):
         Input time series data.
 
     span : int
-        Span parameter for exponential weighting used in the FB-EWMA.
+        Span parameter for exponential weighting used in the FB-EWMA.""" """
 
     delta : float
         Threshold for identifying outliers. Values greater than this threshold will be set to NaN.
@@ -94,7 +91,7 @@ def remove_outliers(input_data, span, delta):
     """
     # Calculate the FB-EWMA of the time series
     fbewma_series = fbewma(input_data, span)
-    
+
     # Create a condition to identify outliers based on the absolute difference between input_data and fbewma_series
     delta_cond = np.abs(input_data - fbewma_series) > delta
 
@@ -139,7 +136,7 @@ def remove_spikes(input_data, span, high_clip, low_clip, delta):
 
     # Use pandas' .interpolate() on the Series
     interp_series = gaps_series.interpolate()
-    
+
     print(type(interp_series))
 
     return interp_series
