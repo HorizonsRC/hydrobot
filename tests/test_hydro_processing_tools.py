@@ -3,11 +3,9 @@
 """Tests for `hydro_processing_tools` package."""
 
 import pytest
-
 from click.testing import CliRunner
 
-from hydro_processing_tools import hydro_processing_tools
-from hydro_processing_tools import cli
+from hydro_processing_tools import cli, hydro_processing_tools
 
 
 @pytest.fixture

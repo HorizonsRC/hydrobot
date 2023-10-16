@@ -38,7 +38,7 @@ def clip(unclipped, high_clip, low_clip):
 
 def fbewma(input_data, span):
     """
-    Calculate the Forward-Backward Exponentially Weighted Moving Average 
+    Calculate the Forward-Backward Exponentially Weighted Moving Average
     (FB-EWMA) of a pandas Series.
 
     Parameters:
