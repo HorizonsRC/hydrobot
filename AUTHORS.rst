@@ -6,6 +6,7 @@ Development Lead
 ----------------
 
 * Nic Mostert <nicolas.mostert@horizons.govt.nz>
+* Sam Irvine <sam.irvine@horizons.govt.nz>
 
 Contributors
 ------------

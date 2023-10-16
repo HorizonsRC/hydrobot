@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import hydro_processing_tools.data_acquisition as data_acquisition
 import hydro_processing_tools.utilities as utilities
 
-
 if __name__ == "__main__":
     base_url = "http://tsdata.horizons.govt.nz/"
     hts = "boo.hts"
