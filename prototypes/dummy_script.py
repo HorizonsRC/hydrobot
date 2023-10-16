@@ -33,6 +33,7 @@ plt.plot(data["Value"], label="Original Data")
 plt.title("Data before spike removal")
 plt.legend()
 
+
 # %% [markdown]
 # ## Spike removal parameters
 
@@ -46,7 +47,7 @@ delta = 500
 # Bad comment
 # BADDER COMMENT
 # %%
-clip_data = smooth.clip(data["Value"], high_clip, low_clip)
+clip_data = utilities.clip(data["Value"], high_clip, low_clip)
 
 # %%
 plt.figure(figsize=(10, 6))
@@ -56,7 +57,7 @@ plt.plot(clip_data, label="Clipped Data")
 plt.legend()
 
 # %%
-fbewma_data = smooth.fbewma(clip_data, span)
+fbewma_data = utilities.fbewma(clip_data, span)
 
 # %%
 plt.figure(figsize=(10, 6))
@@ -64,5 +65,6 @@ plt.subplot(1, 1, 1)
 plt.plot(data["Value"], label="Original Data")
 plt.plot(fbewma_data, label="FBEWMA Data")
 plt.legend()
+
 
 # %%
