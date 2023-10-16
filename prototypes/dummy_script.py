@@ -6,9 +6,10 @@ import matplotlib
 
 matplotlib.use("module://ipympl.backend_nbagg")
 import hilltoppy
+import matplotlib.pyplot as plt
+
 import hydro_processing_tools.data_acquisition as data_acquisition
 import hydro_processing_tools.utilities as utilities
-import matplotlib.pyplot as plt
 
 # %%
 base_url = "http://tsdata.horizons.govt.nz/"
@@ -37,15 +38,13 @@ plt.legend()
 
 # %%
 span = 10
-high_clip =      3500
-low_clip=0
+high_clip = 3500
+low_clip = 0
 delta = 500
 
 
-
-
-
-#Bad comment
+# Bad comment
+# BADDER COMMENT
 # %%
 clip_data = smooth.clip(data["Value"], high_clip, low_clip)
 
@@ -67,6 +66,3 @@ plt.plot(fbewma_data, label="FBEWMA Data")
 plt.legend()
 
 # %%
-
-
-
