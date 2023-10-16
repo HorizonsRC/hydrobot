@@ -66,73 +66,70 @@ Ready to contribute? Here's how to set up `hydro_processing_tools` for local dev
 
 3. Install your local copy into a venv. This is how you set up your fork for local development::
 
-  Switch to the newly created root directory of the project:
+Switch to the newly created root directory of the project::
 
     $ cd hydro_processing_tools/
 
-  Create a virtual environment for this project
+Create a virtual environment for this project::
 
     $ python -m venv path/to/venv/location/
 
-  Activate the virtual environment:
+Activate the virtual environment:
 
-    Unix:
+Unix::
 
-      $ source path/to/venv/location/bin/activate
+    $ source path/to/venv/location/bin/activate
 
-    Windows (Powershell):
+Windows (Powershell)::
 
-      $ ./path/to/venv/location/Scripts/Activate.ps1
+    $ ./path/to/venv/location/Scripts/Activate.ps1
 
-    Windows (cmd):
+Windows (cmd)::
 
-      $ ./path/to/venv/location/Scripts/activate.bat
+    $ ./path/to/venv/location/Scripts/activate.bat
 
-
-  Once within the venv, install the required packages for development:
+Once within the venv, install the required packages for development::
 
     $ python -m pip install -r requirements_dev.txt
 
-  Finally, install the hydro_processing_tools in "editable" (or "develop") mode.
-  This allows you to import the package into test scripts and prototypes, while allowing you to edit the package in-place without reinstallation.
+Finally, install the hydro_processing_tools in "editable" (or "develop") mode.
+This allows you to import the package into test scripts and prototypes, while allowing you to edit the package in-place without reinstallation.::
 
     $ python -m pip install -e .
 
 4. Create a branch for local development::
 
-   In order to track local changes, you must create a branch for local development.
-   This command creates a local brach, then switches to that branch.
+In order to track local changes, you must create a branch for local development.
+This command creates a local brach, then switches to that branch.::
 
     $ git checkout -b name-of-your-bugfix-or-feature
 
-   Now you can make your changes locally.
+Now you can make your changes locally.
 
-   NOTE: It is good practice to give your branch a name based on the changes you are planning to make. E.g. "adding-signal-processing-feature" or "fixing bug in spike filter".
+   *NOTE: It is good practice to give your branch a name based on the changes you are planning to make. E.g. "adding-signal-processing-feature" or "fixing bug in spike filter".*
 
 5. When you're done making changes, verify that all tests still pass on your branch::
 
   $ pytest
 
-  Your branch will not be allowed to merge if all tests do not pass.
+Your branch will not be allowed to merge if all tests do not pass. [*NOTE: This is not technically true yet, but it will be once I figure it out.*]
 
 6. When you're done making changes, commit your changes and push your branch to GitHub::
 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
 
-  This project makes use of various pre-commit hooks. Importantly, this code-base conforms to `black` formatting. If your test fails, follow the instructions on how to fix any problems, and then repeat the commit command. In some cases, the pre-commit hooks will automatically fix all problems. In such cases, just run the hooks again to verify that they will pass, then commit again.
+This project makes use of various pre-commit hooks. Importantly, this code-base conforms to `black` formatting. If your test fails, follow the instructions on how to fix any problems, and then repeat the commit command. In some cases, the pre-commit hooks will automatically fix all problems. In such cases, just run the hooks again to verify that they will pass, then commit again.
 
-  To run all the pre-commit hooks without making a commit, you can run
+To run all the pre-commit hooks without making a commit, you can run::
 
     $ pre-commit run --all-files
 
-  When all checks pass and your changes are committed sucessfully, you may push your changes to the remote version of your branch:
+When all checks pass and your changes are committed sucessfully, you may push your changes to the remote version of your branch::
 
     $ git push origin name-of-your-bugfix-or-feature
 
-7. Submit a pull request through the GitHub website::
-
-  Provide a detailed description of the changes you have made to ensure that they can be merged efficiently.
+7. Submit a pull request through the GitHub website. Provide a detailed description of the changes you have made to ensure that they can be merged efficiently.
 
 Pull Request Guidelines
 -----------------------
@@ -143,7 +140,7 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the appropriate location in the documentation.
-3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. **This is a matter of trust for now, but I will figure out how to enforce this with "tox" at some point**
+3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. [*NOTE: This is a matter of trust for now, but I will figure out how to enforce this with "tox" at some point*]
 
 Tips
 ----
