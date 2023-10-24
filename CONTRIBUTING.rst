@@ -110,7 +110,7 @@ Now you can make your changes locally.
 
 5. When you're done making changes, verify that all tests still pass on your branch::
 
-  $ pytest
+    $ pytest
 
 Your branch will not be allowed to merge if all tests do not pass. [*NOTE: This is not technically true yet, but it will be once I figure it out.*]
 

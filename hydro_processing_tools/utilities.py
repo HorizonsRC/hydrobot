@@ -134,9 +134,9 @@ def remove_spikes(input_data, span, high_clip, low_clip, delta):
     clipped = clip(input_data, high_clip, low_clip)
 
     # Remove outliers using the remove_outliers function
-    gaps_series = remove_outliers(input_data, span, delta)
+    gaps_series = remove_outliers(clipped, span, delta)
 
-    # Use pandas' .interpolate() on the Series
-    interp_series = gaps_series.interpolate()
+    # Could use pandas' .interpolate() on the Series
+    # interp_series = gaps_series.interpolate()
 
-    return interp_series
+    return gaps_series

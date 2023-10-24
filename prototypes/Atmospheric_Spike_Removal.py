@@ -4,7 +4,7 @@
 # %%
 import matplotlib
 
-matplotlib.use("module://ipympl.backend_nbagg")
+# matplotlib.use("module://ipympl.backend_nbagg")
 import hilltoppy
 import matplotlib.pyplot as plt
 
@@ -12,10 +12,10 @@ import hydro_processing_tools.data_acquisition as data_acquisition
 import hydro_processing_tools.utilities as utilities
 
 # %%
-base_url = "http://tsdata.horizons.govt.nz/"
-hts = "boo.hts"
-site = "Saddle Road"
-measurement = "Groundwater"
+base_url = "http://hilltopdev.horizons.govt.nz/"
+hts = "RawLoggerNet.hts"
+site = "Manawatu at Weber Road"
+measurement = "Atmospheric Pressure"
 from_date = "2021-01-01 00:00"
 to_date = "2023-10-12 8:30"
 dtl_method = "trend"
@@ -24,7 +24,7 @@ dtl_method = "trend"
 data = data_acquisition.get_data(
     base_url, hts, site, measurement, from_date, to_date, dtl_method
 )
-print(data)
+# print(data)
 
 # %%
 plt.figure(figsize=(10, 6))
@@ -39,13 +39,11 @@ plt.legend()
 
 # %%
 span = 10
-high_clip = 3500
-low_clip = 0
-delta = 500
+high_clip = 1100
+low_clip = 900
+delta = 20
 
 
-# Bad comment
-# BADDER COMMENT
 # %%
 clip_data = utilities.clip(data["Value"], high_clip, low_clip)
 
@@ -68,3 +66,12 @@ plt.legend()
 
 
 # %%
+delta_clip_data = utilities.remove_outliers(data["Value"], span, delta)
+
+# %%
+plt.figure(figsize=(10, 6))
+plt.subplot(1, 1, 1)
+plt.plot(data["Value"], label="Original Data")
+plt.plot(delta_clip_data, label="Cleaned Data")
+plt.legend()
+plt.show()
