@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 
 import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.utilities as utilities
+import hydro_processing_tools.filters as filters
 
 if __name__ == "__main__":
     base_url = "http://tsdata.horizons.govt.nz/"
@@ -28,7 +28,7 @@ if __name__ == "__main__":
     high_clip = 1000
     low_clip = -1000
     delta = 500
-    cleaned_data = utilities.remove_spikes(
+    cleaned_data = filters.remove_spikes(
         data["Value"], span, high_clip, low_clip, delta
     )
 

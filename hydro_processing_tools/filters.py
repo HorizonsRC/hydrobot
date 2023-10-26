@@ -1,4 +1,4 @@
-"""General utilities that will be added later"""
+"""General filtering utilities"""
 import numpy as np
 import pandas as pd
 
@@ -23,8 +23,6 @@ def clip(unclipped, high_clip, low_clip):
     pandas.Series
         A Series containing the clipped values with the same index as the input Series.
     """
-    print(unclipped.head())
-
     unclipped_arr = unclipped.values
 
     # Create a boolean condition for values that need to be clipped
@@ -130,9 +128,9 @@ def remove_spikes(input_data, span, high_clip, low_clip, delta):
     pandas.Series
         A Series containing the time series with spikes removed with the same index as the input Series.
     """
+    print(input_data)
     # Clip values in the input data within the specified range
     clipped = clip(input_data, high_clip, low_clip)
-
     # Remove outliers using the remove_outliers function
     gaps_series = remove_outliers(clipped, span, delta)
 
