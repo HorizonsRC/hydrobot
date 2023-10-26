@@ -1,6 +1,6 @@
 """Main module."""
 
-from hilltoppy import web_service as ws
+from hilltoppy import Hilltop
 
 
 def get_data(
@@ -43,8 +43,8 @@ def get_data(
     pandas.DataFrame
         A DataFrame containing the acquired time series data.
     """
-    tsdata = ws.get_data(
-        base_url, hts, site, measurement, from_date=from_date, to_date=to_date
-    )
+    ht = Hilltop(base_url, hts)
+
+    tsdata = ht.get_data(hts, site, measurement, from_date=from_date, to_date=to_date)
 
     return tsdata
