@@ -1,11 +1,11 @@
 """
-Using the utilities functions for various data sets
+Using the filters functions for various data sets
 """
 
 import matplotlib.pyplot as plt
 
 import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.utilities as utilities
+import hydro_processing_tools.filters as filters
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
@@ -40,7 +40,7 @@ if display_working_plots:
 
 
 # Remove high values and low values
-clip_data = utilities.clip(data["Value"], high_clip, low_clip)
+clip_data = filters.clip(data["Value"], high_clip, low_clip)
 
 # Base vs clipped data display
 if display_working_plots:
@@ -51,7 +51,7 @@ if display_working_plots:
     plt.legend()
 
 # Create smoothed data using forwards-backwards exponential weighted moving average (FBEWMA)
-fbewma_data = utilities.fbewma(clip_data, span)
+fbewma_data = filters.fbewma(clip_data, span)
 
 # Base vs smoothed data
 if display_working_plots:
@@ -63,7 +63,7 @@ if display_working_plots:
 
 
 # Compare base data to smoothed data, remove any large differences
-delta_clip_data = utilities.remove_outliers(clip_data, span, delta)
+delta_clip_data = filters.remove_outliers(clip_data, span, delta)
 
 # Display cleaned data
 plt.figure(figsize=(10, 6))
