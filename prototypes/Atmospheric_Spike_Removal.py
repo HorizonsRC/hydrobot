@@ -9,7 +9,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 
 import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.utilities as utilities
+import hydro_processing_tools.filters as filters
 
 # %%
 base_url = "http://hilltopdev.horizons.govt.nz/"
@@ -45,7 +45,7 @@ delta = 20
 
 
 # %%
-clip_data = utilities.clip(data["Value"], high_clip, low_clip)
+clip_data = filters.clip(data["Value"], high_clip, low_clip)
 
 # %%
 plt.figure(figsize=(10, 6))
@@ -55,7 +55,7 @@ plt.plot(clip_data, label="Clipped Data")
 plt.legend()
 
 # %%
-fbewma_data = utilities.fbewma(clip_data, span)
+fbewma_data = filters.fbewma(clip_data, span)
 
 # %%
 plt.figure(figsize=(10, 6))
@@ -66,7 +66,7 @@ plt.legend()
 
 
 # %%
-delta_clip_data = utilities.remove_outliers(data["Value"], span, delta)
+delta_clip_data = filters.remove_outliers(data["Value"], span, delta)
 
 # %%
 plt.figure(figsize=(10, 6))

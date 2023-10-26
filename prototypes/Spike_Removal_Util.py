@@ -1,11 +1,11 @@
 """
-Using the utilities functions for various data sets
+Using the filters functions for various data sets
 """
 
 import matplotlib.pyplot as plt
 
 import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.utilities as utilities
+import hydro_processing_tools.filters as filters
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
@@ -28,7 +28,7 @@ data = data_acquisition.get_data(
 
 
 # Remove high values and low values
-cleaned_data = utilities.remove_spikes(data["Value"], span, high_clip, low_clip, delta)
+cleaned_data = filters.remove_spikes(data["Value"], span, high_clip, low_clip, delta)
 
 # Display cleaned data
 plt.figure(figsize=(10, 6))
