@@ -13,11 +13,12 @@ check_hts = "boo.hts"
 ht_check = Hilltop(base_url, check_hts)
 
 site = "Manawatu at Teachers College"
-measurement = "Stage"
-from_date = "2023-01-01 00:00"
+from_date = "2021-01-01 00:00"
 to_date = "2023-10-12 8:30"
-# Used only for the check data
-check_measurement = "Internal S.G."
+
+# Measurements used
+measurement = "Water Temperature [Dissolved Oxygen sensor]"
+check_measurement = "Water Temperature Check [Water Temperature]"
 
 
 base_data = ht_base.get_data(
@@ -29,19 +30,19 @@ base_data = ht_base.get_data(
 
 check_data = ht_check.get_data(
     site,
-    measurement,
+    check_measurement,
     from_date,
     to_date,
     tstype="Check",
 )
-
+filtered_check_data = check_data[check_data["Value"] != -1]
 
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
 plt.plot(base_data["Time"], base_data["Value"], label="Original Data")
 plt.plot(
-    check_data["Time"],
-    check_data["Value"],
+    filtered_check_data["Time"],
+    filtered_check_data["Value"],
     label="Check Data",
     marker="o",
     linestyle="None",
