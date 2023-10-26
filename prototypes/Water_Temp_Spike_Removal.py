@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import hydro_processing_tools.data_acquisition as data_acquisition
 import hydro_processing_tools.utilities as utilities
 
-
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
 hts = "RawLoggerNet.hts"
