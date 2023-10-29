@@ -43,6 +43,9 @@ check_data = get_data(
 )
 filtered_check_data = check_data[check_data["Value"] != -1]
 
+base_data.to_csv("output_dump/base_" + site + "-" + measurement)
+filtered_check_data.to_csv("output_dump/check_" + site + "-" + check_measurement)
+
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
 plt.plot(base_data["Time"], base_data["Value"], label="Original Data")
@@ -55,6 +58,3 @@ plt.plot(
 )
 plt.legend()
 plt.show()
-
-base_data.to_csv("output_dump/base_" + site + "-" + measurement)
-check_data.to_csv("output_dump/check_" + site + "-" + check_measurement)
