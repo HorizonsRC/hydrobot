@@ -4,13 +4,12 @@ Using the utilities functions for various data sets
 
 import matplotlib.pyplot as plt
 from hilltoppy import Hilltop
+from hydro_processing_tools.data_acquisition import get_data
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
-base_hts = "RawLogger.hts"
-ht_base = Hilltop(base_url, base_hts)
+standard_hts = "RawLogger.hts"
 check_hts = "boo.hts"
-ht_check = Hilltop(base_url, check_hts)
 
 
 # awfa
@@ -24,14 +23,18 @@ to_date = "2023-10-12 8:30"
 measurement = "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement = "Water Temperature Check [Water Temperature]"
 
-base_data = ht_base.get_data(
+base_data = get_data(
+    base_url,
+    standard_hts,
     site,
     measurement,
     from_date,
     to_date,
 )
 
-check_data = ht_check.get_data(
+check_data = get_data(
+    base_url,
+    check_hts,
     site,
     check_measurement,
     from_date,
