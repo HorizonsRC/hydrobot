@@ -31,6 +31,7 @@ base_data = get_data(
     from_date,
     to_date,
 )
+base_data = base_data[base_data["Value"] != -1]
 
 check_data = get_data(
     base_url,
@@ -41,17 +42,18 @@ check_data = get_data(
     to_date,
     tstype="Check",
 )
-filtered_check_data = check_data[check_data["Value"] != -1]
+# Filter
+check_data = check_data[check_data["Value"] != -1]
 
-base_data.to_csv("output_dump/base_" + site + "-" + measurement)
-filtered_check_data.to_csv("output_dump/check_" + site + "-" + check_measurement)
+base_data.to_csv("output_dump/base_" + site + "-" + measurement + ".csv")
+check_data.to_csv("output_dump/check_" + site + "-" + check_measurement + ".csv")
 
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
 plt.plot(base_data["Time"], base_data["Value"], label="Original Data")
 plt.plot(
-    filtered_check_data["Time"],
-    filtered_check_data["Value"],
+    check_data["Time"],
+    check_data["Value"],
     label="Check Data",
     marker="o",
     linestyle="None",
