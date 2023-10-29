@@ -55,3 +55,6 @@ plt.plot(
 )
 plt.legend()
 plt.show()
+
+base_data.to_csv("output_dump/base_" + site + "-" + measurement)
+check_data.to_csv("output_dump/check_" + site + "-" + check_measurement)
