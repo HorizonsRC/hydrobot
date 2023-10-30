@@ -128,7 +128,6 @@ def remove_spikes(input_data, span, high_clip, low_clip, delta):
     pandas.Series
         A Series containing the time series with spikes removed with the same index as the input Series.
     """
-    print(input_data)
     # Clip values in the input data within the specified range
     clipped = clip(input_data, high_clip, low_clip)
     # Remove outliers using the remove_outliers function
