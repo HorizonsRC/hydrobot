@@ -45,6 +45,6 @@ def get_data(
     """
     ht = Hilltop(base_url, hts)
 
-    tsdata = ht.get_data(hts, site, measurement, from_date=from_date, to_date=to_date)
+    tsdata = ht.get_data(site, measurement, from_date=from_date, to_date=to_date)
 
     return tsdata
