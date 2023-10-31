@@ -4,6 +4,12 @@ from hydro_processing_tools import filters, data_acquisition
 from hilltoppy import Hilltop
 import warnings
 from functools import partial
+from annalist import annalist
+
+flogger = annalist.FunctionLogger(
+    "Processing",
+    "Nic Baby, Always",
+)
 
 
 class Processor(Hilltop):
@@ -49,6 +55,7 @@ class Processor(Hilltop):
         return self._start
 
     @start.setter
+    @flogger.annalize
     def start(self, value):
         self._start = value
         self._stale = True
@@ -59,6 +66,7 @@ class Processor(Hilltop):
         return self._end
 
     @end.setter
+    @flogger.annalize
     def end(self, value):
         self._end = value
         self._stale = True
@@ -69,9 +77,11 @@ class Processor(Hilltop):
         return self._dataset
 
     @dataset.setter
+    @flogger.annalize
     def dataset(self, value):
         self._dataset = value
 
+    @flogger.annalize
     def reload_data(
         self,
         from_date: str = None,
@@ -83,6 +93,7 @@ class Processor(Hilltop):
         apply_precision: bool = False,
         tstype: str = None,
     ):
+        """(Re)Load Raw Data from Hilltop"""
         if from_date is None:
             from_date = self._start
         if to_date is None:
@@ -102,21 +113,25 @@ class Processor(Hilltop):
         self._dataset = data
         self._stale = False
 
+    @flogger.annalize
     def clip(self, low_clip: float, high_clip: float):
         """Method implementation of clip"""
         data = self._dataset["Values"]
         return filters.clip(data, low_clip, high_clip)
 
+    @flogger.annalize
     def fbewma(self, span: int):
         """Method implementation of fbewma"""
         data = self._dataset["Values"]
         return filters.fbewma(data, span)
 
+    @flogger.annalize
     def remove_outliers(self, span: int, delta: float):
         """Method implementation of remove_outliers"""
         data = self._dataset["Values"]
         return filters.remove_outliers(data, span, delta)
 
+    @flogger.annalize
     def remove_spikes(self, span: int, low_clip: float, high_clip: float, delta: float):
         """Method implementation of remove_spikes"""
         data = self._dataset["Values"]
