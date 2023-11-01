@@ -3,7 +3,6 @@ Using the filters functions for various data sets
 """
 
 import matplotlib.pyplot as plt
-
 import hydro_processing_tools.data_acquisition as data_acquisition
 import hydro_processing_tools.filters as filters
 
