@@ -51,6 +51,7 @@ def small_gap_closer(series, gap_length):
 
     gaps = gap_finder(series)
     for gap in gaps:
+        # Ask ChatGPT what this means
         if gap[1] <= gap_length:
             mask = ~series.index.isin(
                 series.index[
@@ -73,6 +74,35 @@ def check_data_quality_code(series, check_series, measurement):
     :param measurement: data_sources.Measurement
         Handler for QC comparisons
 
-    :return:
+    :return: List of integers (QC values)
     """
-    return []
+    qc_series = pd.Series({})
+    for check_time, check_value in check_series.items():
+        adjusted_time = find_nearest_time(series, check_time)
+        qc_value = measurement.find_qc(series[adjusted_time], check_value)
+        qc_series[check_time] = qc_value
+
+    return qc_series
+
+
+def find_nearest_time(series, dt):
+    """
+    Finds the time in the series that is closest to dt, for example for
+
+    :param series: pd.Series
+        The series indexed by time
+    :param dt: Datetime
+        Time that may or may nor exactly line up with the series
+
+    :return: Datetime
+        The value of dt rounded to the nearest timestamp of the series
+    """
+
+    # Make sure it is in the range
+    first_timestamp = series.index[0]
+    last_timestamp = series.index[-1]
+    if dt < first_timestamp or dt > last_timestamp:
+        raise Exception
+
+    output_index = series.index.get_indexer([dt], method="nearest")
+    return series.index[output_index][0]
