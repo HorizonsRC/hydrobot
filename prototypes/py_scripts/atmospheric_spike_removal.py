@@ -24,6 +24,7 @@ dtl_method = "trend"
 data = data_acquisition.get_data(
     base_url, hts, site, measurement, from_date, to_date, dtl_method
 )
+print(data)
 # print(data)
 
 # %%

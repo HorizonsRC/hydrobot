@@ -7,6 +7,11 @@ import pytest
 import hydro_processing_tools.evaluator as evaluator
 import hydro_processing_tools.data_sources as data_sources
 
+from annalist.annalist import Annalist
+
+ann = Annalist()
+ann.configure("Test Evaluator", "Pytest")
+
 raw_data_dict = {
     pd.Timestamp("2021-01-01 00:00"): 1.0,
     pd.Timestamp("2021-01-01 00:15"): 2.0,

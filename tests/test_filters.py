@@ -6,6 +6,11 @@ import pandas as pd
 import pytest
 
 import hydro_processing_tools.filters as filters
+from annalist.annalist import Annalist
+
+
+ann = Annalist()
+ann.configure("Test Processor", "Pytest")
 
 raw_data_dict = {
     "2021-01-01 00:00": 1.0,
@@ -63,8 +68,8 @@ def test_clip(raw_data):
     high_clip = 4
 
     # Testing
-    clipped = filters.clip(raw_data, high_clip, low_clip)
-    print(clipped)
+    clipped = filters.clip(raw_data, low_clip, high_clip)
+
     assert math.isnan(clipped["2021-01-01 00:00"]), "Low value not removed!"
     assert math.isnan(clipped["2021-01-01 00:20"]), "High value not removed!"
     assert not (
@@ -84,7 +89,7 @@ def test_fbewma(raw_data, fbewma_data):
     assert fbewmadf.values == pytest.approx(fbewma_data.values), "FBEWMA failed!"
 
 
-def test_remove_outliers(raw_data, fbewma_data, mocker, span=3, delta=2):
+def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     # Setting up a bug free mock version of fbewma to use in remove_outliers
     fbewma_mock = mocker.patch(
         "hydro_processing_tools.filters.fbewma",
@@ -98,7 +103,7 @@ def test_remove_outliers(raw_data, fbewma_data, mocker, span=3, delta=2):
 
 def test_remove_spike(raw_data, fbewma_data, mocker):
     # Setup
-    span = 3
+    span = 2
     low_clip = 2
     high_clip = 4
     delta = 2

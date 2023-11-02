@@ -2,7 +2,12 @@
 
 from hilltoppy import Hilltop
 
+from annalist.annalist import Annalist
 
+annalizer = Annalist()
+
+
+@annalizer.annalize
 def get_data(
     base_url,
     hts,
@@ -30,13 +35,16 @@ def get_data(
         The type of measurement to retrieve.
 
     from_date : str
-        The start date and time for data retrieval in the format 'YYYY-MM-DD HH:mm'.
+        The start date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
 
     to_date : str
-        The end date and time for data retrieval in the format 'YYYY-MM-DD HH:mm'.
+        The end date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
 
     tstype : str
-        Type of data that is sought (default 'Standard, can be Standard, Check, or Quality)
+        Type of data that is sought
+        (default 'Standard, can be Standard, Check, or Quality)
 
     Returns:
     --------

@@ -9,6 +9,7 @@ from hydro_processing_tools.data_acquisition import get_data
 from hydro_processing_tools.filters import remove_spikes, clip
 from hydro_processing_tools.evaluator import check_data_quality_code, small_gap_closer
 from hydro_processing_tools.data_sources import get_measurement
+from annalist.annalist import Annalist
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
@@ -28,6 +29,9 @@ span = 10
 # Measurements used
 measurement = "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement = "Water Temperature Check [Water Temperature]"
+
+ann = Annalist()
+ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")
 
 base_data = get_data(
     base_url,

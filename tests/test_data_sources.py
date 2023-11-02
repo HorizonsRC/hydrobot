@@ -6,6 +6,11 @@ import pandas as pd
 import pytest
 import hydro_processing_tools.data_sources as data_sources
 
+from annalist.annalist import Annalist
+
+ann = Annalist()
+ann.configure("Test Evaluator", "Pytest")
+
 
 @pytest.mark.dependency(name="test_get_measurement_dict")
 def test_get_measurement_dict():
