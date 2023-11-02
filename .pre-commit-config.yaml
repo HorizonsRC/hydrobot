@@ -14,18 +14,27 @@ repos:
   hooks:
   - id: bandit
     args: ["-r", "-lll"]
-# - repo: https://github.com/pre-commit/mirrors-mypy
-#   rev: v1.5.1
-#   hooks:
-#   - id: mypy
-#     exclude: docs\/.*
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: v1.5.1
+  hooks:
+  - id: mypy
+    exclude: docs\/.*
+- repo: https://github.com/Carreau/velin
+  rev: 0.0.11
+  hooks:
+  - id: velin
+    exclude: docs\/.*
+- repo: https://github.com/regebro/pyroma
+  rev: "3.2"
+  hooks:
+  - id: pyroma
 - repo: https://github.com/asottile/pyupgrade
   rev: v3.11.0
   hooks:
   - id: pyupgrade
     args: [--py38-plus]
-# - repo: https://github.com/PyCQA/isort
-#   rev: 5.12.0
-#   hooks:
-#   - id: isort
-#     exclude: docs\/.*
+- repo: https://github.com/PyCQA/pydocstyle
+  rev: 6.3.0
+  hooks:
+  - id: pydocstyle
+    exclude: docs\/.*

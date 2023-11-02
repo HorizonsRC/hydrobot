@@ -1,8 +1,8 @@
 """Handling for different types of data sources."""
-import numpy as np
 import csv
 from pathlib import Path
 
+import numpy as np
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
@@ -33,6 +33,7 @@ class Measurement:
 def get_measurement_dict():
     """
     Return all measurements in a dictionary.
+
     :return: dict of string:measurement pairs
     """
     measurement_dict = {}
@@ -51,8 +52,9 @@ def get_measurement_dict():
 @annalizer.annalize
 def get_measurement(measurement_name):
     """
-    Returns measurement that matches the given name
-    Raises exception if measurement is not in the config
+    Return measurement that matches the given name.
+
+    Raises exception if measurement is not in the config.
 
     :param measurement_name: string
         Name of the measurement as defined in the config

@@ -1,3 +1,4 @@
+"""Atmospheric Spike Removal."""
 # %% [markdown]
 # # Saddle Road Spike Removal Test
 
@@ -8,8 +9,8 @@ import hilltoppy
 import matplotlib
 import matplotlib.pyplot as plt
 
-import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.filters as filters
+import hydrobot.data_acquisition as data_acquisition
+import hydrobot.filters as filters
 
 # %%
 base_url = "http://hilltopdev.horizons.govt.nz/"

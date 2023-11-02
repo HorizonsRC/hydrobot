@@ -1,10 +1,9 @@
-"""
-Using the filters functions for various data sets
-"""
+"""Using the filters functions for various data sets."""
 
 import matplotlib.pyplot as plt
-import hydro_processing_tools.data_acquisition as data_acquisition
-import hydro_processing_tools.filters as filters
+
+import hydrobot.data_acquisition as data_acquisition
+import hydrobot.filters as filters
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
