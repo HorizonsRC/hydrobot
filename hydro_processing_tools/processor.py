@@ -1,9 +1,7 @@
 """Processor class"""
 
-from hydro_processing_tools import filters, data_acquisition
+from hydro_processing_tools import filters
 from hilltoppy import Hilltop
-import warnings
-from functools import partial
 from annalist import annalist
 
 flogger = annalist.FunctionLogger(
@@ -22,8 +20,8 @@ class Processor(Hilltop):
         site: str,
         measurement: str,
         timeout: int = 60,
-        start: str = None,
-        end: str = None,
+        start: str | None = None,
+        end: str | None = None,
         **kwargs,
     ):
         super().__init__(base_url, hts, timeout, **kwargs)
@@ -31,7 +29,8 @@ class Processor(Hilltop):
             self._site = site
         else:
             raise ValueError(
-                f"Site '{site}' not found for base_url and hts combo. Available sites are {[s for s in self.available_sites]}"
+                f"Site '{site}' not found for base_url and hts combo. "
+                f"Available sites are {[s for s in self.available_sites]}"
             )
 
         self._measurement_list = self.get_measurement_list(site)
@@ -39,7 +38,9 @@ class Processor(Hilltop):
             self._measurement = measurement
         else:
             raise ValueError(
-                f"Measurement '{measurement}' not found at site '{site}'. Available measurements are {[str(m[0]) for m in self._measurement_list.values]}"
+                f"Measurement '{measurement}' not found at site '{site}'. "
+                "Available measurements are "
+                f"{[str(m[0]) for m in self._measurement_list.values]}"
             )
 
         self._start = start
@@ -84,14 +85,14 @@ class Processor(Hilltop):
     @flogger.annalize
     def reload_data(
         self,
-        from_date: str = None,
-        to_date: str = None,
-        agg_method: str = None,
-        agg_interval: str = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        agg_method: str | None = None,
+        agg_interval: str | None = None,
         alignment: str = "00:00",
         quality_codes: bool = False,
         apply_precision: bool = False,
-        tstype: str = None,
+        tstype: str | None = None,
     ):
         """(Re)Load Raw Data from Hilltop"""
         if from_date is None:
@@ -132,7 +133,13 @@ class Processor(Hilltop):
         return filters.remove_outliers(data, span, delta)
 
     @flogger.annalize
-    def remove_spikes(self, span: int, low_clip: float, high_clip: float, delta: float):
+    def remove_spikes(
+        self,
+        span: int,
+        low_clip: float,
+        high_clip: float,
+        delta: float,
+    ):
         """Method implementation of remove_spikes"""
         data = self._dataset["Values"]
         return filters.remove_spikes(data, span, low_clip, high_clip, delta)

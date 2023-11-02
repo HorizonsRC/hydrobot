@@ -10,7 +10,7 @@ def get_data(
     measurement,
     from_date,
     to_date,
-    dtl_method,
+    tstype="Standard",
 ):
     """
     Acquire time series data from a web service and return it as a DataFrame.
@@ -30,13 +30,16 @@ def get_data(
         The type of measurement to retrieve.
 
     from_date : str
-        The start date and time for data retrieval in the format 'YYYY-MM-DD HH:mm'.
+        The start date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
 
     to_date : str
-        The end date and time for data retrieval in the format 'YYYY-MM-DD HH:mm'.
+        The end date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
 
-    dtl_method : str
-        The data retrieval method, e.g., 'trend'.
+    tstype : str
+        Type of data that is sought
+        (default 'Standard, can be Standard, Check, or Quality)
 
     Returns:
     --------
@@ -45,6 +48,8 @@ def get_data(
     """
     ht = Hilltop(base_url, hts)
 
-    tsdata = ht.get_data(site, measurement, from_date=from_date, to_date=to_date)
+    tsdata = ht.get_data(
+        site, measurement, from_date=from_date, to_date=to_date, tstype=tstype
+    )
 
     return tsdata

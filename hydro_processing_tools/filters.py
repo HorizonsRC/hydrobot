@@ -21,14 +21,16 @@ def clip(unclipped, low_clip: float, high_clip: float):
     Returns:
     --------
     pandas.Series
-        A Series containing the clipped values with the same index as the input Series.
+        A Series containing the clipped values with the same index as the input
+        Series.
     """
     unclipped_arr = unclipped.values
 
     # Create a boolean condition for values that need to be clipped
     clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
 
-    # Use pandas' where function to clip values to NaN where the condition is True
+    # Use pandas' where function to clip values to NaN where the condition is
+    # True
     clipped_series = unclipped.where(~clip_cond, np.nan)
 
     return clipped_series
@@ -50,7 +52,8 @@ def fbewma(input_data, span: int):
     Returns:
     --------
     pandas.Series
-        A Series containing the FB-EWMA values with the same index as the input Series.
+        A Series containing the FB-EWMA values with the same index as the input
+        Series.
     """
     # Calculate the Forward EWMA.
     fwd = input_data.ewm(span=span).mean()

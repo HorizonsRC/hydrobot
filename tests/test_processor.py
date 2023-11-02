@@ -1,12 +1,9 @@
 import pytest
-
 from hydro_processing_tools import processor
-from unittest.mock import patch
 from datetime import datetime, timedelta
 import pandas as pd
 import random
 from hilltoppy import Hilltop
-import requests
 
 SITES = [
     "Slimy Bog at Dirt Road",

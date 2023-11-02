@@ -130,3 +130,4 @@ watchdog==3.0.0
 wcwidth==0.2.8
 widgetsnbextension==4.0.9
 zipp==3.17.0
+pytest-dependency==0.5.1
