@@ -1,6 +1,3 @@
-import math
-from unittest.mock import call
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -41,6 +38,16 @@ check_data_dict = {
     pd.Timestamp("2021-01-01 01:00"): 25.0,
 }
 
+qc_data_dict = {
+    pd.Timestamp("2021-01-01 00:00"): 600,
+    pd.Timestamp("2021-01-01 00:15"): 500,
+    pd.Timestamp("2021-01-01 00:45"): 600,
+    pd.Timestamp("2021-01-01 01:00"): 500,
+    pd.Timestamp("2021-01-01 01:30"): 500,
+    pd.Timestamp("2021-01-01 02:15"): 600,
+    pd.Timestamp("2021-01-01 02:45"): 600,
+}
+
 
 @pytest.fixture
 def raw_data():
@@ -60,6 +67,13 @@ def gap_data():
 def check_data():
     """Example data for testing. Do not change these values!"""
     data_series = pd.Series(check_data_dict)
+    return data_series
+
+
+@pytest.fixture
+def qc_data():
+    """Example data for testing. Do not change these values!"""
+    data_series = pd.Series(qc_data_dict)
     return data_series
 
 
@@ -147,3 +161,73 @@ def test_check_data_quality_code(raw_data, check_data):
     assert output.iloc[0] == 600, "QC 600 test failed"
     assert output.iloc[1] == 500, "QC 500 test failed"
     assert output.iloc[2] == 400, "QC 400 test failed"
+
+
+def test_base_data_qc_filter(gap_data, qc_data):
+    assert len(
+        evaluator.base_data_qc_filter(
+            gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): True})
+        )
+    ) == len(gap_data), "True filter removed data"
+    assert (
+        len(
+            evaluator.base_data_qc_filter(
+                gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): False})
+            )
+        )
+        == 0
+    ), "False filter did not delete all data"
+    data_600 = evaluator.base_data_qc_filter(gap_data, qc_data == 600)
+    assert pd.Timestamp("2021-01-01 00:00") in data_600
+    assert pd.Timestamp("2021-01-01 00:15") not in data_600
+    assert pd.Timestamp("2021-01-01 00:30") in data_600
+    assert pd.Timestamp("2021-01-01 00:45") in data_600
+    assert pd.Timestamp("2021-01-01 01:00") not in data_600
+    assert pd.Timestamp("2021-01-01 01:15") not in data_600
+    assert pd.Timestamp("2021-01-01 02:30") in data_600
+    assert pd.Timestamp("2021-01-01 02:45") in data_600
+
+    data_500 = evaluator.base_data_qc_filter(gap_data, qc_data == 500)
+    assert pd.Timestamp("2021-01-01 00:00") not in data_500
+    assert pd.Timestamp("2021-01-01 00:15") in data_500
+    assert pd.Timestamp("2021-01-01 00:30") not in data_500
+    assert pd.Timestamp("2021-01-01 00:45") not in data_500
+    assert pd.Timestamp("2021-01-01 01:00") in data_500
+    assert pd.Timestamp("2021-01-01 01:15") in data_500
+    assert pd.Timestamp("2021-01-01 02:30") not in data_500
+    assert pd.Timestamp("2021-01-01 02:45") not in data_500
+
+
+def test_base_data_meets_qc(gap_data, qc_data):
+    assert len(
+        evaluator.base_data_meets_qc(
+            gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): 600}), 600
+        )
+    ) == len(gap_data), "True filter removed data"
+    assert (
+        len(
+            evaluator.base_data_meets_qc(
+                gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): 500}), 600
+            )
+        )
+        == 0
+    ), "False filter did not delete all data"
+    data_600 = evaluator.base_data_meets_qc(gap_data, qc_data, 600)
+    assert pd.Timestamp("2021-01-01 00:00") in data_600
+    assert pd.Timestamp("2021-01-01 00:15") not in data_600
+    assert pd.Timestamp("2021-01-01 00:30") in data_600
+    assert pd.Timestamp("2021-01-01 00:45") in data_600
+    assert pd.Timestamp("2021-01-01 01:00") not in data_600
+    assert pd.Timestamp("2021-01-01 01:15") not in data_600
+    assert pd.Timestamp("2021-01-01 02:30") in data_600
+    assert pd.Timestamp("2021-01-01 02:45") in data_600
+
+    data_500 = evaluator.base_data_meets_qc(gap_data, qc_data, 500)
+    assert pd.Timestamp("2021-01-01 00:00") not in data_500
+    assert pd.Timestamp("2021-01-01 00:15") in data_500
+    assert pd.Timestamp("2021-01-01 00:30") not in data_500
+    assert pd.Timestamp("2021-01-01 00:45") not in data_500
+    assert pd.Timestamp("2021-01-01 01:00") in data_500
+    assert pd.Timestamp("2021-01-01 01:15") in data_500
+    assert pd.Timestamp("2021-01-01 02:30") not in data_500
+    assert pd.Timestamp("2021-01-01 02:45") not in data_500
