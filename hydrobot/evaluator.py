@@ -50,8 +50,7 @@ def small_gap_closer(series, gap_length):
     :param series: pandas.Series
         Data which has gaps to be closed
     :param gap_length: integer
-        Maximum length of gaps removed, will remove all np.NaN's in consecutive
-        runs of gap_length or less
+        Maximum length of gaps removed, will remove all np.NaN's in consecutive runs of gap_length or less
     :return:
     pandas.Series
         Data with any short gaps removed
