@@ -1,8 +1,9 @@
+"""Gap Finder Script."""
 import matplotlib.pyplot as plt
-import pandas as pd
-from hydro_processing_tools.data_acquisition import get_data
 import numpy as np
+import pandas as pd
 
+from hydrobot.data_acquisition import get_data
 
 base_url = "http://hilltopdev.horizons.govt.nz/"
 standard_hts = "RawLogger.hts"
@@ -27,9 +28,8 @@ base_data = base_data.asfreq("15T")
 base_data.loc["2023-04-01 13:00:00"] = pd.NA
 print(f"Missing datastamps: {base_data['Value'].isna()}")
 print(base_data[(base_data.Value.isnull()) & ~(base_data.Value.shift().isnull())])
-print(
-    f"Gaps: {len(base_data[(base_data.Value.isnull()) & ~(base_data.Value.shift().isnull())])}"
-)
+gaps = len(base_data[(base_data.Value.isnull()) & ~(base_data.Value.shift().isnull())])
+print(f"Gaps: {gaps}")
 thresh = 3
 
 

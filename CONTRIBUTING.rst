@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/nicmostert/hydro_processing_tools/issues.
+Report bugs at https://github.com/nicmostert/hydrobot/issues.
 
 If you are reporting a bug, please include:
 
@@ -45,7 +45,7 @@ articles, and such.
 Submit Feedback
 ~~~~~~~~~~~~~~~
 
-The best way to send feedback is to file an issue at https://github.com/nicmostert/hydro_processing_tools/issues.
+The best way to send feedback is to file an issue at https://github.com/nicmostert/hydrobot/issues.
 
 If you are proposing a feature:
 
@@ -57,18 +57,18 @@ If you are proposing a feature:
 Get Started!
 ------------
 
-Ready to contribute? Here's how to set up `hydro_processing_tools` for local development.
+Ready to contribute? Here's how to set up `hydrobot` for local development.
 
-1. Fork the `hydro_processing_tools` repo on GitHub.
+1. Fork the `hydrobot` repo on GitHub.
 2. Clone your fork locally::
 
-    $ git clone git@github.com:your_name_here/hydro_processing_tools.git
+    $ git clone git@github.com:your_name_here/hydrobot.git
 
 3. Install your local copy into a venv. This is how you set up your fork for local development::
 
 Switch to the newly created root directory of the project::
 
-    $ cd hydro_processing_tools/
+    $ cd hydrobot/
 
 Create a virtual environment for this project::
 
@@ -92,7 +92,7 @@ Once within the venv, install the required packages for development::
 
     $ python -m pip install -r requirements_dev.txt
 
-Finally, install the hydro_processing_tools in "editable" (or "develop") mode.
+Finally, install the hydrobot in "editable" (or "develop") mode.
 This allows you to import the package into test scripts and prototypes, while allowing you to edit the package in-place without reinstallation.::
 
     $ python -m pip install -e .
@@ -106,7 +106,7 @@ This command creates a local brach, then switches to that branch.::
 
 Now you can make your changes locally.
 
-   *NOTE: It is good practice to give your branch a name based on the changes you are planning to make. E.g. "adding-signal-processing-feature" or "fixing bug in spike filter".*
+   *NOTE: It is good practice to give your branch a name based on the changes you are planning to make. E.g. "adding-signal-processing-feature" or "fixing-bug-in-spike-filter".*
 
 5. When you're done making changes, verify that all tests still pass on your branch::
 
@@ -119,9 +119,10 @@ Your branch will not be allowed to merge if all tests do not pass. [*NOTE: This 
     $ git add .
     $ git commit -m "Your detailed description of your changes."
 
-This project makes use of various pre-commit hooks. Importantly, this code-base conforms to `black` formatting. If your test fails, follow the instructions on how to fix any problems, and then repeat the commit command. In some cases, the pre-commit hooks will automatically fix all problems. In such cases, just run the hooks again to verify that they will pass, then commit again.
+This project makes use of various pre-commit hooks. Importantly, this code-base conforms to `black` formatting.
+If your test fails, follow the instructions on how to fix any problems, and then repeat the commit command. In some cases, the pre-commit hooks will automatically fix all problems. In such cases, the changes need to be staged with `git add .` again then commit again. Since the failed commit didn't go through, feel free to use the same commit message as before.
 
-To run all the pre-commit hooks without making a commit, you can run::
+To run all the pre-commit hooks without making a commit (e.g. to check if the auto-fixes solved all the problems), you can run::
 
     $ pre-commit run --all-files
 
@@ -147,7 +148,7 @@ Tips
 
 To run a subset of tests::
 
-$ pytest tests.test_hydro_processing_tools
+$ pytest tests.test_hydrobot
 
 
 Deploying
@@ -160,5 +161,3 @@ Then run::
 $ bump2version patch # possible: major / minor / patch
 $ git push
 $ git push --tags
-
-Travis will then deploy to PyPI if tests pass.

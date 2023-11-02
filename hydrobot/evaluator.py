@@ -1,6 +1,6 @@
 """Tools for checking how many problems there are with the data."""
-import pandas as pd
 import numpy as np
+import pandas as pd
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
@@ -14,13 +14,13 @@ def gap_finder(data):
     Returns a list of tuples indicating the start of the gap, and the number
     of entries that are NaN
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : pandas.Series
         Input data to be clipped.
 
-    Returns:
-    --------
+    Returns
+    -------
     List of Tuples
         Each element in the list gives the index value for the start of the gap
         and the length of the gap
@@ -120,7 +120,10 @@ def find_nearest_time(series, dt):
 
 def base_data_qc_filter(base_series, qc_filter):
     """
-    Returns only the base series data for which the next date in the qc_filter is 'true'
+    Filter out data based on quality code filter.
+
+    Return only the base series data for which the next date in the qc_filter
+    is 'true'
 
     :param base_series: pandas.Series
         Data to be filtered
@@ -129,14 +132,17 @@ def base_data_qc_filter(base_series, qc_filter):
     :return: pandas.Series
         Filtered data
     """
-
     base_filter = qc_filter.reindex(base_series.index, method="bfill").fillna(False)
     return base_series[base_filter]
 
 
 def base_data_meets_qc(base_series, qc_series, target_qc):
     """
-    Returns only the base series data for which the next date in the qc_filter is equal to target_qc
+    Find all data where QC targets are met.
+
+    Returns only the base series data for which the next date in the qc_filter
+    is equal to target_qc
+
     :param base_series: pandas.Series
         Data to be filtered
     :param qc_series: pandas.Series

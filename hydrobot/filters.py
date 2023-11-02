@@ -13,19 +13,17 @@ def clip(unclipped, low_clip: float, high_clip: float):
 
     Clip values in a pandas Series within a specified range.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     unclipped : pandas.Series
         Input data to be clipped.
-
     high_clip : float
         Upper bound for clipping. Values greater than this will be set to NaN.
-
     low_clip : float
         Lower bound for clipping. Values less than this will be set to NaN.
 
-    Returns:
-    --------
+    Returns
+    -------
     pandas.Series
         A Series containing the clipped values with the same index as the input
         Series.
@@ -49,16 +47,15 @@ def fbewma(input_data, span: int):
     Calculate the Forward-Backward Exponentially Weighted Moving Average
     (FB-EWMA) of a pandas Series.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     input_data : pandas.Series
         Input time series data to calculate the FB-EWMA on.
-
     span : int
         Span parameter for exponential weighting.
 
-    Returns:
-    --------
+    Returns
+    -------
     pandas.Series
         A Series containing the FB-EWMA values with the same index as the input
         Series.
@@ -85,20 +82,18 @@ def remove_outliers(input_data, span: int, delta: float):
     Remove outliers from a time series by comparing it to the
     Forward-Backward Exponentially Weighted Moving Average (FB-EWMA).
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     input_data : pandas.Series
         Input time series data.
-
     span : int
-        Span parameter for exponential weighting used in the FB-EWMA.""" """
-
+        Span parameter for exponential weighting used in the FB-EWMA.
     delta : float
         Threshold for identifying outliers. Values greater than this
         threshold will be set to NaN.
 
-    Returns:
-    --------
+    Returns
+    -------
     pandas.Series
         A Series containing the time series with outliers removed with
         the same index as the input Series.
@@ -106,7 +101,8 @@ def remove_outliers(input_data, span: int, delta: float):
     # Calculate the FB-EWMA of the time series
     fbewma_series = fbewma(input_data, span)
 
-    # Create a condition to identify outliers based on the absolute difference between input_data and fbewma_series
+    # Create a condition to identify outliers based on the absolute difference
+    # between input_data and fbewma_series
     delta_cond = np.abs(input_data - fbewma_series) > delta
 
     # Set values to NaN where the condition is True
@@ -124,26 +120,22 @@ def remove_spikes(
     Remove spikes from a time series data using a combination of clipping and
     interpolation.
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     input_data : pandas.Series
         Input time series data.
-
     span : int
         Span parameter for exponential weighting used in outlier detection.
-
     low_clip : float
         Lower bound for clipping. Values less than this will be set to NaN.
-
     high_clip : float
         Upper bound for clipping. Values greater than this will be set to NaN.
-
     delta : float
         Threshold for identifying outliers. Values greater than this threshold
         will be considered spikes.
 
-    Returns:
-    --------
+    Returns
+    -------
     pandas.Series
         A Series containing the time series with spikes removed with the same
         index as the input Series.
