@@ -106,3 +106,34 @@ def find_nearest_time(series, dt):
 
     output_index = series.index.get_indexer([dt], method="nearest")
     return series.index[output_index][0]
+
+
+def base_data_qc_filter(base_series, qc_filter):
+    """
+    Returns only the base series data for which the next date in the qc_filter is 'true'
+
+    :param base_series: pandas.Series
+        Data to be filtered
+    :param qc_filter: pandas.Series of booleans
+        Dates for which some condition is met or not
+    :return: pandas.Series
+        Filtered data
+    """
+
+    base_filter = qc_filter.reindex(base_series.index, method="bfill").fillna(False)
+    return base_series[base_filter]
+
+
+def base_data_meets_qc(base_series, qc_series, target_qc):
+    """
+    Returns only the base series data for which the next date in the qc_filter is equal to target_qc
+    :param base_series: pandas.Series
+        Data to be filtered
+    :param qc_series: pandas.Series
+        quality code data series, some of which are presumably target_qc
+    :param target_qc: int
+        target quality code
+    :return: pandas.Series
+        Filtered data
+    """
+    return base_data_qc_filter(base_series, qc_series == target_qc)

@@ -7,7 +7,11 @@ import pandas as pd
 from hilltoppy import Hilltop
 from hydro_processing_tools.data_acquisition import get_data
 from hydro_processing_tools.filters import remove_spikes, clip
-from hydro_processing_tools.evaluator import check_data_quality_code, small_gap_closer
+from hydro_processing_tools.evaluator import (
+    check_data_quality_code,
+    small_gap_closer,
+    base_data_meets_qc,
+)
 from hydro_processing_tools.data_sources import get_measurement
 
 # Location and attributes of data to be obtained
@@ -38,6 +42,7 @@ base_data = get_data(
     to_date,
 )
 base_series = pd.Series(base_data["Value"].values, base_data["Time"])
+base_series = base_series.asfreq("15T")
 base_series.index.name = "Time"
 base_series.name = "Value"
 
@@ -80,10 +85,15 @@ check_400 = check_series[qc_series == 400]
 check_500 = check_series[qc_series == 500]
 check_600 = check_series[qc_series == 600]
 check_other = check_series[(qc_series != 400) & (qc_series != 500) & (qc_series != 600)]
+base_400 = base_data_meets_qc(base_series, qc_series, 400)
+base_500 = base_data_meets_qc(base_series, qc_series, 500)
+base_600 = base_data_meets_qc(base_series, qc_series, 600)
 
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
-plt.plot(base_series.index, base_series, label="Processed Data")
+plt.plot(base_400.index, base_400, label="Processed Data", color="yellow")
+plt.plot(base_500.index, base_500, label="Processed Data", color="cyan")
+plt.plot(base_600.index, base_600, label="Processed Data", color="green")
 plt.plot(
     check_600.index,
     check_600,
@@ -111,7 +121,7 @@ plt.plot(
 plt.plot(
     check_other.index,
     check_other,
-    label="Check QC>=300",
+    label="Check QC<=300",
     marker="o",
     color="brown",
     linestyle="None",
