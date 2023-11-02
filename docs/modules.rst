@@ -1,7 +1,7 @@
-hydro_processing_tools
-======================
+hydrobot
+========
 
 .. toctree::
    :maxdepth: 4
 
-   hydro_processing_tools
+   hydrobot

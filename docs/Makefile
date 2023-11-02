@@ -4,7 +4,7 @@
 # You can set these variables from the command line.
 SPHINXOPTS    =
 SPHINXBUILD   = python -msphinx
-SPHINXPROJ    = hydro_processing_tools
+SPHINXPROJ    = hydrobot
 SOURCEDIR     = .
 BUILDDIR      = _build
 

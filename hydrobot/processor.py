@@ -3,7 +3,7 @@
 from annalist.annalist import Annalist
 from hilltoppy import Hilltop
 
-from hydro_processing_tools import filters
+from hydrobot import filters
 
 annalizer = Annalist()
 
