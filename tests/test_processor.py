@@ -4,6 +4,10 @@ from datetime import datetime, timedelta
 import pandas as pd
 import random
 from hilltoppy import Hilltop
+from annalist.annalist import Annalist
+
+ann = Annalist()
+ann.configure("Test Processor", "Pytest")
 
 SITES = [
     "Slimy Bog at Dirt Road",

@@ -1,10 +1,16 @@
-"""General filtering utilities"""
+"""General filtering utilities."""
+
 import numpy as np
 import pandas as pd
+from annalist.annalist import Annalist
+
+annalizer = Annalist()
 
 
+@annalizer.annalize
 def clip(unclipped, low_clip: float, high_clip: float):
-    """
+    """Clip data.
+
     Clip values in a pandas Series within a specified range.
 
     Parameters:
@@ -36,8 +42,10 @@ def clip(unclipped, low_clip: float, high_clip: float):
     return clipped_series
 
 
+@annalizer.annalize
 def fbewma(input_data, span: int):
-    """
+    """Calculate FBEWMA.
+
     Calculate the Forward-Backward Exponentially Weighted Moving Average
     (FB-EWMA) of a pandas Series.
 
@@ -70,8 +78,10 @@ def fbewma(input_data, span: int):
     return fb_ewma
 
 
+@annalizer.annalize
 def remove_outliers(input_data, span: int, delta: float):
-    """
+    """Remove outliers.
+
     Remove outliers from a time series by comparing it to the
     Forward-Backward Exponentially Weighted Moving Average (FB-EWMA).
 
@@ -105,11 +115,14 @@ def remove_outliers(input_data, span: int, delta: float):
     return gaps_series
 
 
+@annalizer.annalize
 def remove_spikes(
     input_data, span: int, low_clip: float, high_clip: float, delta: float
 ):
-    """
-    Remove spikes from a time series data using a combination of clipping and interpolation.
+    """Remove spikes.
+
+    Remove spikes from a time series data using a combination of clipping and
+    interpolation.
 
     Parameters:
     -----------
@@ -126,12 +139,14 @@ def remove_spikes(
         Upper bound for clipping. Values greater than this will be set to NaN.
 
     delta : float
-        Threshold for identifying outliers. Values greater than this threshold will be considered spikes.
+        Threshold for identifying outliers. Values greater than this threshold
+        will be considered spikes.
 
     Returns:
     --------
     pandas.Series
-        A Series containing the time series with spikes removed with the same index as the input Series.
+        A Series containing the time series with spikes removed with the same
+        index as the input Series.
     """
     # Clip values in the input data within the specified range
     clipped = clip(input_data, low_clip, high_clip)

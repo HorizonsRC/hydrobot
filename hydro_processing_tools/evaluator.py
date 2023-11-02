@@ -1,13 +1,18 @@
-"""Tools for checking how many problems there are with the data"""
+"""Tools for checking how many problems there are with the data."""
 import pandas as pd
 import numpy as np
+from annalist.annalist import Annalist
+
+annalizer = Annalist()
 
 
+@annalizer.annalize
 def gap_finder(data):
     """
-    Finds gaps in a series of data (indicated by np.isnan())
+    Find gaps in a series of data (indicated by np.isnan()).
 
-    Returns a list of tuples indicating the start of the gap, and the number of entries that are NaN
+    Returns a list of tuples indicating the start of the gap, and the number
+    of entries that are NaN
 
     Parameters:
     -----------
@@ -17,9 +22,9 @@ def gap_finder(data):
     Returns:
     --------
     List of Tuples
-        Each element in the list gives the index value for the start of the gap and the length of the gap
+        Each element in the list gives the index value for the start of the gap
+        and the length of the gap
     """
-
     idx0 = np.flatnonzero(np.r_[True, np.diff(np.isnan(data)) != 0, True])
     count = np.diff(idx0)
     idx = idx0[:-1]
@@ -31,24 +36,26 @@ def gap_finder(data):
     return list(out)
 
 
+@annalizer.annalize
 def small_gap_closer(series, gap_length):
     """
-    Removes small gaps from a series
+    Remove small gaps from a series.
 
     Gaps are defined by a sequential number of np.NaN values
     Small gaps are defined as gaps of length gap_length or less
 
-    Will return series with the nan values in the short gaps removed, and the long gaps untouched
+    Will return series with the nan values in the short gaps removed, and the
+    long gaps untouched
 
     :param series: pandas.Series
         Data which has gaps to be closed
     :param gap_length: integer
-        Maximum length of gaps removed, will remove all np.NaN's in consecutive runs of gap_length or less
+        Maximum length of gaps removed, will remove all np.NaN's in consecutive
+        runs of gap_length or less
     :return:
     pandas.Series
         Data with any short gaps removed
     """
-
     gaps = gap_finder(series)
     for gap in gaps:
         # Ask ChatGPT what this means
@@ -63,9 +70,12 @@ def small_gap_closer(series, gap_length):
     return series
 
 
+@annalizer.annalize
 def check_data_quality_code(series, check_series, measurement):
-    """
-    Quality codes data based on the difference between the standard series and the check data
+    """Quality Code Check Data.
+
+    Quality codes data based on the difference between the standard series and
+    the check data
 
     :param series: pd.Series
         Data to be quality coded
@@ -85,9 +95,10 @@ def check_data_quality_code(series, check_series, measurement):
     return qc_series
 
 
+@annalizer.annalize
 def find_nearest_time(series, dt):
     """
-    Finds the time in the series that is closest to dt, for example for
+    Find the time in the series that is closest to dt, for example for...
 
     :param series: pd.Series
         The series indexed by time
@@ -97,7 +108,6 @@ def find_nearest_time(series, dt):
     :return: Datetime
         The value of dt rounded to the nearest timestamp of the series
     """
-
     # Make sure it is in the range
     first_timestamp = series.index[0]
     last_timestamp = series.index[-1]

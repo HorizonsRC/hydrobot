@@ -2,7 +2,12 @@
 
 from hilltoppy import Hilltop
 
+from annalist.annalist import Annalist
 
+annalizer = Annalist()
+
+
+@annalizer.annalize
 def get_data(
     base_url,
     hts,

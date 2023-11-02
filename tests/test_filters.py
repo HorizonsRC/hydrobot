@@ -6,6 +6,11 @@ import pandas as pd
 import pytest
 
 import hydro_processing_tools.filters as filters
+from annalist.annalist import Annalist
+
+
+ann = Annalist()
+ann.configure("Test Processor", "Pytest")
 
 raw_data_dict = {
     "2021-01-01 00:00": 1.0,

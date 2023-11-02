@@ -2,17 +2,15 @@
 
 from hydro_processing_tools import filters
 from hilltoppy import Hilltop
-from annalist import annalist
+from annalist.annalist import Annalist
 
-flogger = annalist.FunctionLogger(
-    "Processing",
-    "Nic Baby, Always",
-)
+annalizer = Annalist()
 
 
 class Processor(Hilltop):
     """docstring for Processor."""
 
+    @annalizer.annalize
     def __init__(
         self,
         base_url: str,
@@ -24,6 +22,7 @@ class Processor(Hilltop):
         end: str | None = None,
         **kwargs,
     ):
+        """Initialize a Processor instance."""
         super().__init__(base_url, hts, timeout, **kwargs)
         if site in self.available_sites:
             self._site = site
@@ -56,7 +55,7 @@ class Processor(Hilltop):
         return self._start
 
     @start.setter
-    @flogger.annalize
+    @annalizer.annalize
     def start(self, value):
         self._start = value
         self._stale = True
@@ -67,7 +66,7 @@ class Processor(Hilltop):
         return self._end
 
     @end.setter
-    @flogger.annalize
+    @annalizer.annalize
     def end(self, value):
         self._end = value
         self._stale = True
@@ -78,11 +77,11 @@ class Processor(Hilltop):
         return self._dataset
 
     @dataset.setter
-    @flogger.annalize
+    @annalizer.annalize
     def dataset(self, value):
         self._dataset = value
 
-    @flogger.annalize
+    @annalizer.annalize
     def reload_data(
         self,
         from_date: str | None = None,
@@ -94,7 +93,7 @@ class Processor(Hilltop):
         apply_precision: bool = False,
         tstype: str | None = None,
     ):
-        """(Re)Load Raw Data from Hilltop"""
+        """(Re)Load Raw Data from Hilltop."""
         if from_date is None:
             from_date = self._start
         if to_date is None:
@@ -114,25 +113,34 @@ class Processor(Hilltop):
         self._dataset = data
         self._stale = False
 
-    @flogger.annalize
+    @annalizer.annalize
     def clip(self, low_clip: float, high_clip: float):
-        """Method implementation of clip"""
+        """Clip data.
+
+        Method implementation of filters.clip
+        """
         data = self._dataset["Values"]
         return filters.clip(data, low_clip, high_clip)
 
-    @flogger.annalize
+    @annalizer.annalize
     def fbewma(self, span: int):
-        """Method implementation of fbewma"""
+        """fbewma.
+
+        Method implementation of filters.fbewma
+        """
         data = self._dataset["Values"]
         return filters.fbewma(data, span)
 
-    @flogger.annalize
+    @annalizer.annalize
     def remove_outliers(self, span: int, delta: float):
-        """Method implementation of remove_outliers"""
+        """Remove Outliers.
+
+        Method implementation of filters.remove_outliers
+        """
         data = self._dataset["Values"]
         return filters.remove_outliers(data, span, delta)
 
-    @flogger.annalize
+    @annalizer.annalize
     def remove_spikes(
         self,
         span: int,
@@ -140,6 +148,9 @@ class Processor(Hilltop):
         high_clip: float,
         delta: float,
     ):
-        """Method implementation of remove_spikes"""
+        """Remove Spikes.
+
+        Method implementation of filters.remove_spikes
+        """
         data = self._dataset["Values"]
         return filters.remove_spikes(data, span, low_clip, high_clip, delta)

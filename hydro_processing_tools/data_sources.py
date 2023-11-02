@@ -1,19 +1,25 @@
-"""Handling for different types of data sources"""
+"""Handling for different types of data sources."""
 import numpy as np
 import csv
 from pathlib import Path
 
+from annalist.annalist import Annalist
+
+annalizer = Annalist()
+
 
 class Measurement:
-    """
-    Basic measurement only compares magnitude of differences
-    """
+    """Basic measurement only compares magnitude of differences."""
 
+    @annalizer.annalize
     def __init__(self, qc_500_limit, qc_600_limit):
+        """Initialize Measurement."""
         self.qc_500_limit = qc_500_limit
         self.qc_600_limit = qc_600_limit
 
+    @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
+        """Find the base quality codes."""
         diff = np.abs(base_datum - check_datum)
         if diff < self.qc_600_limit:
             return 600
@@ -23,9 +29,10 @@ class Measurement:
             return 400
 
 
+@annalizer.annalize
 def get_measurement_dict():
     """
-    Returns all measurements in a dictionary
+    Return all measurements in a dictionary.
     :return: dict of string:measurement pairs
     """
     measurement_dict = {}
@@ -41,6 +48,7 @@ def get_measurement_dict():
     return measurement_dict
 
 
+@annalizer.annalize
 def get_measurement(measurement_name):
     """
     Returns measurement that matches the given name
