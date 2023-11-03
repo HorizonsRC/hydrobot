@@ -28,7 +28,6 @@ low_clip = 0
 delta = 1
 span = 10
 
-
 # Measurements used
 measurement = "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement = "Water Temperature Check [Water Temperature]"
@@ -46,6 +45,7 @@ base_data = get_data(
 )
 base_series = pd.Series(base_data["Value"].values, base_data["Time"])
 base_series = base_series.asfreq("15T")
+
 base_series.index.name = "Time"
 base_series.name = "Value"
 
@@ -62,11 +62,10 @@ check_series = pd.Series(check_data["Value"].values, check_data["Time"])
 check_series.index.name = "Time"
 check_series.name = "Value"
 # Clip check data
-check_series = clip(check_series, high_clip, low_clip)
-
+check_series = clip(check_series, low_clip, high_clip)
 
 # Removing spikes from base data
-base_series = remove_spikes(base_series, span, high_clip, low_clip, delta)
+base_series = remove_spikes(base_series, span, low_clip, high_clip, delta)
 
 # Removing small np.NaN gaps
 base_series = small_gap_closer(base_series, 12)
@@ -88,15 +87,19 @@ check_400 = check_series[qc_series == 400]
 check_500 = check_series[qc_series == 500]
 check_600 = check_series[qc_series == 600]
 check_other = check_series[(qc_series != 400) & (qc_series != 500) & (qc_series != 600)]
-base_400 = base_data_meets_qc(base_series, qc_series, 400)
-base_500 = base_data_meets_qc(base_series, qc_series, 500)
-base_600 = base_data_meets_qc(base_series, qc_series, 600)
+base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq("15T")
+base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
+base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq("15T")
+
 
 plt.figure(figsize=(10, 6))
-plt.subplot(1, 1, 1)
-plt.plot(base_400.index, base_400, label="QC400", color="#ffa500")
-plt.plot(base_500.index, base_500, label="QC500", color="#00bfff")
+# plt.subplot(1, 1, 1)
+# plt.plot(base_series.index, base_series, label="QC600", color="#006400")
 plt.plot(base_600.index, base_600, label="QC600", color="#006400")
+plt.plot(base_500.index, base_500, label="QC500", color="#00bfff")
+plt.plot(base_400.index, base_400, label="QC400", color="#ffa500")
+
+
 plt.plot(
     check_series.index,
     check_series,
