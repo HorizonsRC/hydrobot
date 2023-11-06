@@ -12,10 +12,16 @@ class Measurement:
     """Basic measurement only compares magnitude of differences."""
 
     @annalizer.annalize
-    def __init__(self, qc_500_limit, qc_600_limit):
+    def __init__(self, qc_500_limit, qc_600_limit, name=""):
         """Initialize Measurement."""
         self.qc_500_limit = qc_500_limit
         self.qc_600_limit = qc_600_limit
+        self.name = name
+
+    def __repr__(self):
+        return repr(
+            f"Measurement {self.name} with limits ({self.qc_500_limit},{self.qc_600_limit})"
+        )
 
     @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
@@ -42,7 +48,7 @@ def get_measurement_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = Measurement(float(row[1]), float(row[2]))
+            measurement_dict[row[0]] = Measurement(float(row[1]), float(row[2]), row[0])
         csv_file.close()
 
     return measurement_dict

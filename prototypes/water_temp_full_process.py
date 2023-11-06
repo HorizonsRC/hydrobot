@@ -10,6 +10,7 @@ from hydro_processing_tools.evaluator import (
     check_data_quality_code,
     small_gap_closer,
     base_data_meets_qc,
+    diagnose_data,
 )
 from hydro_processing_tools.data_sources import get_measurement
 from annalist.annalist import Annalist
@@ -45,6 +46,7 @@ base_data = get_data(
 )
 base_series = pd.Series(base_data["Value"].values, base_data["Time"])
 base_series = base_series.asfreq("15T")
+raw_data = base_series
 
 base_series.index.name = "Time"
 base_series.name = "Value"
@@ -87,19 +89,26 @@ check_400 = check_series[qc_series == 400]
 check_500 = check_series[qc_series == 500]
 check_600 = check_series[qc_series == 600]
 check_other = check_series[(qc_series != 400) & (qc_series != 500) & (qc_series != 600)]
+base_200 = base_data_meets_qc(base_series, qc_series, 200).asfreq("15T")
 base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq("15T")
 base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
 base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq("15T")
 
+print(
+    diagnose_data(
+        raw_data,
+        base_series,
+        [base_600, base_500, base_400, base_200],
+        [600, 500, 400, 200],
+    )
+)
 
 plt.figure(figsize=(10, 6))
-# plt.subplot(1, 1, 1)
-# plt.plot(base_series.index, base_series, label="QC600", color="#006400")
+# plt.plot(base_series.index, base_series, label="All data", color=black) # for all data
 plt.plot(base_600.index, base_600, label="QC600", color="#006400")
 plt.plot(base_500.index, base_500, label="QC500", color="#00bfff")
 plt.plot(base_400.index, base_400, label="QC400", color="#ffa500")
-
-
+plt.plot(base_200.index, base_200, label="QC200", color="#8b5902")
 plt.plot(
     check_series.index,
     check_series,
