@@ -94,17 +94,19 @@ base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq("15T")
 base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
 base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq("15T")
 
+
 print(
     diagnose_data(
         raw_data,
         base_series,
         [base_600, base_500, base_400, base_200],
         [600, 500, 400, 200],
+        check_series,
     )
 )
 
 plt.figure(figsize=(10, 6))
-# plt.plot(base_series.index, base_series, label="All data", color=black) # for all data
+# plt.plot(base_series.index, base_series, label="All data") # for all data
 plt.plot(base_600.index, base_600, label="QC600", color="#006400")
 plt.plot(base_500.index, base_500, label="QC500", color="#00bfff")
 plt.plot(base_400.index, base_400, label="QC400", color="#ffa500")

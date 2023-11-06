@@ -184,9 +184,12 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
     return base_data_qc_filter(base_series, qc_series == target_qc)
 
 
-def diagnose_data(raw_data, base_series, series_list, qc_list):
+def diagnose_data(raw_data, base_series, series_list, qc_list, check_series):
     """
     Returns description of how much missing data, how much for each QC, etc
+
+    This function feels like a mess, I'm sorry.
+    The good news is that it shouldn't be used for anything important, so feel free to refactor the hell out of it (and there is some hell in it)
 
     :param raw_data: pandas.Series
         unprocessed data
@@ -196,31 +199,38 @@ def diagnose_data(raw_data, base_series, series_list, qc_list):
         Data for each QC
     :param qc_list: list of ints (QC codes)
         QC codes for each element in series_list
+    :param check_series: pandas.Series
+        Check data, just used for time range
     :return: String
     """
-
     output_string = ""
+    # trim the data based on last check data
+    untrimmed_data = raw_data
+    raw_data = raw_data[raw_data.index < check_series.index[-1]]
+    base_series = base_series[base_series.index < check_series.index[-1]]
+    output_string += f"Looking at {len(raw_data)/len(untrimmed_data)*100}% of the given time period (end of check data)\n"
+
     # total time
     first_timestamp = base_series.index[0]
     last_timestamp = base_series.index[-1]
     total_time = last_timestamp - first_timestamp
-    output_string += f"Total time examined is {total_time} from {first_timestamp} to {last_timestamp}\n"
+    output_string += (
+        f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}\n"
+    )
 
     # periods
-    ave_period = total_time / len(raw_data)
-    output_string += f"Average period between recorded datums is {ave_period}\n"
+    ave_period = total_time / (len(raw_data) - 1)
+    output_string += f"Period between recorded datums is approximately {ave_period}\n"
     gap_time = ave_period * (len(base_series) - len(base_series.dropna()) + 1)
-    output_string += (
-        f"Missing {gap_time} amount of data, that's {gap_time/total_time*100}%\n"
-    )
+    output_string += f"Missing {gap_time} of data, that's {gap_time/total_time*100}%\n"
 
     # QCs
     for line in list(zip(series_list, qc_list)):
         qc = line[1]
         series = line[0]
         output_string += (
-            f"Data that is QC{qc} makes up {len(series.dropna()) / len(base_series) * 100}% of the "
-            f"workable data and {len(series.dropna()) / len(raw_data) * 100}% of the time period\n"
+            f"Data that is QC{qc} makes up {len(series.dropna()) / len(base_series.dropna()) * 100}% of the "
+            f"workable data and {len(series.dropna()) / len(base_series) * 100}% of the time period\n"
         )
     output_string += f"Now it's your job to figure out if that's good enough"
     return output_string
