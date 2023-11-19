@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-import pytest
+import pytest, warnings
 import hydro_processing_tools.evaluator as evaluator
 import hydro_processing_tools.data_sources as data_sources
 
@@ -180,9 +180,10 @@ def test_find_nearest_valid_time(gap_data, qc_data):
 
 def test_check_data_quality_code(raw_data, check_data):
     meas = data_sources.Measurement(10, 2.0)
-    assert (
-        len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 0
-    ), "fails for empty check data series"
+    with pytest.warns(Warning):
+        assert (
+            len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 0
+        ), "fails for empty check data series"
     output = evaluator.check_data_quality_code(raw_data, check_data, meas)
     assert len(output) == len(
         check_data

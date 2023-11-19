@@ -1,6 +1,7 @@
 """Tools for checking how many problems there are with the data."""
 import pandas as pd
 import numpy as np
+import warnings
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
@@ -89,15 +90,19 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
     :return: List of integers (QC values)
     """
     qc_series = pd.Series({})
-    for check_time, check_value in check_series.items():
-        adjusted_time = find_nearest_valid_time(series, check_time)
-        if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
-            qc_value = measurement.find_qc(series[adjusted_time], check_value)
-        else:
-            qc_value = 200
-        qc_series[check_time] = qc_value
+    if check_series.empty:
+        warnings.warn("Warning: No check data")
+        return qc_series
+    else:
+        for check_time, check_value in check_series.items():
+            adjusted_time = find_nearest_valid_time(series, check_time)
+            if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
+                qc_value = measurement.find_qc(series[adjusted_time], check_value)
+            else:
+                qc_value = 200
+            qc_series[check_time] = qc_value
 
-    return qc_series
+        return qc_series
 
 
 @annalizer.annalize
