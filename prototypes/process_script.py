@@ -1,21 +1,20 @@
-"""
-Script to run through various processing tasks
-"""
+"""Script to run through various processing tasks."""
 import matplotlib.pyplot as plt
 import pandas as pd
-from hydro_processing_tools.data_acquisition import get_data
-from hydro_processing_tools.filters import remove_spikes, clip
-from hydro_processing_tools.evaluator import (
+from hydrobot.data_acquisition import get_data
+from hydrobot.filters import remove_spikes, clip
+from hydrobot.evaluator import (
     check_data_quality_code,
     small_gap_closer,
     base_data_meets_qc,
     diagnose_data,
 )
-from hydro_processing_tools.data_sources import get_measurement
+from hydrobot.data_sources import get_measurement
 from annalist.annalist import Annalist
 
 
 def process_data(processing_parameters):
+    """Script to run through all processing."""
     # Location and attributes of data to be obtained
 
     ann = Annalist()
@@ -54,17 +53,17 @@ def process_data(processing_parameters):
     # Clip check data
     check_series = clip(
         check_series,
-        processing_parameters["low_clip"],
-        processing_parameters["high_clip"],
+        processing_parameters["defaults"]["low_clip"],
+        processing_parameters["defaults"]["high_clip"],
     )
 
     # Removing spikes from base data
     base_series = remove_spikes(
         base_series,
-        processing_parameters["span"],
-        processing_parameters["low_clip"],
-        processing_parameters["high_clip"],
-        processing_parameters["delta"],
+        processing_parameters["defaults"]["span"],
+        processing_parameters["defaults"]["low_clip"],
+        processing_parameters["defaults"]["high_clip"],
+        processing_parameters["defaults"]["delta"],
     )
 
     # Removing small np.NaN gaps
@@ -145,7 +144,7 @@ def process_data(processing_parameters):
     plt.show()
 
 
-processing_parameters = {
+parameters = {
     "standard_base_url": "http://hilltopdev.horizons.govt.nz/",
     "check_base_url": "http://hilltopdev.horizons.govt.nz/",
     "standard_hts_filename": "RawLogger.hts",
@@ -156,10 +155,12 @@ processing_parameters = {
     "frequency": "5T",
     "measurement": "Water level statistics: Point Sample",
     "check_measurement": "External S.G. [Water Level NRT]",
-    "high_clip": 20000,
-    "low_clip": 0,
-    "delta": 1000,
-    "span": 10,
+    "defaults": {
+        "high_clip": 20000,
+        "low_clip": 0,
+        "delta": 1000,
+        "span": 10,
+    },
 }
 
-process_data(processing_parameters)
+process_data(parameters)

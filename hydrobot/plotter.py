@@ -1,15 +1,18 @@
+"""Tools for displaying potentially problematic data."""
 import matplotlib.pyplot as plt
 import pandas as pd
 import warnings
-from hydro_processing_tools.evaluator import gap_finder, find_nearest_time
+from hydrobot.evaluator import gap_finder, find_nearest_time
 
 
 def gap_plotter(base_series, span=10):
     """
-    Plots the areas around NaN values to check for invalid
-    :param base_series:
-    :param check_series:
-    :param span:
+    Plot the areas around NaN values to check for invalid.
+
+    :param base_series: pd.Dataframe
+        Data to have the gaps found and plotted
+    :param span: int
+        How many points around the gap gets plotted
     :return: None, but outputs a series of plots
     """
     for gap in gap_finder(base_series):
@@ -37,7 +40,8 @@ def gap_plotter(base_series, span=10):
 
 def check_plotter(base_series, check_series, span=10):
     """
-    Plots the areas around check values to check for
+    Plot the areas around check values to check for.
+
     :param base_series:
     :param check_series:
     :param span:

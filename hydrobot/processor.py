@@ -1,8 +1,9 @@
-"""Processor class"""
+"""Processor class."""
 
-from hydro_processing_tools import filters
-from hilltoppy import Hilltop
 from annalist.annalist import Annalist
+from hilltoppy import Hilltop
+
+from hydrobot import filters
 
 annalizer = Annalist()
 

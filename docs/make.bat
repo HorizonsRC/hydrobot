@@ -9,7 +9,7 @@ if "%SPHINXBUILD%" == "" (
 )
 set SOURCEDIR=.
 set BUILDDIR=_build
-set SPHINXPROJ=hydro_processing_tools
+set SPHINXPROJ=hydrobot
 
 if "%1" == "" goto help
 

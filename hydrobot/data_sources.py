@@ -1,8 +1,8 @@
 """Handling for different types of data sources."""
-import numpy as np
 import csv
 from pathlib import Path
 
+import numpy as np
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
@@ -19,6 +19,7 @@ class Measurement:
         self.name = name
 
     def __repr__(self):
+        """Measurement representation."""
         return repr(f"Measurement '{self.name}' with limits {vars(self)}")
 
     @annalizer.annalize
@@ -35,8 +36,9 @@ class Measurement:
 
 class TwoLevelMeasurement(Measurement):
     """
-    Measurement for standards such as water level
-    Fixed error up to given threshold, percentage error after that
+    Measurement for standards such as water level.
+
+    Fixed error up to given threshold, percentage error after that.
     """
 
     @annalizer.annalize
@@ -49,6 +51,7 @@ class TwoLevelMeasurement(Measurement):
         limit_percent_threshold,
         name="",
     ):
+        """Initialize TwoLevelMeasurement."""
         Measurement.__init__(self, qc_500_limit, qc_600_limit)
         # self.qc_500_limit = qc_500_limit
         # self.qc_600_limit = qc_600_limit
@@ -59,7 +62,7 @@ class TwoLevelMeasurement(Measurement):
 
     @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
-        """Find the base quality codes with two a flat and percentage QC threshold"""
+        """Find the base quality codes with two a flat and percentage QC threshold."""
         if base_datum < self.limit_percent_threshold:
             # flat qc check
             diff = np.abs(base_datum - check_datum)
@@ -84,6 +87,7 @@ class TwoLevelMeasurement(Measurement):
 def get_measurement_dict():
     """
     Return all measurements in a dictionary.
+
     :return: dict of string:measurement pairs
     """
     measurement_dict = {}
@@ -120,8 +124,9 @@ def get_measurement_dict():
 @annalizer.annalize
 def get_measurement(measurement_name):
     """
-    Returns measurement that matches the given name
-    Raises exception if measurement is not in the config
+    Return measurement that matches the given name.
+
+    Raises exception if measurement is not in the config.
 
     :param measurement_name: string
         Name of the measurement as defined in the config

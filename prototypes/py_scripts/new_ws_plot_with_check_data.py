@@ -1,10 +1,9 @@
-"""
-Using the utilities functions for various data sets
-"""
+"""Using the utilities functions for various data sets."""
 
 import matplotlib.pyplot as plt
 from hilltoppy import Hilltop
-from hydro_processing_tools.data_acquisition import get_data
+
+from hydrobot.data_acquisition import get_data
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"

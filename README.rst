@@ -1,20 +1,20 @@
 ======================
-Hydro Processing Tools
+Hydrobot
 ======================
 
 
-.. image:: https://img.shields.io/pypi/v/hydro_processing_tools.svg
-        :target: https://pypi.python.org/pypi/hydro_processing_tools
+.. image:: https://img.shields.io/pypi/v/hydrobot.svg
+        :target: https://pypi.python.org/pypi/hydrobot
 
-.. image:: https://readthedocs.org/projects/hydro-processing-tools/badge/?version=latest
-        :target: https://hydro-processing-tools.readthedocs.io/en/latest/?version=latest
+.. image:: https://readthedocs.org/projects/hydrobot/badge/?version=latest
+        :target: https://hydrobot.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
 
 Python Package providing a suite of processing tools and utilities for Hilltop hydrological data.
 
 
 * Free software: GNU General Public License v3
-* Documentation: https://hydro-processing-tools.readthedocs.io.
+* Documentation: https://hydrobot.readthedocs.io.
 
 
 Features

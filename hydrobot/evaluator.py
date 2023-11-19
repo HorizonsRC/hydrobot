@@ -1,7 +1,7 @@
 """Tools for checking how many problems there are with the data."""
-import pandas as pd
 import numpy as np
 import warnings
+import pandas as pd
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
@@ -15,13 +15,13 @@ def gap_finder(data):
     Returns a list of tuples indicating the start of the gap, and the number
     of entries that are NaN
 
-    Parameters:
-    -----------
+    Parameters
+    ----------
     data : pandas.Series
         Input data to be clipped.
 
-    Returns:
-    --------
+    Returns
+    -------
     List of Tuples
         Each element in the list gives the index value for the start of the gap
         and the length of the gap
@@ -51,8 +51,7 @@ def small_gap_closer(series, gap_length):
     :param series: pandas.Series
         Data which has gaps to be closed
     :param gap_length: integer
-        Maximum length of gaps removed, will remove all np.NaN's in consecutive
-        runs of gap_length or less
+        Maximum length of gaps removed, will remove all np.NaN's in consecutive runs of gap_length or less
     :return:
     pandas.Series
         Data with any short gaps removed
@@ -108,7 +107,8 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
 @annalizer.annalize
 def find_nearest_time(series, dt):
     """
-    Find the time in the series that is closest to dt
+    Find the time in the series that is closest to dt.
+
     For example for... data series
         pd.Timestamp("2021-01-01 02:00"): 0.0,
         pd.Timestamp("2021-01-01 02:15"): 0.0,
@@ -137,7 +137,7 @@ def find_nearest_time(series, dt):
 @annalizer.annalize
 def find_nearest_valid_time(series, dt):
     """
-    Find the time in the series that is closest to dt, but ignoring NaN values (gaps)
+    Find the time in the series that is closest to dt, but ignoring NaN values (gaps).
 
     :param series: pd.Series
         The series indexed by time
@@ -160,7 +160,10 @@ def find_nearest_valid_time(series, dt):
 
 def base_data_qc_filter(base_series, qc_filter):
     """
-    Returns only the base series data for which the next date in the qc_filter is 'true'
+    Filter out data based on quality code filter.
+
+    Return only the base series data for which the next date in the qc_filter
+    is 'true'
 
     :param base_series: pandas.Series
         Data to be filtered
@@ -169,14 +172,17 @@ def base_data_qc_filter(base_series, qc_filter):
     :return: pandas.Series
         Filtered data
     """
-
     base_filter = qc_filter.reindex(base_series.index, method="bfill").fillna(False)
     return base_series[base_filter]
 
 
 def base_data_meets_qc(base_series, qc_series, target_qc):
     """
-    Returns only the base series data for which the next date in the qc_filter is equal to target_qc
+    Find all data where QC targets are met.
+
+    Returns only the base series data for which the next date in the qc_filter
+    is equal to target_qc
+
     :param base_series: pandas.Series
         Data to be filtered
     :param qc_series: pandas.Series
@@ -191,7 +197,7 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
 
 def diagnose_data(raw_data, base_series, series_list, qc_list, check_series):
     """
-    Returns description of how much missing data, how much for each QC, etc
+    Return description of how much missing data, how much for each QC, etc.
 
     This function feels like a mess, I'm sorry.
     The good news is that it shouldn't be used for anything important, so feel free to refactor the hell out of it (and there is some hell in it)

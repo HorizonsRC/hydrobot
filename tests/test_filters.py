@@ -1,11 +1,11 @@
 import math
+
 import numpy as np
 import pandas as pd
 import pytest
-
-import hydro_processing_tools.filters as filters
 from annalist.annalist import Annalist
 
+import hydrobot.filters as filters
 
 ann = Annalist()
 ann.configure("Test Processor", "Pytest")
@@ -90,7 +90,7 @@ def test_fbewma(raw_data, fbewma_data):
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     # Setting up a bug free mock version of fbewma to use in remove_outliers
     fbewma_mock = mocker.patch(
-        "hydro_processing_tools.filters.fbewma",
+        "hydrobot.filters.fbewma",
         side_effect=fbewma_data,
     )
 
@@ -116,12 +116,12 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
 
     # I can use the same mocker here because clip wouldn't do anything to this data
     clip_mock = mocker.patch(
-        "hydro_processing_tools.filters.clip",
+        "hydrobot.filters.clip",
         side_effect=clip_no_bugs,
     )
 
     remove_outlier_mock = mocker.patch(
-        "hydro_processing_tools.filters.remove_outliers",
+        "hydrobot.filters.remove_outliers",
         side_effect=remove_outliers_no_bugs,
     )
 

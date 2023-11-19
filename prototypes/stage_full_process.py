@@ -1,18 +1,16 @@
-"""
-Script to run through various processing tasks
-"""
+"""Script to run through various processing tasks."""
 import time
 import matplotlib.pyplot as plt
 import pandas as pd
-from hydro_processing_tools.data_acquisition import get_data
-from hydro_processing_tools.filters import remove_spikes, clip
-from hydro_processing_tools.evaluator import (
+from hydrobot.data_acquisition import get_data
+from hydrobot.filters import remove_spikes, clip
+from hydrobot.evaluator import (
     check_data_quality_code,
     small_gap_closer,
     base_data_meets_qc,
     diagnose_data,
 )
-from hydro_processing_tools.data_sources import get_measurement
+from hydrobot.data_sources import get_measurement
 from annalist.annalist import Annalist
 
 # Location and attributes of data to be obtained

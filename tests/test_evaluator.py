@@ -1,10 +1,13 @@
+import hydrobot.data_sources as data_sources
+import hydrobot.evaluator as evaluator
 import numpy as np
 import pandas as pd
-import pytest, warnings
-import hydro_processing_tools.evaluator as evaluator
-import hydro_processing_tools.data_sources as data_sources
-
+import pytest
+import warnings
 from annalist.annalist import Annalist
+
+import hydrobot.data_sources as data_sources
+import hydrobot.evaluator as evaluator
 
 ann = Annalist()
 ann.configure("Test Evaluator", "Pytest")

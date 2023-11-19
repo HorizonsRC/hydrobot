@@ -1,4 +1,4 @@
-Welcome to Hydro Processing Tools's documentation!
+Welcome to Hydrobot's documentation!
 ======================================
 
 .. toctree::
