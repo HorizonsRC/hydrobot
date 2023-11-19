@@ -1,37 +1,36 @@
 """Script to run through various processing tasks."""
-
+import time
 import matplotlib.pyplot as plt
 import pandas as pd
-from annalist.annalist import Annalist
-
 from hydrobot.data_acquisition import get_data
-from hydrobot.data_sources import get_measurement
+from hydrobot.filters import remove_spikes, clip
 from hydrobot.evaluator import (
-    base_data_meets_qc,
     check_data_quality_code,
     small_gap_closer,
     base_data_meets_qc,
     diagnose_data,
 )
-from hydrobot.filters import clip, remove_spikes
+from hydrobot.data_sources import get_measurement
+from annalist.annalist import Annalist
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
 standard_hts = "RawLogger.hts"
 check_hts = "boo.hts"
 
-site = "Rangitikei at Mangaweka"
+site = "Whanganui at Te Rewa"
 from_date = "2021-01-01 00:00"
 to_date = "2023-10-12 8:30"
+frequency = "5T"
 
-high_clip = 40
+high_clip = 20000
 low_clip = 0
-delta = 1
+delta = 1000
 span = 10
 
 # Measurements used
-measurement = "Water Temperature [Dissolved Oxygen sensor]"
-check_measurement = "Water Temperature Check [Water Temperature]"
+measurement = "Water level statistics: Point Sample"
+check_measurement = "External S.G. [Water Level NRT]"
 
 ann = Annalist()
 ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")
@@ -45,7 +44,7 @@ base_data = get_data(
     to_date,
 )
 base_series = pd.Series(base_data["Value"].values, base_data["Time"])
-base_series = base_series.asfreq("15T")
+base_series = base_series.asfreq(frequency)
 raw_data = base_series
 
 base_series.index.name = "Time"
@@ -72,6 +71,7 @@ base_series = remove_spikes(base_series, span, low_clip, high_clip, delta)
 # Removing small np.NaN gaps
 base_series = small_gap_closer(base_series, 12)
 
+
 # Find the QC values
 qc_series = check_data_quality_code(
     base_series, check_series, get_measurement(measurement)
@@ -89,10 +89,10 @@ check_400 = check_series[qc_series == 400]
 check_500 = check_series[qc_series == 500]
 check_600 = check_series[qc_series == 600]
 check_other = check_series[(qc_series != 400) & (qc_series != 500) & (qc_series != 600)]
-base_200 = base_data_meets_qc(base_series, qc_series, 200).asfreq("15T")
-base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq("15T")
-base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
-base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq("15T")
+base_200 = base_data_meets_qc(base_series, qc_series, 200).asfreq(frequency)
+base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq(frequency)
+base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq(frequency)
+base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq(frequency)
 
 
 print(

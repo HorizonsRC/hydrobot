@@ -1,6 +1,9 @@
+import hydrobot.data_sources as data_sources
+import hydrobot.evaluator as evaluator
 import numpy as np
 import pandas as pd
 import pytest
+import warnings
 from annalist.annalist import Annalist
 
 import hydrobot.data_sources as data_sources
@@ -149,11 +152,41 @@ def test_find_nearest_time(gap_data):
         evaluator.find_nearest_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
 
 
+def test_find_nearest_valid_time(gap_data, qc_data):
+    assert evaluator.find_nearest_valid_time(
+        qc_data, pd.Timestamp("2021-01-01 01:00")
+    ) == pd.Timestamp("2021-01-01 01:00"), "does not find exact value"
+    assert evaluator.find_nearest_valid_time(
+        qc_data, pd.Timestamp("2021-01-01 01:07")
+    ) == pd.Timestamp("2021-01-01 01:00"), "does not round down correctly"
+    assert evaluator.find_nearest_valid_time(
+        qc_data, pd.Timestamp("2021-01-01 01:08")
+    ) == pd.Timestamp(
+        "2021-01-01 01:00"
+    ), "does not round down when round up would lead to null"
+    assert evaluator.find_nearest_valid_time(
+        gap_data, pd.Timestamp("2021-01-01 01:23")
+    ) == pd.Timestamp("2021-01-01 01:00"), "middle of nulls not reading correctly"
+    assert evaluator.find_nearest_valid_time(
+        qc_data, pd.Timestamp("2021-01-01 00:00")
+    ) == pd.Timestamp("2021-01-01 00:00"), "start time not accepted"
+    assert evaluator.find_nearest_valid_time(
+        qc_data, pd.Timestamp("2021-01-01 02:45")
+    ) == pd.Timestamp("2021-01-01 02:45"), "end time not accepted"
+    with pytest.raises(Exception):
+        # out of range forwards
+        evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2021-01-01 02:46"))
+    with pytest.raises(Exception):
+        # out of range backwards
+        evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
+
+
 def test_check_data_quality_code(raw_data, check_data):
     meas = data_sources.Measurement(10, 2.0)
-    assert (
-        len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 0
-    ), "fails for empty check data series"
+    with pytest.warns(Warning):
+        assert (
+            len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 0
+        ), "fails for empty check data series"
     output = evaluator.check_data_quality_code(raw_data, check_data, meas)
     assert len(output) == len(
         check_data

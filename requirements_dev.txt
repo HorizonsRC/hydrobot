@@ -20,7 +20,7 @@ contourpy==1.1.1
 coverage==7.3.1
 cryptography==41.0.4
 cycler==0.12.1
-data-annalist==0.2.0
+data-annalist==0.3.2
 debugpy==1.8.0
 decorator==5.1.1
 distlib==0.3.7
@@ -90,6 +90,7 @@ Pygments==2.16.1
 pyparsing==3.1.1
 pyproject-api==1.6.1
 pytest==7.4.2
+pytest-dependency==0.5.1
 pytest-mock==3.12.0
 python-dateutil==2.8.2
 pytz==2023.3.post1
@@ -131,3 +132,4 @@ watchdog==3.0.0
 wcwidth==0.2.8
 widgetsnbextension==4.0.9
 zipp==3.17.0
+setuptools~=65.5.1

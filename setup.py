@@ -31,7 +31,7 @@ setup(
         and utilities for Hilltop hydrological data.",
     # entry_points={
     #     "console_scripts": [
-    #         "hydro_processing_tools=hydro_processing_tools.cli:main",
+    #         "hydrobot=hydrobot.cli:main",
     #     ],
     # },
     install_requires=requirements,
