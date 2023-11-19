@@ -20,7 +20,7 @@ contourpy==1.1.1
 coverage==7.3.1
 cryptography==41.0.4
 cycler==0.12.1
-data-annalist==0.2.0
+data-annalist==0.3.2
 debugpy==1.8.0
 decorator==5.1.1
 distlib==0.3.7

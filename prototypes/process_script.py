@@ -19,7 +19,10 @@ def process_data(processing_parameters):
     # Location and attributes of data to be obtained
 
     ann = Annalist()
-    ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")
+    ann.configure(
+        logfile="output_dump/Processing Water Temp Data.",
+        analyst_name="Hot Dameul, Sameul!",
+    )
 
     base_data = get_data(
         processing_parameters["standard_base_url"],
