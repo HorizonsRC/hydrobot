@@ -28,6 +28,7 @@ def gap_plotter(base_series, span=10):
             if lower_idx < 0:
                 # span is too big or not enough data
                 warnings.warn("Warning: Span bigger than data")
+                lower_idx = 0
         gap_range = base_series.iloc[lower_idx:upper_idx]
         plt.plot(gap_range.index, gap_range)
         plt.title(f"Gap starting at {gap[0]}")
@@ -60,6 +61,7 @@ def check_plotter(base_series, check_series, span=10):
             if lower_idx < 0:
                 # span is too big or not enough data
                 warnings.warn("Warning: Span bigger than data")
+                lower_idx = 0
         gap_range = base_series.iloc[lower_idx:upper_idx]
         plt.plot(gap_range.index, gap_range)
         plt.title(f"Check at {check}")
