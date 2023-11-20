@@ -69,8 +69,6 @@ def process_data(processing_parameters):
     # Removing small np.NaN gaps
     base_series = small_gap_closer(base_series, 12)
 
-    print(base_series)
-    print(check_series)
     # Find the QC values
     qc_series = check_data_quality_code(
         base_series, check_series, get_measurement(processing_parameters["measurement"])

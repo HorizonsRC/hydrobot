@@ -43,16 +43,20 @@ def small_gap_closer(series, gap_length):
     Remove small gaps from a series.
 
     Gaps are defined by a sequential number of np.NaN values
-    Small gaps are defined as gaps of length gap_length or less
+    Small gaps are defined as gaps of length gap_length or less.
 
     Will return series with the nan values in the short gaps removed, and the
-    long gaps untouched
+    long gaps untouched.
 
-    :param series: pandas.Series
+    Parameters
+    ----------
+    series : pandas.Series
         Data which has gaps to be closed
-    :param gap_length: integer
+    gap_length : integer
         Maximum length of gaps removed, will remove all np.NaN's in consecutive runs of gap_length or less
-    :return:
+
+    Returns
+    -------
     pandas.Series
         Data with any short gaps removed
     """
@@ -72,21 +76,29 @@ def small_gap_closer(series, gap_length):
 
 @annalizer.annalize
 def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
-    """Quality Code Check Data.
+    """
+    Quality Code Check Data.
 
     Quality codes data based on the difference between the standard series and
     the check data
 
-    :param series: pd.Series
+    :return: List of integers (QC values)
+
+    Parameters
+    ----------
+    series : pd.Series
         Data to be quality coded
-    :param check_series: pd.Series
+    check_series : pd.Series
         Check data
-    :param measurement: data_sources.Measurement
+    measurement : data_sources.Measurement
         Handler for QC comparisons
-    :param gap_limit: int (seconds)
+    gap_limit : integer (seconds)
         If the nearest real data point is more than this many seconds away, return 200
 
-    :return: List of integers (QC values)
+    Returns
+    -------
+    pd.Series
+        The QC values with the same index of the check_series
     """
     qc_series = pd.Series({})
     if check_series.empty:
@@ -109,19 +121,23 @@ def find_nearest_time(series, dt):
     """
     Find the time in the series that is closest to dt.
 
-    For example for... data series
+    For example for the series
         pd.Timestamp("2021-01-01 02:00"): 0.0,
         pd.Timestamp("2021-01-01 02:15"): 0.0,
     with dt
         pd.Timestamp("2021-01-01 02:13"): 0.0,
     the result should be the closer pd.Timestamp("2021-01-01 02:15") value
 
-    :param series: pd.Series
+    Parameters
+    ----------
+    series : pd.Series
         The series indexed by time
-    :param dt: Datetime
+    dt : Datetime
         Time that may or may nor exactly line up with the series
 
-    :return: Datetime
+    Returns
+    -------
+    Datetime
         The value of dt rounded to the nearest timestamp of the series
     """
     # Make sure it is in the range
@@ -139,13 +155,18 @@ def find_nearest_valid_time(series, dt):
     """
     Find the time in the series that is closest to dt, but ignoring NaN values (gaps).
 
-    :param series: pd.Series
+    Parameters
+    ----------
+    series : pd.Series
         The series indexed by time
-    :param dt: Datetime
+    dt : Datetime
         Time that may or may nor exactly line up with the series
 
-    :return: Datetime
+    Returns
+    -------
+    Datetime
         The value of dt rounded to the nearest timestamp of the series
+
     """
     # Make sure it is in the range
     first_timestamp = series.index[0]
@@ -165,12 +186,18 @@ def base_data_qc_filter(base_series, qc_filter):
     Return only the base series data for which the next date in the qc_filter
     is 'true'
 
-    :param base_series: pandas.Series
+    Parameters
+    ----------
+    base_series : pandas.Series
         Data to be filtered
-    :param qc_filter: pandas.Series of booleans
+    qc_filter : pandas.Series of booleans
         Dates for which some condition is met or not
-    :return: pandas.Series
-        Filtered data
+
+    Returns
+    -------
+    pandas.Series
+        The filtered data
+
     """
     base_filter = qc_filter.reindex(base_series.index, method="bfill").fillna(False)
     return base_series[base_filter]
@@ -180,16 +207,20 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
     """
     Find all data where QC targets are met.
 
-    Returns only the base series data for which the next date in the qc_filter
-    is equal to target_qc
+    Returns only the base series data for which the next date in the qc_filter is equal to target_qc
 
-    :param base_series: pandas.Series
+    Parameters
+    ----------
+    base_series: pandas.Series
         Data to be filtered
-    :param qc_series: pandas.Series
+    qc_series: pandas.Series
         quality code data series, some of which are presumably target_qc
-    :param target_qc: int
+    target_qc: int
         target quality code
-    :return: pandas.Series
+
+    Returns
+    -------
+    pandas.Series
         Filtered data
     """
     return base_data_qc_filter(base_series, qc_series == target_qc)
@@ -200,19 +231,26 @@ def diagnose_data(raw_data, base_series, series_list, qc_list, check_series):
     Return description of how much missing data, how much for each QC, etc.
 
     This function feels like a mess, I'm sorry.
-    The good news is that it shouldn't be used for anything important, so feel free to refactor the hell out of it (and there is some hell in it)
+    The good news is that it is only a diagnostic, so feel free to change the hell out of it
 
-    :param raw_data: pandas.Series
+    Parameters
+    ----------
+    raw_data : pandas.Series
         unprocessed data
-    :param base_series: pandas.Series
+    base_series : pandas.Series
         un-QCed but processed data (spikes removed, small gaps closed)
-    :param series_list: list of pandas.Series
+    series_list : list of pandas.Series
         Data for each QC
-    :param qc_list: list of ints (QC codes)
+    qc_list : list of ints (QC codes)
         QC codes for each element in series_list
-    :param check_series: pandas.Series
+    check_series : pandas.Series
         Check data, just used for time range
-    :return: String
+
+    Returns
+    -------
+    String
+        A description of potential problems with the data
+
     """
     output_string = ""
     # trim the data based on last check data

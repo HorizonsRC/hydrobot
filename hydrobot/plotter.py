@@ -7,7 +7,7 @@ from hydrobot.evaluator import gap_finder, find_nearest_time
 
 def gap_plotter(base_series, span=10):
     """
-    Plot the areas around NaN values to check for invalid.
+    Plot the areas around NaN values to visually check for dodgy spike removal.
 
     :param base_series: pd.Series
         Data to have the gaps found and plotted
@@ -40,14 +40,24 @@ def gap_plotter(base_series, span=10):
 
 def check_plotter(base_series, check_series, span=10):
     """
-    Plot the areas around check values to check for.
+    Plot the areas around check values to visually check for dodgy data from inspections.
 
     :param base_series: pd.Series
         Data to plot
     :param check_series: pd.Series
         Check data which determines where the data is plotted
     :param span: int
-    :return: None, but outputs a series of plots
+    :return:
+    Parameters
+    ----------
+    base_series
+    check_series
+    span
+
+    Returns
+    -------
+    None, but outputs a series of plots
+
     """
     for check in check_series:
         print(check)
