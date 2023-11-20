@@ -4,7 +4,7 @@ from annalist.annalist import Annalist
 import hydrobot.data_sources as data_sources
 
 ann = Annalist()
-ann.configure("Test Evaluator", "Pytest")
+ann.configure()
 
 
 @pytest.mark.dependency(name="test_get_measurement_dict")

@@ -9,7 +9,7 @@ from hilltoppy import Hilltop
 from hydrobot import processor
 
 ann = Annalist()
-ann.configure("Test Processor", "Pytest")
+ann.configure()
 
 SITES = [
     "Slimy Bog at Dirt Road",

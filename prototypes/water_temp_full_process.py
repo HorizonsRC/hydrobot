@@ -34,7 +34,10 @@ measurement = "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement = "Water Temperature Check [Water Temperature]"
 
 ann = Annalist()
-ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")
+ann.configure(
+    logfile="output_dump/Processing Water Temp Data.",
+    analyst_name="Hot Dameul, Sameul!",
+)
 
 base_data = get_data(
     base_url,

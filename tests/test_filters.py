@@ -8,7 +8,7 @@ from annalist.annalist import Annalist
 import hydrobot.filters as filters
 
 ann = Annalist()
-ann.configure("Test Processor", "Pytest")
+ann.configure()
 
 raw_data_dict = {
     "2021-01-01 00:00": 1.0,

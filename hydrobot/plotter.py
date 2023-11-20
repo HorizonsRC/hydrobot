@@ -9,7 +9,7 @@ def gap_plotter(base_series, span=10):
     """
     Plot the areas around NaN values to check for invalid.
 
-    :param base_series: pd.Dataframe
+    :param base_series: pd.Series
         Data to have the gaps found and plotted
     :param span: int
         How many points around the gap gets plotted
@@ -42,9 +42,11 @@ def check_plotter(base_series, check_series, span=10):
     """
     Plot the areas around check values to check for.
 
-    :param base_series:
-    :param check_series:
-    :param span:
+    :param base_series: pd.Series
+        Data to plot
+    :param check_series: pd.Series
+        Check data which determines where the data is plotted
+    :param span: int
     :return: None, but outputs a series of plots
     """
     for check in check_series:
