@@ -6,6 +6,7 @@ import numpy as np
 from annalist.annalist import Annalist
 
 annalizer = Annalist()
+annalizer.configure()
 
 
 class Measurement:
@@ -13,7 +14,18 @@ class Measurement:
 
     @annalizer.annalize
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
-        """Initialize Measurement."""
+        """
+        Initialize Measurement.
+
+        Parameters
+        ----------
+        qc_500_limit : numerical
+            Threshold between QC 400 and QC 500
+        qc_600_limit : numerical
+            Threshold between QC 500 and QC 600
+        name : str
+            Name of the data source
+        """
         self.qc_500_limit = qc_500_limit
         self.qc_600_limit = qc_600_limit
         self.name = name
@@ -24,7 +36,22 @@ class Measurement:
 
     @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
-        """Find the base quality codes."""
+        """
+        Find the base quality codes.
+
+        Parameters
+        ----------
+        base_datum : numerical
+            Closest continuum datum point to the check
+        check_datum : numerical
+            The check data to verify the continuous data
+
+        Returns
+        -------
+        int
+            The Quality code
+
+        """
         diff = np.abs(base_datum - check_datum)
         if diff < self.qc_600_limit:
             return 600
@@ -51,7 +78,24 @@ class TwoLevelMeasurement(Measurement):
         limit_percent_threshold,
         name="",
     ):
-        """Initialize TwoLevelMeasurement."""
+        """
+                Initialize TwoLevelMeasurement.
+
+        Parameters
+        ----------
+        qc_500_limit : numerical
+            Threshold between QC 400 and QC 500 for linear portion
+        qc_600_limit : numerical
+            Threshold between QC 500 and QC 600 for linear portion
+        qc_500_percent : numerical
+            Threshold between QC 400 and QC 500 for percentage portion
+        qc_600_percent : numerical
+            Threshold between QC 500 and QC 600 for percentage portion
+        limit_percent_threshold
+            Value at which the measurement transitions between linear and percentage QC comparison
+        name : str
+            Name of the data source
+        """
         Measurement.__init__(self, qc_500_limit, qc_600_limit)
         # self.qc_500_limit = qc_500_limit
         # self.qc_600_limit = qc_600_limit
@@ -62,7 +106,22 @@ class TwoLevelMeasurement(Measurement):
 
     @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
-        """Find the base quality codes with two a flat and percentage QC threshold."""
+        """
+        Find the base quality codes with two stages - a flat and percentage QC threshold.
+
+        Parameters
+        ----------
+        base_datum : numerical
+            Closest continuum datum point to the check
+        check_datum : numerical
+            The check data to verify the continuous data
+
+        Returns
+        -------
+        int
+            The Quality code
+
+        """
         if base_datum < self.limit_percent_threshold:
             # flat qc check
             diff = np.abs(base_datum - check_datum)
@@ -88,10 +147,13 @@ def get_measurement_dict():
     """
     Return all measurements in a dictionary.
 
-    :return: dict of string:measurement pairs
+    Returns
+    -------
+    dict of string-measurement pairs
     """
     measurement_dict = {}
-    script_dir = Path(__file__).parent
+    script_dir = Path(__file__).parent.parent
+    # script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Plain Measurements
     template_path = (script_dir / "config/measurement_QC_config.csv").resolve()
@@ -128,9 +190,14 @@ def get_measurement(measurement_name):
 
     Raises exception if measurement is not in the config.
 
-    :param measurement_name: string
+    Parameters
+    ----------
+    measurement_name : string
         Name of the measurement as defined in the config
-    :return: Measurement
+
+    Returns
+    -------
+    Measurement
         The Measurement class initiated with the standard config data
     """
     m_dict = get_measurement_dict()
