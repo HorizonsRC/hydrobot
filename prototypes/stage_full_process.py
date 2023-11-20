@@ -33,7 +33,7 @@ measurement = "Water level statistics: Point Sample"
 check_measurement = "External S.G. [Water Level NRT]"
 
 ann = Annalist()
-ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")
+ann.configure("output_dump/Processing Water Temp Data.", "Hot Dameul, Sameul!")
 
 base_data = get_data(
     base_url,

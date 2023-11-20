@@ -10,7 +10,7 @@ import hydrobot.data_sources as data_sources
 import hydrobot.evaluator as evaluator
 
 ann = Annalist()
-ann.configure("Test Evaluator", "Pytest")
+ann.configure()
 
 raw_data_dict = {
     pd.Timestamp("2021-01-01 00:00"): 1.0,
