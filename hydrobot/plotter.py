@@ -9,11 +9,17 @@ def gap_plotter(base_series, span=10):
     """
     Plot the areas around NaN values to visually check for dodgy spike removal.
 
-    :param base_series: pd.Series
+    Parameters
+    ----------
+    base_series : pd.Series
         Data to have the gaps found and plotted
-    :param span: int
+    span : int
         How many points around the gap gets plotted
-    :return: None, but outputs a series of plots
+
+    Returns
+    -------
+    None
+        Outputs a series of plots
     """
     for gap in gap_finder(base_series):
         plt.figure()
@@ -42,21 +48,18 @@ def check_plotter(base_series, check_series, span=10):
     """
     Plot the areas around check values to visually check for dodgy data from inspections.
 
-    :param base_series: pd.Series
-        Data to plot
-    :param check_series: pd.Series
-        Check data which determines where the data is plotted
-    :param span: int
-    :return:
     Parameters
     ----------
-    base_series
-    check_series
-    span
+    base_series : pd.Series
+        Data to plot
+    check_series : pd.Series
+        Check data which determines where the data is plotted
+    span : int
 
     Returns
     -------
-    None, but outputs a series of plots
+    None
+        Outputs a series of plots
 
     """
     for check in check_series:

@@ -185,27 +185,28 @@ def test_check_data_quality_code(raw_data, check_data):
     meas = data_sources.Measurement(10, 2.0)
     with pytest.warns(Warning):
         assert (
-            len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 0
+            len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 1
         ), "fails for empty check data series"
     output = evaluator.check_data_quality_code(raw_data, check_data, meas)
-    assert len(output) == len(
-        check_data
+    assert (
+        len(output) == len(check_data) + 1
     ), "different amount of QC values than check data values"
     assert output.iloc[0] == 600, "QC 600 test failed"
     assert output.iloc[1] == 500, "QC 500 test failed"
     assert output.iloc[2] == 400, "QC 400 test failed"
+    assert output.iloc[3] == 0, "Should have QC 0 at the end"
 
 
 def test_base_data_qc_filter(gap_data, qc_data):
     assert len(
         evaluator.base_data_qc_filter(
-            gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): True})
+            gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): True})
         )
     ) == len(gap_data), "True filter removed data"
     assert (
         len(
             evaluator.base_data_qc_filter(
-                gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): False})
+                gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): False})
             )
         )
         == 0
@@ -213,7 +214,7 @@ def test_base_data_qc_filter(gap_data, qc_data):
     data_600 = evaluator.base_data_qc_filter(gap_data, qc_data == 600)
     assert pd.Timestamp("2021-01-01 00:00") in data_600
     assert pd.Timestamp("2021-01-01 00:15") not in data_600
-    assert pd.Timestamp("2021-01-01 00:30") in data_600
+    assert pd.Timestamp("2021-01-01 00:30") not in data_600
     assert pd.Timestamp("2021-01-01 00:45") in data_600
     assert pd.Timestamp("2021-01-01 01:00") not in data_600
     assert pd.Timestamp("2021-01-01 01:15") not in data_600
@@ -223,7 +224,7 @@ def test_base_data_qc_filter(gap_data, qc_data):
     data_500 = evaluator.base_data_qc_filter(gap_data, qc_data == 500)
     assert pd.Timestamp("2021-01-01 00:00") not in data_500
     assert pd.Timestamp("2021-01-01 00:15") in data_500
-    assert pd.Timestamp("2021-01-01 00:30") not in data_500
+    assert pd.Timestamp("2021-01-01 00:30") in data_500
     assert pd.Timestamp("2021-01-01 00:45") not in data_500
     assert pd.Timestamp("2021-01-01 01:00") in data_500
     assert pd.Timestamp("2021-01-01 01:15") in data_500
@@ -234,13 +235,13 @@ def test_base_data_qc_filter(gap_data, qc_data):
 def test_base_data_meets_qc(gap_data, qc_data):
     assert len(
         evaluator.base_data_meets_qc(
-            gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): 600}), 600
+            gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): 600}), 600
         )
     ) == len(gap_data), "True filter removed data"
     assert (
         len(
             evaluator.base_data_meets_qc(
-                gap_data, pd.Series({pd.Timestamp("2021-01-01 02:45"): 500}), 600
+                gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): 500}), 600
             )
         )
         == 0
@@ -248,7 +249,7 @@ def test_base_data_meets_qc(gap_data, qc_data):
     data_600 = evaluator.base_data_meets_qc(gap_data, qc_data, 600)
     assert pd.Timestamp("2021-01-01 00:00") in data_600
     assert pd.Timestamp("2021-01-01 00:15") not in data_600
-    assert pd.Timestamp("2021-01-01 00:30") in data_600
+    assert pd.Timestamp("2021-01-01 00:30") not in data_600
     assert pd.Timestamp("2021-01-01 00:45") in data_600
     assert pd.Timestamp("2021-01-01 01:00") not in data_600
     assert pd.Timestamp("2021-01-01 01:15") not in data_600
@@ -258,9 +259,25 @@ def test_base_data_meets_qc(gap_data, qc_data):
     data_500 = evaluator.base_data_meets_qc(gap_data, qc_data, 500)
     assert pd.Timestamp("2021-01-01 00:00") not in data_500
     assert pd.Timestamp("2021-01-01 00:15") in data_500
-    assert pd.Timestamp("2021-01-01 00:30") not in data_500
+    assert pd.Timestamp("2021-01-01 00:30") in data_500
     assert pd.Timestamp("2021-01-01 00:45") not in data_500
     assert pd.Timestamp("2021-01-01 01:00") in data_500
     assert pd.Timestamp("2021-01-01 01:15") in data_500
     assert pd.Timestamp("2021-01-01 02:30") not in data_500
     assert pd.Timestamp("2021-01-01 02:45") not in data_500
+
+
+def test_missing_data_quality_code(gap_data, qc_data):
+    no_gap_qc = evaluator.missing_data_quality_code(
+        gap_data.fillna(3), qc_data, gap_limit=0
+    )
+    assert no_gap_qc.equals(qc_data), "QC data modified when there are no gaps"
+
+    new_qc = evaluator.missing_data_quality_code(gap_data, qc_data, gap_limit=0)
+    assert new_qc[pd.Timestamp("2021-01-01 00:00")] == 100, "Starting gap not added"
+    assert new_qc[pd.Timestamp("2021-01-01 00:15")] == 500, "Starting gap not closed"
+    assert new_qc[pd.Timestamp("2021-01-01 02:30")] == 100, "Ending gap not added"
+    with pytest.raises(Exception):
+        # Mid-gap QC not replaced
+        new_qc[pd.Timestamp("2021-01-01 01:30")]
+    assert new_qc[pd.Timestamp("2021-01-01 02:00")] == 500, "Gap in middle not closed"

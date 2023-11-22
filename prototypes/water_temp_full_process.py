@@ -1,17 +1,18 @@
 """Script to run through various processing tasks."""
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
 
 from hydrobot.data_acquisition import get_data
 from hydrobot.data_sources import get_measurement
 from hydrobot.evaluator import (
-    base_data_meets_qc,
     check_data_quality_code,
     small_gap_closer,
     base_data_meets_qc,
     diagnose_data,
+    missing_data_quality_code,
 )
 from hydrobot.filters import clip, remove_spikes
 
@@ -79,6 +80,10 @@ base_series = small_gap_closer(base_series, 12)
 qc_series = check_data_quality_code(
     base_series, check_series, get_measurement(measurement)
 )
+qc_series = missing_data_quality_code(base_series, qc_series, 12)
+# qc_series[from_date] = np.NaN
+# qc_series.sort_index(inplace=True)
+# qc_series = qc_series.shift(-1, fill_value=0)
 qc_series.index.name = "Time"
 qc_series.name = "Value"
 
@@ -88,10 +93,11 @@ check_series.to_csv("output_dump/check_" + site + "-" + check_measurement + ".cs
 qc_series.to_csv("output_dump/QC_" + site + "-" + check_measurement + ".csv")
 
 # filters for each QC
-check_400 = check_series[qc_series == 400]
-check_500 = check_series[qc_series == 500]
-check_600 = check_series[qc_series == 600]
-check_other = check_series[(qc_series != 400) & (qc_series != 500) & (qc_series != 600)]
+base_100 = (
+    base_data_meets_qc(base_series, qc_series, 100)
+    .fillna(base_series.median())
+    .asfreq("15T")
+)
 base_200 = base_data_meets_qc(base_series, qc_series, 200).asfreq("15T")
 base_400 = base_data_meets_qc(base_series, qc_series, 400).asfreq("15T")
 base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
@@ -114,6 +120,13 @@ plt.plot(base_600.index, base_600, label="QC600", color="#006400")
 plt.plot(base_500.index, base_500, label="QC500", color="#00bfff")
 plt.plot(base_400.index, base_400, label="QC400", color="#ffa500")
 plt.plot(base_200.index, base_200, label="QC200", color="#8b5902")
+plt.plot(
+    base_100.index,
+    base_100,
+    marker="x",
+    label="QC100",
+    color="#ff0000",
+)
 plt.plot(
     check_series.index,
     check_series,
