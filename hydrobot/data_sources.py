@@ -3,16 +3,11 @@ import csv
 from pathlib import Path
 
 import numpy as np
-from annalist.annalist import Annalist
-
-annalizer = Annalist()
-annalizer.configure()
 
 
 class Measurement:
     """Basic measurement only compares magnitude of differences."""
 
-    @annalizer.annalize
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
         """
         Initialize Measurement.
@@ -34,7 +29,6 @@ class Measurement:
         """Measurement representation."""
         return repr(f"Measurement '{self.name}' with limits {vars(self)}")
 
-    @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
         """
         Find the base quality codes.
@@ -68,7 +62,6 @@ class TwoLevelMeasurement(Measurement):
     Fixed error up to given threshold, percentage error after that.
     """
 
-    @annalizer.annalize
     def __init__(
         self,
         qc_500_limit,
@@ -79,7 +72,7 @@ class TwoLevelMeasurement(Measurement):
         name="",
     ):
         """
-                Initialize TwoLevelMeasurement.
+        Initialize TwoLevelMeasurement.
 
         Parameters
         ----------
@@ -104,7 +97,6 @@ class TwoLevelMeasurement(Measurement):
         self.limit_percent_threshold = limit_percent_threshold
         self.name = name
 
-    @annalizer.annalize
     def find_qc(self, base_datum, check_datum):
         """
         Find the base quality codes with two stages - a flat and percentage QC threshold.
@@ -142,7 +134,6 @@ class TwoLevelMeasurement(Measurement):
                 return 400
 
 
-@annalizer.annalize
 def get_measurement_dict():
     """
     Return all measurements in a dictionary.
@@ -183,7 +174,6 @@ def get_measurement_dict():
     return measurement_dict
 
 
-@annalizer.annalize
 def get_measurement(measurement_name):
     """
     Return measurement that matches the given name.

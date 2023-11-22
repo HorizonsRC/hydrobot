@@ -1,4 +1,4 @@
-"""Tools for checking how many problems there are with the data."""
+"""Tools for checking quality and finding problems in the data."""
 import numpy as np
 import warnings
 import pandas as pd
@@ -7,7 +7,6 @@ from annalist.annalist import Annalist
 annalizer = Annalist()
 
 
-@annalizer.annalize
 def gap_finder(data):
     """
     Find gaps in a series of data (indicated by np.isnan()).
@@ -38,7 +37,7 @@ def gap_finder(data):
 
 
 @annalizer.annalize
-def small_gap_closer(series, gap_length):
+def small_gap_closer(series, gap_limit):
     """
     Remove small gaps from a series.
 
@@ -52,7 +51,7 @@ def small_gap_closer(series, gap_length):
     ----------
     series : pandas.Series
         Data which has gaps to be closed
-    gap_length : integer
+    gap_limit : integer
         Maximum length of gaps removed, will remove all np.NaN's in consecutive runs of gap_length or less
 
     Returns
@@ -62,15 +61,15 @@ def small_gap_closer(series, gap_length):
     """
     gaps = gap_finder(series)
     for gap in gaps:
-        # Ask ChatGPT what this means
-        if gap[1] <= gap_length:
+        if gap[1] <= gap_limit:
+            # Determine the range of rows to remove
             mask = ~series.index.isin(
                 series.index[
                     series.index.get_loc(gap[0]) : series.index.get_loc(gap[0]) + gap[1]
                 ]
             )
+            # Remove the bad rows
             series = series[mask]
-
     return series
 
 
@@ -81,8 +80,6 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
 
     Quality codes data based on the difference between the standard series and
     the check data
-
-    :return: List of integers (QC values)
 
     Parameters
     ----------
@@ -98,13 +95,20 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
     Returns
     -------
     pd.Series
-        The QC values with the same index of the check_series
+        The QC values of the series, indexed by the END time of the QC period
     """
-    qc_series = pd.Series({})
+    qc_series = pd.Series({series.index[0]: np.NaN})
     if check_series.empty:
+        # Maybe you should go find that check data
         warnings.warn("Warning: No check data")
-        return qc_series
+    elif (
+        check_series.index[0] < series.index[0]
+        or check_series.index[-1] > series.index[-1]
+    ):
+        # Can't check something that's not there
+        raise Exception("Error: check data out of range")
     else:
+        # Stuff actually working (hopefully)
         for check_time, check_value in check_series.items():
             adjusted_time = find_nearest_valid_time(series, check_time)
             if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
@@ -112,11 +116,52 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
             else:
                 qc_value = 200
             qc_series[check_time] = qc_value
+        qc_series = qc_series.shift(-1, fill_value=0)
+    return qc_series
 
-        return qc_series
+
+def missing_data_quality_code(series, qc_series, gap_limit):
+    """
+    Make sure that missing data is QC100.
+
+    Returns qc_series with QC100 values added where series is NaN
+
+    Parameters
+    ----------
+    series : pd.Series
+        Base series which may contain NaNs
+    qc_series
+        QC series for base series without QC100 values
+    gap_limit
+        Maximum size of gaps which will be ignored
+
+    Returns
+    -------
+    pd.Series
+        The modified QC series, indexed by the start time of the QC period
+    """
+    for gap in gap_finder(series):
+        if gap[1] > gap_limit:
+            end_idx = series.index.get_loc(gap[0]) + gap[1]
+            # end of gap should recover the value from previous
+            if end_idx < len(series):
+                prev_values = qc_series[qc_series.index <= series.index[end_idx]]
+                prev_values = prev_values[prev_values > 100]
+                qc_series[series.index[end_idx]] = prev_values.iloc[-1]
+
+            # getting rid of any stray QC codes in the middle
+            drop_series = qc_series
+            drop_series = drop_series[drop_series.index > gap[0]]
+            drop_series = drop_series[drop_series.index <= series.index[end_idx - 1]]
+            qc_series.drop(drop_series.index, inplace=True)
+
+            # start of gap
+            qc_series[gap[0]] = 100
+
+    qc_series.sort_index(inplace=True)
+    return qc_series
 
 
-@annalizer.annalize
 def find_nearest_time(series, dt):
     """
     Find the time in the series that is closest to dt.
@@ -150,7 +195,6 @@ def find_nearest_time(series, dt):
     return series.index[output_index][0]
 
 
-@annalizer.annalize
 def find_nearest_valid_time(series, dt):
     """
     Find the time in the series that is closest to dt, but ignoring NaN values (gaps).
@@ -199,7 +243,7 @@ def base_data_qc_filter(base_series, qc_filter):
         The filtered data
 
     """
-    base_filter = qc_filter.reindex(base_series.index, method="bfill").fillna(False)
+    base_filter = qc_filter.reindex(base_series.index, method="ffill").fillna(False)
     return base_series[base_filter]
 
 
