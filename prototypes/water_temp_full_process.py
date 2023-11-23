@@ -104,14 +104,11 @@ base_500 = base_data_meets_qc(base_series, qc_series, 500).asfreq("15T")
 base_600 = base_data_meets_qc(base_series, qc_series, 600).asfreq("15T")
 
 
-print(
-    diagnose_data(
-        raw_data,
-        base_series,
-        [base_600, base_500, base_400, base_200],
-        [600, 500, 400, 200],
-        check_series,
-    )
+diagnose_data(
+    base_series,
+    check_series,
+    qc_series,
+    "15T",
 )
 
 plt.figure(figsize=(10, 6))

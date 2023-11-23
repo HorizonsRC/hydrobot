@@ -270,7 +270,7 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
     return base_data_qc_filter(base_series, qc_series == target_qc)
 
 
-def diagnose_data(raw_data, base_series, series_list, qc_list, check_series):
+def diagnose_data(base_series, check_series, qc_series, frequency):
     """
     Return description of how much missing data, how much for each QC, etc.
 
@@ -280,50 +280,104 @@ def diagnose_data(raw_data, base_series, series_list, qc_list, check_series):
     Parameters
     ----------
     raw_data : pandas.Series
-        unprocessed data
+        unprocessed base time series data
     base_series : pandas.Series
-        un-QCed but processed data (spikes removed, small gaps closed)
-    series_list : list of pandas.Series
-        Data for each QC
-    qc_list : list of ints (QC codes)
-        QC codes for each element in series_list
+        processed base time series data
     check_series : pandas.Series
-        Check data, just used for time range
+        Check datatime series
+    qc_series : pandas.Series
+        QC time series
+    frequency : DateOffset or str
+        Frequency to which the data gets set to
 
     Returns
     -------
-    String
-        A description of potential problems with the data
-
+    None
+        Prints statements that describe the state of the data
     """
-    output_string = ""
-    # trim the data based on last check data
-    untrimmed_data = raw_data
-    raw_data = raw_data[raw_data.index < check_series.index[-1]]
-    base_series = base_series[base_series.index < check_series.index[-1]]
-    output_string += f"Looking at {len(raw_data)/len(untrimmed_data)*100}% of the given time period (end of check data)\n"
-
     # total time
     first_timestamp = base_series.index[0]
     last_timestamp = base_series.index[-1]
     total_time = last_timestamp - first_timestamp
-    output_string += (
-        f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}\n"
+    print(f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}")
+    print(
+        f"Have check data for {check_series.index[-1] - first_timestamp} (last check {check_series.index[-1]})"
     )
 
     # periods
-    ave_period = total_time / (len(raw_data) - 1)
-    output_string += f"Period between recorded datums is approximately {ave_period}\n"
+    ave_period = pd.to_timedelta(frequency)  # total_time / (len(raw_data) - 1)
     gap_time = ave_period * (len(base_series) - len(base_series.dropna()) + 1)
-    output_string += f"Missing {gap_time} of data, that's {gap_time/total_time*100}%\n"
+    print(f"Missing {gap_time} of data, that's {gap_time/total_time*100}%")
 
     # QCs
-    for line in list(zip(series_list, qc_list)):
-        qc = line[1]
-        series = line[0]
-        output_string += (
-            f"Data that is QC{qc} makes up {len(series.dropna()) / len(base_series.dropna()) * 100}% of the "
-            f"workable data and {len(series.dropna()) / len(base_series) * 100}% of the time period\n"
+    split_data = splitter(base_series, qc_series, frequency)
+    for qc in split_data:
+        print(
+            f"Data that is QC{qc} makes up {len(split_data[qc].dropna()) / len(base_series.dropna()) * 100}% of the "
+            f"workable data and {len(split_data[qc].dropna()) / len(base_series) * 100}% of the time period"
         )
-    output_string += f"Now it's your job to figure out if that's good enough"
-    return output_string
+    print("Now it's your job to figure out if that's good enough")
+
+
+def splitter(base_series, qc_series, frequency):
+    """
+    Split the data up by QC code.
+
+    Selects all data which meets a given QC code, pads the rest with NaN values
+    Does this for all current NEMs values ([0, 100, 200, 300, 400, 500, 600])
+
+    Parameters
+    ----------
+    base_series
+        Time series data to be split up
+    qc_series : pd.Series
+        QC values to split the data by
+    frequency : DateOffset or str
+        Frequency to which the data gets set to
+
+    Returns
+    -------
+    dict of int:pd.Series pairs
+        Keys are the QC values as ints, values are series of data that fits
+    """
+    qc_list = [0, 100, 200, 300, 400, 500, 600]
+    return_dict = {}
+    for qc in qc_list:
+        if qc == 100:
+            return_dict[qc] = (
+                base_data_meets_qc(base_series, qc_series, qc)
+                .fillna(base_series.median())
+                .asfreq(frequency)
+            )
+        else:
+            return_dict[qc] = base_data_meets_qc(base_series, qc_series, qc).asfreq(
+                frequency
+            )
+    return return_dict
+
+
+def quality_encoder(base_series, check_series, measurement, gap_limit):
+    """
+    Return complete QC series.
+
+    Parameters
+    ----------
+    base_series : pd.Series
+        Base time series data
+    check_series : pd.Series
+        Check data time series
+    measurement : data_sources.Measurement
+        Handler for QC comparisons
+    gap_limit
+        Maximum size of gaps which will be ignored
+
+    Returns
+    -------
+    pd.Series
+        The modified QC series, indexed by the start time of the QC period
+    """
+    qc_series = check_data_quality_code(base_series, check_series, measurement)
+    qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
+    qc_series.index.name = "Time"
+    qc_series.name = "Value"
+    return qc_series
