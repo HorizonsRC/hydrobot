@@ -7,7 +7,6 @@ from annalist.annalist import Annalist
 annalizer = Annalist()
 
 
-@annalizer.annalize
 def clip(unclipped, low_clip: float, high_clip: float):
     """
     Clip values in a pandas Series within a specified range.
@@ -33,6 +32,7 @@ def clip(unclipped, low_clip: float, high_clip: float):
 
     # Use pandas' where function to clip values to NaN where the condition is
     # True
+    clipped_series = unclipped.where(~clip_cond, np.nan)
     clipped_series = unclipped.where(~clip_cond, np.nan)
 
     return clipped_series

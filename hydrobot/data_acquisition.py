@@ -38,7 +38,7 @@ def get_data(
         in the format 'YYYY-MM-DD HH:mm'.
     tstype : str
         Type of data that is sought
-        (default 'Standard, can be Standard, Check, or Quality)
+        (default is Standard, can be Standard, Check, or Quality)
 
     Returns
     -------
@@ -47,11 +47,11 @@ def get_data(
     """
     ht = Hilltop(base_url, hts)
 
-    tsdata = ht.get_data(
+    ts_data = ht.get_data(
         site, measurement, from_date=from_date, to_date=to_date, tstype=tstype
     )
 
-    return tsdata
+    return ts_data
 
 
 def get_series(
@@ -100,7 +100,8 @@ def get_series(
         to_date,
         tstype,
     )
-    data = pd.Series(data["Value"].values, data["Time"])
-    data.index.name = "Time"
-    data.name = "Value"
+    if not data.empty:
+        data = pd.Series(data["Value"].values, data["Time"])
+        data.index.name = "Time"
+        data.name = "Value"
     return data
