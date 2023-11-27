@@ -38,7 +38,6 @@ def clip(unclipped, low_clip: float, high_clip: float):
     return clipped_series
 
 
-@annalizer.annalize
 def fbewma(input_data, span: int):
     """
     Calculate the Forward-Backward Exponentially Weighted Moving Average (FBEWMA) of a pandas Series.
@@ -70,7 +69,6 @@ def fbewma(input_data, span: int):
     return fb_ewma
 
 
-@annalizer.annalize
 def remove_outliers(input_data, span: int, delta: float):
     """
     Remove outliers.
@@ -107,7 +105,6 @@ def remove_outliers(input_data, span: int, delta: float):
     return gaps_series
 
 
-@annalizer.annalize
 def remove_spikes(
     input_data, span: int, low_clip: float, high_clip: float, delta: float
 ):

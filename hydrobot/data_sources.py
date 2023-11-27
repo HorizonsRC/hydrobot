@@ -2,6 +2,7 @@
 import csv
 from pathlib import Path
 import pandas as pd
+import re
 
 import numpy as np
 
@@ -229,13 +230,28 @@ def series_export_to_csv(
     """
     if std_series is not None:
         std_series.to_csv(
-            file_location + "base_" + site_name + "-" + measurement_name + ".csv"
+            file_location
+            + "std_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
         )
     if check_series is not None:
         check_series.to_csv(
-            file_location + "check_" + site_name + "-" + measurement_name + ".csv"
+            file_location
+            + "check_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
         )
     if qc_series is not None:
         qc_series.to_csv(
-            file_location + "QC_" + site_name + "-" + measurement_name + ".csv"
+            file_location
+            + "QC_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
         )

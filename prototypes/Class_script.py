@@ -24,9 +24,14 @@ processing_parameters = {
 }
 
 ann = Annalist()
+stream_format_str = (
+    "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(data_source)s, %(ts_type)s, "
+    "%(from_date)s, %(end_date)s, %(message)s"
+)
 ann.configure(
     logfile="output_dump/Processing Water Temp Data.",
-    analyst_name="Hot Dameul, Sameul!",
+    analyst_name="Hot Dame, Samuel!",
+    stream_format_str=stream_format_str,
 )
 
 data = Processor(
@@ -56,6 +61,6 @@ data.data_exporter("output_dump/")
 
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
-    data.plot_qc_series()
-    data.plot_gaps()
+    data.plot_qc_series(show=False)
+    data.plot_gaps(show=False)
     data.plot_checks()

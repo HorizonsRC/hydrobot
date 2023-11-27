@@ -7,7 +7,6 @@ import pandas as pd
 annalizer = Annalist()
 
 
-@annalizer.annalize
 def get_data(
     base_url,
     hts,

@@ -1,6 +1,7 @@
 """Processor class."""
 
 from annalist.annalist import Annalist
+from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 import warnings
 import pandas as pd
@@ -58,7 +59,7 @@ def stale_warning(method):
 class Processor:
     """docstring for Processor."""
 
-    @annalizer.annalize
+    @ClassLogger  # type: ignore
     def __init__(
         self,
         base_url: str,
@@ -134,8 +135,8 @@ class Processor:
         """The from_date property."""
         return self._from_date
 
+    @ClassLogger  # type: ignore
     @from_date.setter
-    @annalizer.annalize
     def from_date(self, value):
         self._from_date = value
         self._stale = True
@@ -145,8 +146,8 @@ class Processor:
         """The to_date property."""
         return self._to_date
 
+    @ClassLogger  # type: ignore
     @to_date.setter
-    @annalizer.annalize
     def to_date(self, value):
         self._to_date = value
         self._stale = True
@@ -156,8 +157,8 @@ class Processor:
         """The to_date property."""
         return self._frequency
 
+    @ClassLogger  # type: ignore
     @frequency.setter
-    @annalizer.annalize
     def frequency(self, value):
         self._frequency = value
         self._stale = True
@@ -167,8 +168,8 @@ class Processor:
         """The dataset property."""
         return self._standard_series
 
+    @ClassLogger  # type: ignore
     @standard_series.setter
-    @annalizer.annalize
     def standard_series(self, value):
         self._standard_series = value
 
@@ -177,12 +178,12 @@ class Processor:
         """The dataset property."""
         return self._check_series
 
+    @ClassLogger  # type: ignore
     @check_series.setter
-    @annalizer.annalize
     def check_series(self, value):
         self._check_series = value
 
-    @annalizer.annalize
+    @ClassLogger
     def import_data(
         self,
         from_date: str | None = None,
@@ -207,7 +208,7 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            self._standard_series = self._standard_series.asfreq(self._frequency)
+            self._standard_series = self._standard_series.asfreq(self._frequency)  # type: ignore
         if check:
             self._check_series = data_acquisition.get_series(
                 self._base_url,
@@ -230,7 +231,8 @@ class Processor:
             )
         self._stale = False
 
-    @stale_warning
+    @stale_warning  # type: ignore
+    @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -239,7 +241,8 @@ class Processor:
             self._standard_series, gap_limit=gap_limit
         )
 
-    @stale_warning
+    @stale_warning  # type: ignore
+    @ClassLogger
     def quality_encoder(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -251,8 +254,8 @@ class Processor:
             gap_limit=gap_limit,
         )
 
-    @stale_warning
-    @annalizer.annalize
+    @stale_warning  # type: ignore
+    @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """Clip data.
 
@@ -266,8 +269,8 @@ class Processor:
         self._standard_series = filters.clip(self._standard_series, low_clip, high_clip)
         self._check_series = filters.clip(self._check_series, low_clip, high_clip)
 
-    @stale_warning
-    @annalizer.annalize
+    @stale_warning  # type: ignore
+    @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """Remove Outliers.
 
@@ -282,8 +285,8 @@ class Processor:
             self._standard_series, span, delta
         )
 
-    @stale_warning
-    @annalizer.annalize
+    @stale_warning  # type: ignore
+    @ClassLogger
     def remove_spikes(
         self,
         low_clip: float | None = None,
@@ -307,6 +310,7 @@ class Processor:
             self._standard_series, span, low_clip, high_clip, delta
         )
 
+    @ClassLogger
     def data_exporter(self, file_location):
         """Export data to csv."""
         data_sources.series_export_to_csv(
@@ -327,22 +331,28 @@ class Processor:
             self._frequency,
         )
 
-    def plot_qc_series(self):
+    def plot_qc_series(self, show=True):
         """Implement qc_plotter()."""
         plotter.qc_plotter(
-            self._standard_series, self._check_series, self._qc_series, self._frequency
+            self._standard_series,
+            self._check_series,
+            self._qc_series,
+            self._frequency,
+            show=show,
         )
 
-    def plot_gaps(self, span=None):
+    def plot_gaps(self, span=None, show=True):
         """Implement gap_plotter()."""
         if span is None:
-            plotter.gap_plotter(self._standard_series)
+            plotter.gap_plotter(self._standard_series, show=show)
         else:
-            plotter.gap_plotter(self._standard_series, span)
+            plotter.gap_plotter(self._standard_series, span, show=show)
 
-    def plot_checks(self, span=None):
+    def plot_checks(self, span=None, show=True):
         """Implement check_plotter()."""
         if span is None:
-            plotter.check_plotter(self._standard_series, self._check_series)
+            plotter.check_plotter(self._standard_series, self._check_series, show=show)
         else:
-            plotter.check_plotter(self._standard_series, self._check_series, span)
+            plotter.check_plotter(
+                self._standard_series, self._check_series, span, show=show
+            )
