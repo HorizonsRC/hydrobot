@@ -123,9 +123,9 @@ class Processor:
         self._measurement = data_sources.get_measurement(standard_measurement)
 
         self._stale = True
-        self._standard_series = None
-        self._check_series = None
-        self._qc_series = None
+        self._standard_series = pd.Series({})
+        self._check_series = pd.Series({})
+        self._qc_series = pd.Series({})
 
         # Load data for the first time
         self.import_data()
@@ -208,7 +208,7 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            self._standard_series = self._standard_series.asfreq(self._frequency)  # type: ignore
+            self._standard_series = self._standard_series.asfreq(self._frequency)
         if check:
             self._check_series = data_acquisition.get_series(
                 self._base_url,
