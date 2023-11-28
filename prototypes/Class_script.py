@@ -25,13 +25,13 @@ processing_parameters = {
 
 ann = Annalist()
 stream_format_str = (
-    "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(data_source)s, %(ts_type)s, "
-    "%(from_date)s, %(end_date)s, %(message)s"
+    "%(asctime)s | %(analyst_name)s | %(function_name)s | %(site)s | %(measurement)s | ts_type | "
+    "%(from_date)s | %(to_date)s | %(message)s"
 )
 ann.configure(
-    logfile="output_dump/Processing Water Temp Data.",
+    logfile="output_dump/bot_annals.csv",
     analyst_name="Hot Dame, Samuel!",
-    stream_format_str=stream_format_str,
+    file_format_str=stream_format_str,
 )
 
 data = Processor(
@@ -47,10 +47,7 @@ data = Processor(
     processing_parameters["defaults"],
 )
 
-data.import_data(
-    processing_parameters["from_date"],
-    processing_parameters["to_date"],
-)
+data.import_data()
 
 data.clip()
 data.remove_spikes()

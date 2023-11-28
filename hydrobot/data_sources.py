@@ -29,7 +29,7 @@ class Measurement:
 
     def __repr__(self):
         """Measurement representation."""
-        return repr(f"Measurement '{self.name}' with limits {vars(self)}")
+        return repr(f"Measurement '{self.name}'")
 
     def find_qc(self, base_datum, check_datum):
         """
