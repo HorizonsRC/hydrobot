@@ -1,6 +1,8 @@
 """Handling for different types of data sources."""
 import csv
 from pathlib import Path
+import pandas as pd
+import re
 
 import numpy as np
 
@@ -27,7 +29,7 @@ class Measurement:
 
     def __repr__(self):
         """Measurement representation."""
-        return repr(f"Measurement '{self.name}' with limits {vars(self)}")
+        return repr(f"Measurement '{self.name}'")
 
     def find_qc(self, base_datum, check_datum):
         """
@@ -195,3 +197,61 @@ def get_measurement(measurement_name):
         return m_dict[measurement_name]
     else:
         raise Exception("Measurement not found in the config file")
+
+
+def series_export_to_csv(
+    file_location: str,
+    site_name: str,
+    measurement_name: str,
+    std_series: pd.Series | None,
+    check_series: pd.Series | None,
+    qc_series: pd.Series | None,
+):
+    """
+    Export the 3 main series to csv.
+
+    Parameters
+    ----------
+    file_location : str
+        Where the files are exported to
+    site_name : str
+        Site name
+    measurement_name : str
+        Measurement name
+    std_series : pd.Series
+        Standard series
+    check_series : pd.Series
+        Check series
+    qc_series : pd.Series
+        Quality code series
+    Returns
+    -------
+    None, but makes files
+    """
+    if std_series is not None:
+        std_series.to_csv(
+            file_location
+            + "std_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
+        )
+    if check_series is not None:
+        check_series.to_csv(
+            file_location
+            + "check_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
+        )
+    if qc_series is not None:
+        qc_series.to_csv(
+            file_location
+            + "QC_"
+            + site_name
+            + "-"
+            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+            + ".csv"
+        )

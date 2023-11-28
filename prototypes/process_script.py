@@ -24,17 +24,17 @@ def process_data(processing_parameters):
     )
 
     base_series = get_series(
-        processing_parameters["standard_base_url"],
+        processing_parameters["base_url"],
         processing_parameters["standard_hts_filename"],
         processing_parameters["site"],
-        processing_parameters["measurement"],
+        processing_parameters["standard_measurement"],
         processing_parameters["from_date"],
         processing_parameters["to_date"],
     )
     base_series = base_series.asfreq(processing_parameters["frequency"])
 
     check_series = get_series(
-        processing_parameters["check_base_url"],
+        processing_parameters["base_url"],
         processing_parameters["check_hts_filename"],
         processing_parameters["site"],
         processing_parameters["check_measurement"],
@@ -60,14 +60,16 @@ def process_data(processing_parameters):
     )
 
     # Removing small np.NaN gaps
-    base_series = small_gap_closer(base_series, gap_limit=parameters["gap_limit"])
+    base_series = small_gap_closer(
+        base_series, gap_limit=parameters["defaults"]["gap_limit"]
+    )
 
     # Find the QC values
     qc_series = quality_encoder(
         base_series,
         check_series,
-        get_measurement(processing_parameters["measurement"]),
-        gap_limit=parameters["gap_limit"],
+        get_measurement(processing_parameters["standard_measurement"]),
+        gap_limit=parameters["defaults"]["gap_limit"],
     )
 
     # Export the data
@@ -75,7 +77,7 @@ def process_data(processing_parameters):
         "output_dump/base_"
         + processing_parameters["site"]
         + "-"
-        + processing_parameters["measurement"]
+        + processing_parameters["standard_measurement"]
         + ".csv"
     )
     check_series.to_csv(
@@ -89,7 +91,7 @@ def process_data(processing_parameters):
         "output_dump/QC_"
         + processing_parameters["site"]
         + "-"
-        + processing_parameters["measurement"]
+        + processing_parameters["standard_measurement"]
         + ".csv"
     )
 
@@ -108,22 +110,21 @@ def process_data(processing_parameters):
 
 
 parameters = {
-    "standard_base_url": "http://hilltopdev.horizons.govt.nz/",
-    "check_base_url": "http://hilltopdev.horizons.govt.nz/",
+    "base_url": "http://hilltopdev.horizons.govt.nz/",
     "standard_hts_filename": "RawLogger.hts",
     "check_hts_filename": "boo.hts",
     "site": "Whanganui at Te Rewa",
     "from_date": "2021-06-01 00:00",
     "to_date": "2023-08-12 8:30",
     "frequency": "5T",
-    "measurement": "Water level statistics: Point Sample",
+    "standard_measurement": "Water level statistics: Point Sample",
     "check_measurement": "External S.G. [Water Level NRT]",
-    "gap_limit": 12,
     "defaults": {
         "high_clip": 20000,
         "low_clip": 0,
         "delta": 1000,
         "span": 10,
+        "gap_limit": 12,
     },
 }
 

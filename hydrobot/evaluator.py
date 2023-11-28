@@ -36,7 +36,6 @@ def gap_finder(data):
     return list(out)
 
 
-@annalizer.annalize
 def small_gap_closer(series, gap_limit):
     """
     Remove small gaps from a series.
@@ -73,7 +72,6 @@ def small_gap_closer(series, gap_limit):
     return series
 
 
-@annalizer.annalize
 def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
     """
     Quality Code Check Data.
