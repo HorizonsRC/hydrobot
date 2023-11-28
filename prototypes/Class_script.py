@@ -25,8 +25,8 @@ processing_parameters = {
 
 ann = Annalist()
 stream_format_str = (
-    "%(asctime)s | %(analyst_name)s | %(function_name)s | %(site)s | %(measurement)s | ts_type | "
-    "%(from_date)s | %(to_date)s | %(message)s"
+    "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, ts_type, "
+    "%(from_date)s, %(to_date)s, %(message)s"
 )
 ann.configure(
     logfile="output_dump/bot_annals.csv",
