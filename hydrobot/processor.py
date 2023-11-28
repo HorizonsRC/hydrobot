@@ -125,14 +125,25 @@ class Processor:
         self._stale = True
         self._standard_series = pd.Series({})
         self._check_series = pd.Series({})
-        self._qc_series = pd.Series({})
+        self._quality_series = pd.Series({})
 
         # Load data for the first time
-        self.import_data()
+        # self.import_data()
+
+    @property
+    def site(self):
+        """Site property."""
+        return self._site
+
+    @ClassLogger  # type: ignore
+    @site.setter
+    def site(self, value):
+        self._site = value
+        self._stale = True
 
     @property
     def from_date(self):
-        """The from_date property."""
+        """From_date property."""
         return self._from_date
 
     @ClassLogger  # type: ignore
@@ -143,7 +154,7 @@ class Processor:
 
     @property
     def to_date(self):
-        """The to_date property."""
+        """To_date property."""
         return self._to_date
 
     @ClassLogger  # type: ignore
@@ -154,7 +165,7 @@ class Processor:
 
     @property
     def frequency(self):
-        """The to_date property."""
+        """Frequency property."""
         return self._frequency
 
     @ClassLogger  # type: ignore
@@ -164,18 +175,73 @@ class Processor:
         self._stale = True
 
     @property
-    def standard_series(self):
-        """The dataset property."""
-        return self._standard_series
+    def base_url(self):
+        """Base_url property."""
+        return self._base_url
 
     @ClassLogger  # type: ignore
-    @standard_series.setter
-    def standard_series(self, value):
-        self._standard_series = value
+    @base_url.setter
+    def base_url(self, value):
+        self._base_url = value
+        self._stale = True
+
+    @property
+    def standard_hts(self):
+        """Standard_hts property."""
+        return self._standard_hts
+
+    @ClassLogger  # type: ignore
+    @standard_hts.setter
+    def standard_hts(self, value):
+        self._standard_hts = value
+        self._stale = True
+
+    @property
+    def check_hts(self):
+        """Check_hts property."""
+        return self._check_hts
+
+    @ClassLogger  # type: ignore
+    @check_hts.setter
+    def check_hts(self, value):
+        self._check_hts = value
+        self._stale = True
+
+    @property
+    def measurement(self):
+        """Measurement property."""
+        return self._measurement
+
+    @ClassLogger  # type: ignore
+    @measurement.setter
+    def measurement(self, value):
+        self._measurement = value
+        self._stale = True
+
+    @property
+    def defaults(self):
+        """Defaults property."""
+        return self._defaults
+
+    @ClassLogger  # type: ignore
+    @defaults.setter
+    def defaults(self, value):
+        self._defaults = value
+        self._stale = True
+
+    @property  # type: ignore
+    def standard_series(self):  # type: ignore
+        """Standard dataset property."""  # type: ignore
+        return self._standard_series  # type: ignore
+
+    @ClassLogger  # type: ignore
+    @standard_series.setter  # type: ignore
+    def standard_series(self, value):  # type: ignore
+        self._standard_series = value  # type: ignore
 
     @property
     def check_series(self):
-        """The dataset property."""
+        """Check dataset property."""
         return self._check_series
 
     @ClassLogger  # type: ignore
@@ -183,23 +249,29 @@ class Processor:
     def check_series(self, value):
         self._check_series = value
 
+    @property
+    def quality_series(self):
+        """Quality dataset property."""
+        return self._quality_series
+
+    @ClassLogger  # type: ignore
+    @quality_series.setter
+    def quality_series(self, value):
+        self._quality_series = value
+        self._stale = True
+
     @ClassLogger
-    def import_data(
+    def import_range(
         self,
-        from_date: str | None = None,
-        to_date: str | None = None,
+        from_date: str | None,
+        to_date: str | None,
         standard: bool = True,
         check: bool = True,
         quality: bool = False,
     ):
-        """(Re)Load Raw Data from Hilltop."""
-        if from_date is None:
-            from_date = self._from_date
-        if to_date is None:
-            to_date = self._to_date
-
+        """Load Raw Data from Hilltop."""
         if standard:
-            self._standard_series = data_acquisition.get_series(
+            insert_series = data_acquisition.get_series(
                 self._base_url,
                 self._standard_hts,
                 self._site,
@@ -208,9 +280,16 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            self._standard_series = self._standard_series.asfreq(self._frequency)
+            insert_series = insert_series.asfreq(self.frequency)
+            slice_to_remove = self.standard_series.loc[
+                insert_series.index[0] : insert_series.index[-1]
+            ]
+            cleaned_series = self.standard_series.drop(slice_to_remove.index)
+            self.standard_series = pd.concat(
+                [cleaned_series, insert_series]
+            ).sort_index()
         if check:
-            self._check_series = data_acquisition.get_series(
+            insert_series = data_acquisition.get_series(
                 self._base_url,
                 self._check_hts,
                 self._site,
@@ -219,8 +298,13 @@ class Processor:
                 to_date,
                 tstype="Check",
             )
+            slice_to_remove = self.check_series.loc[
+                insert_series.index[0] : insert_series.index[-1]
+            ]
+            cleaned_series = self.check_series.drop(slice_to_remove.index)
+            self.check_series = pd.concat([cleaned_series, insert_series]).sort_index()
         if quality:
-            self._qc_series = data_acquisition.get_series(
+            insert_series = data_acquisition.get_series(
                 self._base_url,
                 self._standard_hts,
                 self._site,
@@ -229,32 +313,48 @@ class Processor:
                 to_date,
                 tstype="Quality",
             )
+            slice_to_remove = self.quality_series.loc[
+                insert_series.index[0] : insert_series.index[-1]
+            ]
+            cleaned_series = self.quality_series.drop(slice_to_remove.index)
+            self.quality_series = pd.concat(
+                [cleaned_series, insert_series]
+            ).sort_index()
+
+    def import_data(
+        self,
+        standard: bool = True,
+        check: bool = True,
+        quality: bool = False,
+    ):
+        """Import data using class parameter range."""
+        self.import_range(self._from_date, self._to_date, standard, check, quality)
         self._stale = False
 
-    @stale_warning  # type: ignore
+    # @stale_warning  # type: ignore
     @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
             gap_limit = self._defaults["gap_limit"]
-        self._standard_series = evaluator.small_gap_closer(
+        self.standard_series = evaluator.small_gap_closer(
             self._standard_series, gap_limit=gap_limit
         )
 
-    @stale_warning  # type: ignore
+    # @stale_warning  # type: ignore
     @ClassLogger
     def quality_encoder(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
             gap_limit = self._defaults["gap_limit"]
-        self._qc_series = evaluator.quality_encoder(
+        self.quality_series = evaluator.quality_encoder(
             self._standard_series,
             self._check_series,
             self._measurement,
             gap_limit=gap_limit,
         )
 
-    @stale_warning  # type: ignore
+    # @stale_warning  # type: ignore
     @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """Clip data.
@@ -266,10 +366,10 @@ class Processor:
         if high_clip is None:
             high_clip = self._defaults["high_clip"]
 
-        self._standard_series = filters.clip(self._standard_series, low_clip, high_clip)
-        self._check_series = filters.clip(self._check_series, low_clip, high_clip)
+        self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
+        self.check_series = filters.clip(self._check_series, low_clip, high_clip)
 
-    @stale_warning  # type: ignore
+    # @stale_warning  # type: ignore
     @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """Remove Outliers.
@@ -281,11 +381,11 @@ class Processor:
         if delta is None:
             delta = self._defaults["delta"]
 
-        self._standard_series = filters.remove_outliers(
+        self.standard_series = filters.remove_outliers(
             self._standard_series, span, delta
         )
 
-    @stale_warning  # type: ignore
+    # @stale_warning  # type: ignore
     @ClassLogger
     def remove_spikes(
         self,
@@ -306,7 +406,7 @@ class Processor:
             span = self._defaults["span"]
         if delta is None:
             delta = self._defaults["delta"]
-        self._standard_series = filters.remove_spikes(
+        self.standard_series = filters.remove_spikes(
             self._standard_series, span, low_clip, high_clip, delta
         )
 
@@ -319,7 +419,7 @@ class Processor:
             self._measurement.name,
             self._standard_series,
             self._check_series,
-            self._qc_series,
+            self._quality_series,
         )
 
     def diagnosis(self):
@@ -327,7 +427,7 @@ class Processor:
         evaluator.diagnose_data(
             self._standard_series,
             self._check_series,
-            self._qc_series,
+            self._quality_series,
             self._frequency,
         )
 
@@ -336,7 +436,7 @@ class Processor:
         plotter.qc_plotter(
             self._standard_series,
             self._check_series,
-            self._qc_series,
+            self._quality_series,
             self._frequency,
             show=show,
         )
