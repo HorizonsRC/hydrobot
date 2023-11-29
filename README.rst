@@ -20,7 +20,15 @@ Python Package providing a suite of processing tools and utilities for Hilltop h
 Features
 --------
 
-* TODO
+* Processes data downloaded from Hilltop Server
+* Uses annalist to record all changes to data
+* Capable of clipping data, removing spikes based on FBEWMA smoothing, closing gaps of a given size, QCing data based on NEMS standards
+* Plotting stuff (lots of it)
+* Probably more things I cannot think of right now
+* This is a professional document
+* Work in progress
+* TODO - actual feature list
+
 
 Credits
 -------
