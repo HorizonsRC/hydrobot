@@ -15,4 +15,9 @@ History
 0.2.1 (2023-09-27)
 ------------------
 
-* Gets the config lol, + getting wheeled boi
+* Including the config files, + getting wheeled boi
+
+0.2.2 (2023-09-27)
+------------------
+
+* Ok, actually including the config files (promise, but my fingers are crossed behind my back)
