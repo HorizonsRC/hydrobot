@@ -30,7 +30,7 @@ stream_format_str = (
 )
 ann.configure(
     logfile="output_dump/bot_annals.csv",
-    analyst_name="Hot Dame, Samuel!",
+    analyst_name="Annie the analyst!",
     file_format_str=stream_format_str,
 )
 
