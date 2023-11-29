@@ -11,3 +11,8 @@ History
 ------------------
 
 * Hydrobot now annals the "Processor" class, which has capabilities to process data within the single object. Class_script gives an example of this method of processing.
+
+0.2.1 (2023-09-27)
+------------------
+
+* Gets the config lol, + getting wheeled boi
