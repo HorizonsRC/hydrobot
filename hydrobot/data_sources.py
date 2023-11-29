@@ -145,7 +145,7 @@ def get_measurement_dict():
     dict of string-measurement pairs
     """
     measurement_dict = {}
-    script_dir = Path(__file__).parent.parent
+    script_dir = Path(__file__).parent
     # script_dir = os.path.dirname(os.path.abspath(__file__))
 
     # Plain Measurements
