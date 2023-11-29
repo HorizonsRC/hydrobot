@@ -17,13 +17,13 @@ test_requirements = ["pytest>=3", "data-annalist>=0.3.6"]
 setup(
     author="Nic Mostert",
     author_email="nicolas.mostert@horizons.govt.nz",
-    python_requires=">=3.10",
+    python_requires="==3.11",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Natural Language :: English",
-        "Programming Language :: Python :: 3.10",
+        "Programming Language :: Python :: 3.11",
     ],
     description="Python Package providing a suite of processing tools\
         and utilities for Hilltop hydrological data.",
