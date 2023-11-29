@@ -10,11 +10,9 @@ with open("README.rst") as readme_file:
 with open("HISTORY.rst") as history_file:
     history = history_file.read()
 
-requirements: list = []
+requirements: list = ["hilltop-py>=2.3.1", "data-annalist>=0.3.6", "matplotlib>=3.8.0"]
 
-test_requirements = [
-    "pytest>=3",
-]
+test_requirements = ["pytest>=3", "data-annalist>=0.3.6"]
 
 setup(
     author="Nic Mostert",
