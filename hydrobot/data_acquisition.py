@@ -103,4 +103,5 @@ def get_series(
         data = pd.Series(data["Value"].values, data["Time"])
         data.index.name = "Time"
         data.name = "Value"
+        data.index = pd.to_datetime(data.index)
     return data

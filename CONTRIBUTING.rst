@@ -141,7 +141,6 @@ Before you submit a pull request, check that it meets these guidelines:
 2. If the pull request adds functionality, the docs should be updated. Put
    your new functionality into a function with a docstring, and add the
    feature to the appropriate location in the documentation.
-3. The pull request should work for Python 3.5, 3.6, 3.7 and 3.8, and for PyPy. [*NOTE: This is a matter of trust for now, but I will figure out how to enforce this with "tox" at some point*]
 
 Tips
 ----
@@ -151,13 +150,61 @@ To run a subset of tests::
 $ pytest tests.test_hydrobot
 
 
-Deploying
----------
+Releasing to PyPI
+------------------
 
 A reminder for the maintainers on how to deploy.
-Make sure all your changes are committed (including an entry in HISTORY.rst).
-Then run::
 
-$ bump2version patch # possible: major / minor / patch
-$ git push
-$ git push --tags
+1. Make sure all your changes are committed (including an entry in HISTORY.rst, documentation, etc.).
+
+2. Then run `bump2version` to increment the release tags in the appropriate places. Consider running `bump2version --dry-run` to make sure there are no errors first::
+
+    $ bump2version --dry-run --verbose patch # Optional, just to test if it runs without errors
+    $ bump2version patch # For real this time. Possible values: major / minor / patch
+
+3. Install the local development version of the package (make sure you're in the package root directory where setup.py is). You should see the package install with the correct version number.::
+
+    $ pip install -e .
+
+4. Run the tests to see that they still work with this local install::
+
+    $ pytest
+
+5. Push the commit::
+
+    $ git push
+
+6. Push the tags to GitHub. (Note that we don't actually release on GitHub though. We want to keep the releases to PyPI so there's less ambiguity about how to install it.)::
+
+    $ git push --tags
+
+7. Do the release.
+
+    * If using the Makefile (i.e. you have `make` installed and can run `make help` without errors) you can simply run::
+
+        $ make release
+
+    * Otherwise, you would have to do the release manually.
+
+        a. Clean up all the artifact files::
+
+            $ rm -fr build/
+            $ rm -fr dist/
+            $ rm -fr .eggs/
+            $ find . -name '*.egg-info' -exec rm -fr {} +
+            $ find . -name '*.egg' -exec rm -f {} +
+            $ find . -name '*.pyc' -exec rm -f {} +
+            $ find . -name '*.pyo' -exec rm -f {} +
+            $ find . -name '*~' -exec rm -f {} +
+            $ find . -name '__pycache__' -exec rm -fr {} +
+	        $ rm -fr .pytest_cache
+
+        b. Build the source and wheel packages::
+
+            $ python setup.py sdist
+            $ python setup.py bdist_wheel
+            $ ls -l dist
+
+        c. Use twine to release to PyPI. You'll be asked for authentication. Use the username `__token__`, along with the API key I gave you.::
+
+            $ twine upload dist/*

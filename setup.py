@@ -12,12 +12,17 @@ with open("HISTORY.rst") as history_file:
 
 requirements: list = ["hilltop-py>=2.3.1", "data-annalist>=0.3.6", "matplotlib>=3.8.0"]
 
-test_requirements = ["pytest>=3", "data-annalist>=0.3.6"]
+test_requirements = [
+    "pytest>=3",
+    "data-annalist>=0.3.6",
+    "pytest-mock>=3.12.0",
+    "pytest-dependency>=0.5.1",
+]
 
 setup(
     author="Nic Mostert",
     author_email="nicolas.mostert@horizons.govt.nz",
-    python_requires="==3.11",
+    python_requires="==3.11.6",
     classifiers=[
         "Development Status :: 2 - Pre-Alpha",
         "Intended Audience :: Developers",
@@ -42,6 +47,7 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/nicmostert/hydrobot",
-    version="0.2.2",
+    version="0.2.3",
     zip_safe=False,
+    package_data={"hydrobot": ["config/*"]},
 )
