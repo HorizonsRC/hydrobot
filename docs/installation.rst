@@ -49,3 +49,23 @@ Once you have a copy of the source, you can install it with:
 
 .. _Github repo: https://github.com/nicmostert/hydrobot
 .. _tarball: https://github.com/nicmostert/hydrobot/tarball/master
+
+
+Usage
+-----
+
+For purposes of auditing data changes, you may want to track what changes to
+the data are made, and what version of hydrobot (and it's dependencies) are
+used.
+
+    Windows
+
+In Powershell:
+
+.. code-block:: console
+
+    cd path/to/Hydrobot_install
+    python -m venv /path/to/Hydrobot_install/venv
+    path/to/Hydrobot_install/venv/Scripts/Activate.ps1
+    pip install hydrobot
+    pip freeze > requirements.txt
