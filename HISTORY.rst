@@ -21,3 +21,8 @@ History
 ------------------
 
 * Ok, actually including the config files (promise, but my fingers are crossed behind my back)
+
+0.2.3 (2023-11-30)
+------------------
+
+* Fixed some tests and hopefully fixed the config file issue this time.

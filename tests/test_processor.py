@@ -1,4 +1,3 @@
-'''
 import random
 from datetime import datetime, timedelta
 
@@ -20,6 +19,7 @@ SITES = [
 
 MEASUREMENTS = [
     "General Nastiness (out of 10)",
+    "Atmospheric Pressure",
     "Number of Actual Whole Turds Floating By (t/s)",
     "Dead Cow Concentration (ppm)",
 ]
@@ -27,14 +27,13 @@ MEASUREMENTS = [
 
 @pytest.fixture(autouse=True)
 def no_requests(monkeypatch):
-    """Don't allow requests to make requests"""
+    """Don't allow requests to make requests."""
     monkeypatch.delattr("requests.sessions.Session.request")
 
 
 @pytest.fixture
 def mock_site_list():
-    """Mock response from SiteList server call method"""
-
+    """Mock response from SiteList server call method."""
     data = {
         "SiteName": SITES,
     }
@@ -45,8 +44,7 @@ def mock_site_list():
 
 @pytest.fixture
 def mock_measurement_list():
-    """Mock response from MeasurementList server call method"""
-
+    """Mock response from MeasurementList server call method."""
     data = {
         "MeasurementName": MEASUREMENTS,
     }
@@ -78,8 +76,9 @@ def mock_dataset():
     return df
 
 
-
 def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_dataset):
+    """Test the processor function."""
+
     def get_mock_site_list(*args, **kwargs):
         return mock_site_list
 
@@ -95,8 +94,10 @@ def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_data
 
     pr = processor.Processor(
         "https://greenwashed.and.pleasant/",
-        "GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         SITES[1],
+        "GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         MEASUREMENTS[1],
+        "5T",
     )
-    assert pr.dataset.loc[0].Time == "2020-10-01 08:00:00"'''
+    print(pr.standard_series.loc["2020-10-01 08:00:00"])
+    # assert pr.standard_series.loc["2020-10-01 08:00:00"] ==

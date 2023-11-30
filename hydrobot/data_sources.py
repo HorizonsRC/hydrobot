@@ -196,7 +196,10 @@ def get_measurement(measurement_name):
     if measurement_name in m_dict:
         return m_dict[measurement_name]
     else:
-        raise Exception("Measurement not found in the config file")
+        raise Exception(
+            f"Measurement {measurement_name} not found in the config file. "
+            f"Available measurements are {list(m_dict.keys())}."
+        )
 
 
 def series_export_to_csv(
