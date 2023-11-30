@@ -159,7 +159,7 @@ A reminder for the maintainers on how to deploy.
 
 2. Then run `bump2version` to increment the release tags in the appropriate places. Consider running `bump2version --dry-run` to make sure there are no errors first::
 
-    $ bump2version --dry-run patch # Optional, just to test if it runs without errors
+    $ bump2version --dry-run --verbose patch # Optional, just to test if it runs without errors
     $ bump2version patch # For real this time. Possible values: major / minor / patch
 
 3. Install the local development version of the package (make sure you're in the package root directory where setup.py is). You should see the package install with the correct version number.::
