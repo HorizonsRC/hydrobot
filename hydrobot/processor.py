@@ -1,12 +1,14 @@
 """Processor class."""
 
+import warnings
+from functools import wraps
+
+import pandas as pd
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
-import warnings
-import pandas as pd
-from hydrobot import filters, data_acquisition, evaluator, data_sources, plotter
-from functools import wraps
+
+from hydrobot import data_acquisition, data_sources, evaluator, filters, plotter
 
 annalizer = Annalist()
 
@@ -89,9 +91,11 @@ class Processor:
             self._site = site
         else:
             raise ValueError(
-                f"Site '{site}' not found for both base_url and hts combos."
-                f"Available sites in standard_hts are {[s for s in standard_hilltop.available_sites]}"
-                f"Available sites in check_hts are {[s for s in check_hilltop.available_sites]}"
+                f"Site '{site}' not found for both base_url and hts combos. "
+                "Available sites in standard_hts are "
+                f"{[s for s in standard_hilltop.available_sites]}. "
+                "Available sites in check_hts are "
+                f"{[s for s in check_hilltop.available_sites]}."
             )
 
         self._standard_measurement_list = standard_hilltop.get_measurement_list(site)
@@ -99,8 +103,8 @@ class Processor:
             self._standard_measurement = standard_measurement
         else:
             raise ValueError(
-                f"Standard measurement '{standard_measurement}' not found at site '{site}'. "
-                "Available measurements are "
+                f"Standard measurement '{standard_measurement}' not found at"
+                " site '{site}'. Available measurements are "
                 f"{[str(m[0]) for m in self._standard_measurement_list.values]}"
             )
         self._check_measurement_list = check_hilltop.get_measurement_list(site)
@@ -108,8 +112,8 @@ class Processor:
             self._check_measurement = check_measurement
         else:
             raise ValueError(
-                f"Check measurement '{check_measurement}' not found at site '{site}'. "
-                "Available measurements are "
+                f"Check measurement '{check_measurement}' not found at "
+                f"site '{site}'. Available measurements are "
                 f"{[str(m[0]) for m in self._check_measurement_list.values]}"
             )
 
@@ -128,7 +132,7 @@ class Processor:
         self._quality_series = pd.Series({})
 
         # Load data for the first time
-        # self.import_data()
+        self.import_data()
 
     @property
     def site(self):
@@ -280,13 +284,16 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            insert_series = insert_series.asfreq(self.frequency)
+            insert_series = insert_series.asfreq(self.frequency, method="bfill")
             slice_to_remove = self.standard_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
             cleaned_series = self.standard_series.drop(slice_to_remove.index)
             self.standard_series = pd.concat(
-                [cleaned_series, insert_series]
+                [
+                    cleaned_series if not cleaned_series.empty else None,
+                    insert_series if not insert_series.empty else None,
+                ]
             ).sort_index()
         if check:
             insert_series = data_acquisition.get_series(
@@ -302,7 +309,12 @@ class Processor:
                 insert_series.index[0] : insert_series.index[-1]
             ]
             cleaned_series = self.check_series.drop(slice_to_remove.index)
-            self.check_series = pd.concat([cleaned_series, insert_series]).sort_index()
+            self.check_series = pd.concat(
+                [
+                    cleaned_series if not cleaned_series.empty else None,
+                    insert_series if not insert_series.empty else None,
+                ]
+            ).sort_index()
         if quality:
             insert_series = data_acquisition.get_series(
                 self._base_url,
