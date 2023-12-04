@@ -16,14 +16,16 @@ def stale_warning(method):
     Decorate dangerous functions.
 
     Check whether the data is stale, and warn user if so.
-    Warning will then take input form user to determine whether to proceed or cancel.
-    Cancelling will return a null function, which returns None with no side effects no matter what the input
+    Warning will then take input form user to determine whether to proceed
+    or cancel.
+    Cancelling will return a null function, which returns None with no side
+    effects no matter what the input
 
     Parameters
     ----------
     method : function
-        A function that might have some problems if the parameters have been changed but the data hasn't been
-        updated
+        A function that might have some problems if the parameters have been
+        changed but the data hasn't been updated
 
     Returns
     -------
@@ -35,7 +37,8 @@ def stale_warning(method):
     def _impl(self, *method_args, **method_kwargs):
         if self._stale:
             warnings.warn(
-                "Warning: a key parameter of the data has changed but the data itself has not been reloaded."
+                "Warning: a key parameter of the data has changed but the "
+                "data itself has not been reloaded."
             )
             while True:
                 user_input = input("Do you want to continue? y/n: ")
@@ -71,7 +74,7 @@ class Processor:
         to_date: str | None = None,
         check_hts: str | None = None,
         check_measurement: str | None = None,
-        defaults: dict = {},
+        defaults: dict | None = None,
         **kwargs,
     ):
         """Initialize a Processor instance."""
@@ -90,27 +93,30 @@ class Processor:
         else:
             raise ValueError(
                 f"Site '{site}' not found for both base_url and hts combos."
-                f"Available sites in standard_hts are {[s for s in standard_hilltop.available_sites]}"
-                f"Available sites in check_hts are {[s for s in check_hilltop.available_sites]}"
+                f"Available sites in standard_hts are: "
+                f"{[s for s in standard_hilltop.available_sites]}"
+                f"Available sites in check_hts are: "
+                f"{[s for s in check_hilltop.available_sites]}"
             )
 
-        self._standard_measurement_list = standard_hilltop.get_measurement_list(site)
-        if standard_measurement in self._standard_measurement_list.values:
+        standard_measurement_list = standard_hilltop.get_measurement_list(site)
+        if standard_measurement in list(standard_measurement_list.MeasurementName):
             self._standard_measurement = standard_measurement
         else:
             raise ValueError(
-                f"Standard measurement '{standard_measurement}' not found at site '{site}'. "
+                f"Standard measurement '{standard_measurement}' not found at "
+                f"site '{site}'. "
                 "Available measurements are "
-                f"{[str(m[0]) for m in self._standard_measurement_list.values]}"
+                f"{list(standard_measurement_list.MeasurementName)}"
             )
-        self._check_measurement_list = check_hilltop.get_measurement_list(site)
-        if check_measurement in self._check_measurement_list.values:
+        check_measurement_list = check_hilltop.get_measurement_list(site)
+        if check_measurement in list(check_measurement_list.MeasurementName):
             self._check_measurement = check_measurement
         else:
             raise ValueError(
                 f"Check measurement '{check_measurement}' not found at site '{site}'. "
                 "Available measurements are "
-                f"{[str(m[0]) for m in self._check_measurement_list.values]}"
+                f"{list(check_measurement_list.MeasurementName)}"
             )
 
         self._base_url = base_url
@@ -281,10 +287,9 @@ class Processor:
                 tstype="Standard",
             )
             insert_series = insert_series.asfreq(self.frequency)
-            slice_to_remove = self.standard_series.loc[
-                insert_series.index[0] : insert_series.index[-1]
-            ]
-            cleaned_series = self.standard_series.drop(slice_to_remove.index)
+            cleaned_series = filters.remove_range(
+                self.standard_series, insert_series.index[0], insert_series.index[-1]
+            )
             self.standard_series = pd.concat(
                 [cleaned_series, insert_series]
             ).sort_index()
@@ -328,6 +333,9 @@ class Processor:
         quality: bool = False,
     ):
         """Import data using class parameter range."""
+        self.standard_series = pd.Series({})
+        self.check_series = pd.Series({})
+        self.quality_series = pd.Series({})
         self.import_range(self._from_date, self._to_date, standard, check, quality)
         self._stale = False
 
@@ -409,6 +417,34 @@ class Processor:
         self.standard_series = filters.remove_spikes(
             self._standard_series, span, low_clip, high_clip, delta
         )
+
+    @ClassLogger
+    def delete_range(
+        self,
+        from_date,
+        to_date,
+        tstype_standard=True,
+        tstype_check=False,
+        tstype_quality=False,
+    ):
+        """Delete range of data a la remove_range."""
+        if tstype_standard:
+            self.standard_series = filters.remove_range(
+                self.standard_series, from_date, to_date
+            )
+        if tstype_check:
+            self.standard_series = filters.remove_range(
+                self.standard_series, from_date, to_date
+            )
+        if tstype_quality:
+            self.standard_series = filters.remove_range(
+                self.standard_series, from_date, to_date
+            )
+
+    @ClassLogger
+    def insert_missing_nans(self):
+        """Set the data to the correct frequency, filled with NaNs as appropriate."""
+        self.standard_series = self.standard_series.asfreq(self.frequency)
 
     @ClassLogger
     def data_exporter(self, file_location):

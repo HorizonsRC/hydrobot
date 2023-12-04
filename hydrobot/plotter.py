@@ -165,6 +165,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         color="black",
         linestyle="None",
     )
+    plt.xticks(rotation=45, ha="right")
 
     plt.legend()
     if show:

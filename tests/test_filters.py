@@ -36,9 +36,10 @@ def raw_data():
 
 
 def insert_raw_data_gaps(gaps):
+    gap_data_dict = dict(raw_data_dict)
     for gap in gaps:
-        raw_data_dict[gap] = np.nan
-    data_series = pd.Series(raw_data_dict)
+        gap_data_dict[gap] = np.nan
+    data_series = pd.Series(gap_data_dict)
     return data_series
 
 
@@ -81,10 +82,10 @@ def test_fbewma(raw_data, fbewma_data):
     span = 3
 
     # Testing
-    fbewmadf = filters.fbewma(raw_data, span)
+    fbewma_df = filters.fbewma(raw_data, span)
 
     # pytest.approx accounts for floating point errors and such
-    assert fbewmadf.values == pytest.approx(fbewma_data.values), "FBEWMA failed!"
+    assert fbewma_df.values == pytest.approx(fbewma_data.values), "FBEWMA failed!"
 
 
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
@@ -127,3 +128,14 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
 
     spike_removed = filters.remove_spikes(raw_data, span, high_clip, low_clip, delta)
     assert math.isnan(spike_removed["2021-01-01 00:10"]), "Spike not removed!"
+
+
+def test_remove_range(raw_data):
+    a = filters.remove_range(raw_data, "2021-01-01 00:05", "2021-01-01 00:10")
+    assert len(a) == 3, "Incorrect number of values removed"
+    assert a["2021-01-01 00:00"] == 1.0, "first value compromised"
+    assert a["2021-01-01 00:15"] == 4.0, "after value compromised"
+    assert a["2021-01-01 00:20"] == 5.0, "end value compromised"
+
+    b = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14")
+    assert b.equals(a), "time rounding error"
