@@ -60,7 +60,9 @@ def mock_dataset():
     site_name = SITES[1]
     measurement_name = MEASUREMENTS[1]
     start_time = datetime(2020, 10, 1, 8, 0, 0)
-    time_intervals = [start_time + timedelta(minutes=i * 5) for i in range(num_obs)]
+    time_intervals = [
+        start_time + timedelta(minutes=i * 5) for i in range(num_obs)
+    ]
     values = [random.uniform(0, 100) * 10000 for _ in range(num_obs)]
     data = {
         "SiteName": [site_name] * num_obs,
@@ -89,7 +91,9 @@ def test_processor_init(
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
     monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
-    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        Hilltop, "get_measurement_list", get_mock_measurement_list
+    )
     monkeypatch.setattr(Hilltop, "get_data", get_mock_dataset)
 
     pr = processor.Processor(
