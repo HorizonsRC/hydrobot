@@ -27,8 +27,8 @@ base_data = base_data.asfreq("15T")
 
 base_data.loc["2023-04-01 13:00:00"] = pd.NA
 print(f"Missing datastamps: {base_data['Value'].isna()}")
-print(base_data[(base_data.Value.isnull()) & ~(base_data.Value.shift().isnull())])
-gaps = len(base_data[(base_data.Value.isnull()) & ~(base_data.Value.shift().isnull())])
+print(base_data[(base_data.Value.isna()) & ~(base_data.Value.shift().isna())])
+gaps = len(base_data[(base_data.Value.isna()) & ~(base_data.Value.shift().isna())])
 print(f"Gaps: {gaps}")
 thresh = 3
 

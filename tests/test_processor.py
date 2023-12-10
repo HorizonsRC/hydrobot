@@ -1,3 +1,4 @@
+"""Test the processor module."""
 import random
 from datetime import datetime, timedelta
 
@@ -9,7 +10,6 @@ from hilltoppy import Hilltop
 from hydrobot import processor
 
 ann = Annalist()
-ann.configure()
 
 SITES = [
     "Slimy Bog at Dirt Road",
@@ -26,37 +26,34 @@ MEASUREMENTS = [
 
 
 @pytest.fixture(autouse=True)
-def no_requests(monkeypatch):
+def _no_requests(monkeypatch):
     """Don't allow requests to make requests."""
     monkeypatch.delattr("requests.sessions.Session.request")
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_site_list():
     """Mock response from SiteList server call method."""
     data = {
         "SiteName": SITES,
     }
 
-    df = pd.DataFrame(data)
-    return df
+    return pd.DataFrame(data)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_measurement_list():
     """Mock response from MeasurementList server call method."""
     data = {
         "MeasurementName": MEASUREMENTS,
     }
 
-    df = pd.DataFrame(data)
-    return df
+    return pd.DataFrame(data)
 
 
-@pytest.fixture
+@pytest.fixture()
 def mock_dataset():
-    """Mock response from GetData server call method"""
-
+    """Mock response from GetData server call method."""
     num_obs = 5
     random.seed(69420)
 
@@ -72,11 +69,12 @@ def mock_dataset():
         "Value": values,
     }
 
-    df = pd.DataFrame(data)
-    return df
+    return pd.DataFrame(data)
 
 
-def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_dataset):
+def test_processor_init(
+    capsys, monkeypatch, mock_site_list, mock_measurement_list, mock_dataset
+):
     """Test the processor function."""
 
     def get_mock_site_list(*args, **kwargs):
@@ -87,6 +85,8 @@ def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_data
 
     def get_mock_dataset(*args, **kwargs):
         return mock_dataset
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
     monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
@@ -99,5 +99,16 @@ def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_data
         MEASUREMENTS[1],
         "5T",
     )
-    print(pr.standard_series.loc["2020-10-01 08:00:00"])
-    # assert pr.standard_series.loc["2020-10-01 08:00:00"] ==
+
+    captured = capsys.readouterr()
+    ann_output = captured.err.split("\n")
+
+    assert ann_output[0] == "standard_series | Mid Stream at Cowtoilet Farm"
+    assert ann_output[1] == "check_series | Mid Stream at Cowtoilet Farm"
+    assert ann_output[2] == "import_range | Mid Stream at Cowtoilet Farm"
+    assert ann_output[3] == "__init__ | Mid Stream at Cowtoilet Farm"
+
+    assert isinstance(pr.standard_series, pd.Series)
+    assert pr.standard_series.loc["2020-10-01 08:00:00"] == pytest.approx(
+        681993.770479116
+    )

@@ -64,7 +64,7 @@ Ready to contribute? Here's how to set up `hydrobot` for local development.
 
     $ git clone git@github.com:your_name_here/hydrobot.git
 
-3. Install your local copy into a venv. This is how you set up your fork for local development::
+3. Install your local copy into a venv. This is how you set up your fork for local development
 
 Switch to the newly created root directory of the project::
 
@@ -97,7 +97,7 @@ This allows you to import the package into test scripts and prototypes, while al
 
     $ python -m pip install -e .
 
-4. Create a branch for local development::
+4. Create a branch for local development
 
 In order to track local changes, you must create a branch for local development.
 This command creates a local brach, then switches to that branch.::

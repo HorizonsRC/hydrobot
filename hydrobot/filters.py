@@ -8,8 +8,7 @@ annalizer = Annalist()
 
 
 def clip(unclipped, low_clip: float, high_clip: float):
-    """
-    Clip values in a pandas Series within a specified range.
+    """Clip values in a pandas Series within a specified range.
 
     Parameters
     ----------
@@ -25,22 +24,17 @@ def clip(unclipped, low_clip: float, high_clip: float):
     pandas.Series
         A Series containing the clipped values with the same index as the input Series.
     """
-    unclipped_arr = unclipped.values
+    unclipped_arr = unclipped.to_numpy()
 
     # Create a boolean condition for values that need to be clipped
     clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
 
-    # Use pandas' where function to clip values to NaN where the condition is
-    # True
-    clipped_series = unclipped.where(~clip_cond, np.nan)
-    clipped_series = unclipped.where(~clip_cond, np.nan)
-
-    return clipped_series
+    # Use pandas' where function to clip values to NaN where the condition is True
+    return unclipped.where(~clip_cond, np.nan)
 
 
 def fbewma(input_data, span: int):
-    """
-    Calculate the Forward-Backward Exponentially Weighted Moving Average (FBEWMA) of a pandas Series.
+    """Calculate the Forward-Backward Exponentially Weighted Moving Average (FBEWMA).
 
     Parameters
     ----------
@@ -64,14 +58,11 @@ def fbewma(input_data, span: int):
     stacked_ewma = pd.concat([fwd, bwd[::-1]])
 
     # Calculate the FB-EWMA by taking the mean between fwd and bwd.
-    fb_ewma = stacked_ewma.groupby(level=0).mean()
-
-    return fb_ewma
+    return stacked_ewma.groupby(level=0).mean()
 
 
 def remove_outliers(input_data, span: int, delta: float):
-    """
-    Remove outliers.
+    """Remove outliers.
 
     Remove outliers from a time series by comparing it to the
     Forward-Backward Exponentially Weighted Moving Average (FB-EWMA).
@@ -100,16 +91,13 @@ def remove_outliers(input_data, span: int, delta: float):
     delta_cond = np.abs(input_data - fbewma_series) > delta
 
     # Set values to NaN where the condition is True
-    gaps_series = input_data.where(~delta_cond, np.nan)
-
-    return gaps_series
+    return input_data.where(~delta_cond, np.nan)
 
 
 def remove_spikes(
     input_data, span: int, low_clip: float, high_clip: float, delta: float
 ):
-    """
-    Remove spikes.
+    """Remove spikes.
 
     Remove spikes from a time series data using a combination of clipping and
     interpolation.
@@ -136,10 +124,6 @@ def remove_spikes(
     """
     # Clip values in the input data within the specified range
     clipped = clip(input_data, low_clip, high_clip)
+
     # Remove outliers using the remove_outliers function
-    gaps_series = remove_outliers(clipped, span, delta)
-
-    # Could use pandas' .interpolate() on the Series
-    # interp_series = gaps_series.interpolate()
-
-    return gaps_series
+    return remove_outliers(clipped, span, delta)

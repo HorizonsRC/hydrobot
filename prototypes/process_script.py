@@ -1,16 +1,14 @@
 """Script to run through various processing tasks."""
-import pandas as pd
 import matplotlib.pyplot as plt
-from hydrobot.data_acquisition import get_series
-from hydrobot.filters import remove_spikes, clip
-from hydrobot.evaluator import (
-    small_gap_closer,
-    diagnose_data,
-    quality_encoder,
-)
-import hydrobot.plotter as plotter
-from hydrobot.data_sources import get_measurement
+
+# import pandas as pd
 from annalist.annalist import Annalist
+
+import hydrobot.plotter as plotter
+from hydrobot.data_acquisition import get_series
+from hydrobot.data_sources import get_measurement
+from hydrobot.evaluator import diagnose_data, quality_encoder, small_gap_closer
+from hydrobot.filters import clip, remove_spikes
 
 
 def process_data(processing_parameters):

@@ -1,8 +1,8 @@
 """Main module."""
 
+import pandas as pd
 from annalist.annalist import Annalist
 from hilltoppy import Hilltop
-import pandas as pd
 
 annalizer = Annalist()
 
@@ -16,8 +16,7 @@ def get_data(
     to_date,
     tstype="Standard",
 ):
-    """
-    Acquire time series data from a web service and return it as a DataFrame.
+    """Acquire time series data from a web service and return it as a DataFrame.
 
     Parameters
     ----------
@@ -46,11 +45,9 @@ def get_data(
     """
     ht = Hilltop(base_url, hts)
 
-    ts_data = ht.get_data(
+    return ht.get_data(
         site, measurement, from_date=from_date, to_date=to_date, tstype=tstype
     )
-
-    return ts_data
 
 
 def get_series(
@@ -62,8 +59,7 @@ def get_series(
     to_date,
     tstype="Standard",
 ):
-    """
-    Pack data from det_data as a pd.Series.
+    """Pack data from det_data as a pd.Series.
 
     Parameters
     ----------
@@ -104,4 +100,6 @@ def get_series(
         data.index.name = "Time"
         data.name = "Value"
         data.index = pd.to_datetime(data.index)
+    else:
+        data = pd.Series({})
     return data

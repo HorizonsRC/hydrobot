@@ -1,17 +1,18 @@
 """Script to run through various processing tasks."""
-import time
+# import time
 import matplotlib.pyplot as plt
 import pandas as pd
-from hydrobot.data_acquisition import get_data
-from hydrobot.filters import remove_spikes, clip
-from hydrobot.evaluator import (
-    check_data_quality_code,
-    small_gap_closer,
-    base_data_meets_qc,
-    diagnose_data,
-)
-from hydrobot.data_sources import get_measurement
 from annalist.annalist import Annalist
+
+from hydrobot.data_acquisition import get_data
+from hydrobot.data_sources import get_measurement
+from hydrobot.evaluator import (
+    base_data_meets_qc,
+    check_data_quality_code,
+    diagnose_data,
+    small_gap_closer,
+)
+from hydrobot.filters import clip, remove_spikes
 
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
