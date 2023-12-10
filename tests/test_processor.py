@@ -99,5 +99,6 @@ def test_processor(monkeypatch, mock_site_list, mock_measurement_list, mock_data
         MEASUREMENTS[1],
         "5T",
     )
-    print(pr.standard_series.loc["2020-10-01 08:00:00"])
-    # assert pr.standard_series.loc["2020-10-01 08:00:00"] ==
+    pr.import_data()
+    print(pr.standard_series)
+    assert pr.standard_series.loc["2020-10-01 08:00:00"]
