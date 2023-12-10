@@ -14,18 +14,11 @@ repos:
   hooks:
   - id: bandit
     args: ["-r", "-lll"]
-- repo: https://github.com/Carreau/velin
-  rev: 0.0.11
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  rev: v0.1.6
   hooks:
-  - id: velin
-    exclude: docs\/.*
-- repo: https://github.com/asottile/pyupgrade
-  rev: v3.11.0
-  hooks:
-  - id: pyupgrade
-    args: [--py38-plus]
-- repo: https://github.com/PyCQA/pydocstyle
-  rev: 6.3.0
-  hooks:
-  - id: pydocstyle
-    exclude: docs\/.*
+    # Run the linter
+    - id: ruff
+      args: [ --fix ]
+    # Run the formatter
+    - id: ruff-format

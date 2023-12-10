@@ -1,8 +1,8 @@
 """Script to run through a processing task with the processor class."""
-from hydrobot.processor import Processor
-from annalist.annalist import Annalist
 import matplotlib as plt
+from annalist.annalist import Annalist
 
+from hydrobot.processor import Processor
 
 processing_parameters = {
     "base_url": "http://hilltopdev.horizons.govt.nz/",
@@ -25,8 +25,8 @@ processing_parameters = {
 
 ann = Annalist()
 stream_format_str = (
-    "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, ts_type, "
-    "%(from_date)s, %(to_date)s, %(message)s"
+    "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, "
+    "%(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
 )
 ann.configure(
     logfile="output_dump/bot_annals.csv",

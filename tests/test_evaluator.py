@@ -1,9 +1,10 @@
-import hydrobot.data_sources as data_sources
-import hydrobot.evaluator as evaluator
+"""Test the evaluator module."""
+# import warnings
+# pyright: reportGeneralTypeIssues=false
+
 import numpy as np
 import pandas as pd
 import pytest
-import warnings
 from annalist.annalist import Annalist
 
 import hydrobot.data_sources as data_sources
@@ -52,36 +53,37 @@ qc_data_dict = {
 }
 
 
-@pytest.fixture
+@pytest.fixture()
 def raw_data():
-    """Example data for testing. Do not change these values!"""
+    """Example data for testing. Do not change these values."""
     data_series = pd.Series(raw_data_dict)
     return data_series
 
 
-@pytest.fixture
+@pytest.fixture()
 def gap_data():
-    """Example data for testing. Do not change these values!"""
+    """Example data for testing. Do not change these values."""
     data_series = pd.Series(gap_data_dict)
     return data_series
 
 
-@pytest.fixture
+@pytest.fixture()
 def check_data():
-    """Example data for testing. Do not change these values!"""
+    """Example data for testing. Do not change these values."""
     data_series = pd.Series(check_data_dict)
     return data_series
 
 
-@pytest.fixture
+@pytest.fixture()
 def qc_data():
-    """Example data for testing. Do not change these values!"""
+    """Example data for testing. Do not change these values."""
     data_series = pd.Series(qc_data_dict)
     return data_series
 
 
 @pytest.mark.dependency(name="test_gap_finder")
 def test_gap_finder(raw_data, gap_data):
+    """Test the gap finder function."""
     no_gap_list = evaluator.gap_finder(raw_data)
     assert no_gap_list == [], "Gap found where there should be no gap"
 
@@ -95,6 +97,7 @@ def test_gap_finder(raw_data, gap_data):
 
 @pytest.mark.dependency(name="test_small_gap_closer")
 def test_small_gap_closer(raw_data, gap_data):
+    """Test the small gap closer function."""
     # No gaps here, nothing should happen
     no_gaps = evaluator.small_gap_closer(raw_data, 1)
     assert no_gaps.equals(raw_data), "Data without gaps should not be modified, but was"
@@ -110,6 +113,7 @@ def test_small_gap_closer(raw_data, gap_data):
 
 @pytest.mark.dependency(depends=["test_gap_finder", "test_small_gap_closer"])
 def test_small_gap_closer_part2(raw_data, gap_data):
+    """Test the small gap closer some more."""
     # All gaps should be closed
     removed_gaps = evaluator.small_gap_closer(gap_data, 5)
     assert evaluator.gap_finder(removed_gaps) == [], "Gap not closed!"
@@ -124,6 +128,7 @@ def test_small_gap_closer_part2(raw_data, gap_data):
 
 
 def test_find_nearest_time(gap_data):
+    """Test the find nearest time function."""
     assert evaluator.find_nearest_time(
         gap_data, pd.Timestamp("2021-01-01 01:00")
     ) == pd.Timestamp("2021-01-01 01:00"), "does not find exact value"
@@ -144,15 +149,16 @@ def test_find_nearest_time(gap_data):
     assert evaluator.find_nearest_time(
         gap_data, pd.Timestamp("2021-01-01 02:45")
     ) == pd.Timestamp("2021-01-01 02:45"), "end time not accepted"
-    with pytest.raises(Exception):
+    with pytest.raises(IndexError):
         # out of range forwards
         evaluator.find_nearest_time(gap_data, pd.Timestamp("2021-01-01 02:46"))
-    with pytest.raises(Exception):
+    with pytest.raises(IndexError):
         # out of range backwards
         evaluator.find_nearest_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
 
 
 def test_find_nearest_valid_time(gap_data, qc_data):
+    """Test the finc nearest valid time function."""
     assert evaluator.find_nearest_valid_time(
         qc_data, pd.Timestamp("2021-01-01 01:00")
     ) == pd.Timestamp("2021-01-01 01:00"), "does not find exact value"
@@ -173,15 +179,16 @@ def test_find_nearest_valid_time(gap_data, qc_data):
     assert evaluator.find_nearest_valid_time(
         qc_data, pd.Timestamp("2021-01-01 02:45")
     ) == pd.Timestamp("2021-01-01 02:45"), "end time not accepted"
-    with pytest.raises(Exception):
+    with pytest.raises(IndexError):
         # out of range forwards
         evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2021-01-01 02:46"))
-    with pytest.raises(Exception):
+    with pytest.raises(IndexError):
         # out of range backwards
         evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
 
 
 def test_check_data_quality_code(raw_data, check_data):
+    """Test check data quality code function."""
     meas = data_sources.Measurement(10, 2.0)
     with pytest.warns(Warning):
         assert (
@@ -198,6 +205,7 @@ def test_check_data_quality_code(raw_data, check_data):
 
 
 def test_base_data_qc_filter(gap_data, qc_data):
+    """Test base data QC filter function."""
     assert len(
         evaluator.base_data_qc_filter(
             gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): True})
@@ -233,6 +241,7 @@ def test_base_data_qc_filter(gap_data, qc_data):
 
 
 def test_base_data_meets_qc(gap_data, qc_data):
+    """Test the base data meets QC function."""
     assert len(
         evaluator.base_data_meets_qc(
             gap_data, pd.Series({pd.Timestamp("2021-01-01 00:00"): 600}), 600
@@ -268,6 +277,7 @@ def test_base_data_meets_qc(gap_data, qc_data):
 
 
 def test_missing_data_quality_code(gap_data, qc_data):
+    """Test the missing data quality code function."""
     no_gap_qc = evaluator.missing_data_quality_code(
         gap_data.fillna(3), qc_data, gap_limit=0
     )
@@ -277,7 +287,7 @@ def test_missing_data_quality_code(gap_data, qc_data):
     assert new_qc[pd.Timestamp("2021-01-01 00:00")] == 100, "Starting gap not added"
     assert new_qc[pd.Timestamp("2021-01-01 00:15")] == 500, "Starting gap not closed"
     assert new_qc[pd.Timestamp("2021-01-01 02:30")] == 100, "Ending gap not added"
-    with pytest.raises(Exception):
+    with pytest.raises(IndexError):
         # Mid-gap QC not replaced
         new_qc[pd.Timestamp("2021-01-01 01:30")]
     assert new_qc[pd.Timestamp("2021-01-01 02:00")] == 500, "Gap in middle not closed"

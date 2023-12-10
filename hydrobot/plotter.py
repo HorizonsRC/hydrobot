@@ -1,13 +1,13 @@
 """Tools for displaying potentially problematic data."""
-import matplotlib.pyplot as plt
-import pandas as pd
 import warnings
-from hydrobot.evaluator import gap_finder, find_nearest_time, splitter
+
+import matplotlib.pyplot as plt
+
+from hydrobot.evaluator import find_nearest_time, gap_finder, splitter
 
 
 def gap_plotter(base_series, span=20, show=True):
-    """
-    Plot the areas around NaN values to visually check for dodgy spike removal.
+    """Plot the areas around NaN values to visually check for dodgy spike removal.
 
     Parameters
     ----------
@@ -38,7 +38,7 @@ def gap_plotter(base_series, span=20, show=True):
             upper_idx -= len(base_series) - upper_idx
             if lower_idx < 0:
                 # span is too big or not enough data
-                warnings.warn("Warning: Span bigger than data")
+                warnings.warn("Warning: Span bigger than data", stacklevel=2)
                 lower_idx = 0
         gap_range = base_series.iloc[lower_idx:upper_idx]
         plt.plot(gap_range.index, gap_range)
@@ -48,8 +48,7 @@ def gap_plotter(base_series, span=20, show=True):
 
 
 def check_plotter(base_series, check_series, span=20, show=True):
-    """
-    Plot the areas around check values to visually check for dodgy data from inspections.
+    """Plot the areas around check values to visually check for dodgy data from inspections.
 
     Parameters
     ----------
@@ -83,7 +82,7 @@ def check_plotter(base_series, check_series, span=20, show=True):
             upper_idx -= len(base_series) - upper_idx
             if lower_idx < 0:
                 # span is too big or not enough data
-                warnings.warn("Warning: Span bigger than data")
+                warnings.warn("Warning: Span bigger than data", stacklevel=2)
                 lower_idx = 0
         gap_range = base_series.iloc[lower_idx:upper_idx]
         plt.plot(gap_range.index, gap_range)
@@ -100,8 +99,7 @@ def check_plotter(base_series, check_series, span=20, show=True):
 
 
 def qc_colour(qc):
-    """
-    Give the colour of the QC.
+    """Give the colour of the QC.
 
     Parameters
     ----------
@@ -126,8 +124,7 @@ def qc_colour(qc):
 
 
 def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
-    """
-    Plot data with correct qc colour.
+    """Plot data with correct qc colour.
 
     Parameters
     ----------

@@ -1,18 +1,17 @@
 """Handling for different types of data sources."""
 import csv
-from pathlib import Path
-import pandas as pd
 import re
+from pathlib import Path
 
 import numpy as np
+import pandas as pd
 
 
 class Measurement:
     """Basic measurement only compares magnitude of differences."""
 
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
-        """
-        Initialize Measurement.
+        """Initialize Measurement.
 
         Parameters
         ----------
@@ -32,8 +31,7 @@ class Measurement:
         return repr(f"Measurement '{self.name}'")
 
     def find_qc(self, base_datum, check_datum):
-        """
-        Find the base quality codes.
+        """Find the base quality codes.
 
         Parameters
         ----------
@@ -51,15 +49,13 @@ class Measurement:
         diff = np.abs(base_datum - check_datum)
         if diff < self.qc_600_limit:
             return 600
-        elif diff < self.qc_500_limit:
+        if diff < self.qc_500_limit:
             return 500
-        else:
-            return 400
+        return 400
 
 
 class TwoLevelMeasurement(Measurement):
-    """
-    Measurement for standards such as water level.
+    """Measurement for standards such as water level.
 
     Fixed error up to given threshold, percentage error after that.
     """
@@ -73,8 +69,7 @@ class TwoLevelMeasurement(Measurement):
         limit_percent_threshold,
         name="",
     ):
-        """
-        Initialize TwoLevelMeasurement.
+        """Initialize TwoLevelMeasurement.
 
         Parameters
         ----------
@@ -87,7 +82,8 @@ class TwoLevelMeasurement(Measurement):
         qc_600_percent : numerical
             Threshold between QC 500 and QC 600 for percentage portion
         limit_percent_threshold
-            Value at which the measurement transitions between linear and percentage QC comparison
+            Value at which the measurement transitions between linear and percentage
+            QC comparison
         name : str
             Name of the data source
         """
@@ -100,8 +96,9 @@ class TwoLevelMeasurement(Measurement):
         self.name = name
 
     def find_qc(self, base_datum, check_datum):
-        """
-        Find the base quality codes with two stages - a flat and percentage QC threshold.
+        """Find the base quality codes with two stages.
+
+        The two stages are: a flat and percentage QC threshold.
 
         Parameters
         ----------
@@ -121,24 +118,20 @@ class TwoLevelMeasurement(Measurement):
             diff = np.abs(base_datum - check_datum)
             if diff < self.qc_600_limit:
                 return 600
-            elif diff < self.qc_500_limit:
+            if diff < self.qc_500_limit:
                 return 500
-            else:
-                return 400
-        else:
-            # percent qc check
-            diff = np.abs(base_datum / check_datum - 1) * 100
-            if diff < self.qc_600_percent:
-                return 600
-            elif diff < self.qc_500_percent:
-                return 500
-            else:
-                return 400
+            return 400
+        # percent qc check
+        diff = np.abs(base_datum / check_datum - 1) * 100
+        if diff < self.qc_600_percent:
+            return 600
+        if diff < self.qc_500_percent:
+            return 500
+        return 400
 
 
 def get_measurement_dict():
-    """
-    Return all measurements in a dictionary.
+    """Return all measurements in a dictionary.
 
     Returns
     -------
@@ -177,8 +170,7 @@ def get_measurement_dict():
 
 
 def get_measurement(measurement_name):
-    """
-    Return measurement that matches the given name.
+    """Return measurement that matches the given name.
 
     Raises exception if measurement is not in the config.
 
@@ -195,11 +187,10 @@ def get_measurement(measurement_name):
     m_dict = get_measurement_dict()
     if measurement_name in m_dict:
         return m_dict[measurement_name]
-    else:
-        raise Exception(
-            f"Measurement {measurement_name} not found in the config file. "
-            f"Available measurements are {list(m_dict.keys())}."
-        )
+    raise Exception(
+        f"Measurement {measurement_name} not found in the config file. "
+        f"Available measurements are {list(m_dict.keys())}."
+    )
 
 
 def series_export_to_csv(
@@ -210,8 +201,7 @@ def series_export_to_csv(
     check_series: pd.Series | None,
     qc_series: pd.Series | None,
 ):
-    """
-    Export the 3 main series to csv.
+    """Export the 3 main series to csv.
 
     Parameters
     ----------
@@ -227,6 +217,7 @@ def series_export_to_csv(
         Check series
     qc_series : pd.Series
         Quality code series
+
     Returns
     -------
     None, but makes files

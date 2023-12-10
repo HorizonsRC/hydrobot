@@ -5,27 +5,34 @@ from functools import wraps
 
 import pandas as pd
 from annalist.annalist import Annalist
-from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 from hydrobot import data_acquisition, data_sources, evaluator, filters, plotter
 
 annalizer = Annalist()
 
+DEFAULTS = {
+    "high_clip": 20000,
+    "low_clip": 0,
+    "delta": 1000,
+    "span": 10,
+    "gap_limit": 12,
+}
+
 
 def stale_warning(method):
-    """
-    Decorate dangerous functions.
+    """Decorate dangerous functions.
 
     Check whether the data is stale, and warn user if so.
     Warning will then take input form user to determine whether to proceed or cancel.
-    Cancelling will return a null function, which returns None with no side effects no matter what the input
+    Cancelling will return a null function, which returns None with no side effects no
+    matter what the input
 
     Parameters
     ----------
     method : function
-        A function that might have some problems if the parameters have been changed but the data hasn't been
-        updated
+        A function that might have some problems if the parameters have been changed
+        but the data hasn't been updated
 
     Returns
     -------
@@ -37,7 +44,9 @@ def stale_warning(method):
     def _impl(self, *method_args, **method_kwargs):
         if self._stale:
             warnings.warn(
-                "Warning: a key parameter of the data has changed but the data itself has not been reloaded."
+                "Warning: a key parameter of the data has changed but the data itself "
+                "has not been reloaded.",
+                stacklevel=2,
             )
             while True:
                 user_input = input("Do you want to continue? y/n: ")
@@ -45,13 +54,10 @@ def stale_warning(method):
                 if user_input.lower() in ["y", "ye", "yes"]:
                     print("Continuing")
                     return method(self, *method_args, **method_kwargs)
-                elif user_input.lower() in ["n", "no"]:
+                if user_input.lower() in ["n", "no"]:
                     print("Function cancelled")
                     return lambda *x: None
-                else:
-                    print(
-                        "Type y or n (or yes or no, or even ye, all ye who enter here)"
-                    )
+                print("Type y or n (or yes or no, or even ye, all ye who enter here)")
         else:
             return method(self, *method_args, **method_kwargs)
 
@@ -61,7 +67,7 @@ def stale_warning(method):
 class Processor:
     """docstring for Processor."""
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     def __init__(
         self,
         base_url: str,
@@ -73,10 +79,14 @@ class Processor:
         to_date: str | None = None,
         check_hts: str | None = None,
         check_measurement: str | None = None,
-        defaults: dict = {},
+        defaults: dict | None = None,
         **kwargs,
     ):
         """Initialize a Processor instance."""
+        if defaults is None:
+            self._defaults = DEFAULTS
+        else:
+            self._defaults = defaults
         if check_hts is None:
             check_hts = standard_hts
         if check_measurement is None:
@@ -99,22 +109,22 @@ class Processor:
             )
 
         self._standard_measurement_list = standard_hilltop.get_measurement_list(site)
-        if standard_measurement in self._standard_measurement_list.values:
+        if standard_measurement in self._standard_measurement_list.to_numpy():
             self._standard_measurement = standard_measurement
         else:
             raise ValueError(
                 f"Standard measurement '{standard_measurement}' not found at"
                 " site '{site}'. Available measurements are "
-                f"{[str(m[0]) for m in self._standard_measurement_list.values]}"
+                f"{[str(m[0]) for m in self._standard_measurement_list.to_numpy()]}"
             )
         self._check_measurement_list = check_hilltop.get_measurement_list(site)
-        if check_measurement in self._check_measurement_list.values:
+        if check_measurement in self._check_measurement_list.to_numpy():
             self._check_measurement = check_measurement
         else:
             raise ValueError(
                 f"Check measurement '{check_measurement}' not found at "
                 f"site '{site}'. Available measurements are "
-                f"{[str(m[0]) for m in self._check_measurement_list.values]}"
+                f"{[str(m[0]) for m in self._check_measurement_list.to_numpy()]}"
             )
 
         self._base_url = base_url
@@ -123,7 +133,6 @@ class Processor:
         self._frequency = frequency
         self._from_date = from_date
         self._to_date = to_date
-        self._defaults = defaults
         self._measurement = data_sources.get_measurement(standard_measurement)
 
         self._stale = True
@@ -135,136 +144,136 @@ class Processor:
         self.import_data()
 
     @property
-    def site(self):
+    def site(self):  # type: ignore
         """Site property."""
         return self._site
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @site.setter
     def site(self, value):
         self._site = value
         self._stale = True
 
     @property
-    def from_date(self):
+    def from_date(self):  # type: ignore
         """From_date property."""
         return self._from_date
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @from_date.setter
     def from_date(self, value):
         self._from_date = value
         self._stale = True
 
     @property
-    def to_date(self):
+    def to_date(self):  # type: ignore
         """To_date property."""
         return self._to_date
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @to_date.setter
     def to_date(self, value):
         self._to_date = value
         self._stale = True
 
     @property
-    def frequency(self):
+    def frequency(self):  # type: ignore
         """Frequency property."""
         return self._frequency
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @frequency.setter
     def frequency(self, value):
         self._frequency = value
         self._stale = True
 
     @property
-    def base_url(self):
+    def base_url(self):  # type: ignore
         """Base_url property."""
         return self._base_url
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @base_url.setter
     def base_url(self, value):
         self._base_url = value
         self._stale = True
 
     @property
-    def standard_hts(self):
+    def standard_hts(self):  # type: ignore
         """Standard_hts property."""
         return self._standard_hts
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @standard_hts.setter
     def standard_hts(self, value):
         self._standard_hts = value
         self._stale = True
 
     @property
-    def check_hts(self):
+    def check_hts(self):  # type: ignore
         """Check_hts property."""
         return self._check_hts
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @check_hts.setter
     def check_hts(self, value):
         self._check_hts = value
         self._stale = True
 
     @property
-    def measurement(self):
+    def measurement(self):  # type: ignore
         """Measurement property."""
         return self._measurement
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @measurement.setter
     def measurement(self, value):
         self._measurement = value
         self._stale = True
 
     @property
-    def defaults(self):
+    def defaults(self):  # type: ignore
         """Defaults property."""
         return self._defaults
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @defaults.setter
     def defaults(self, value):
         self._defaults = value
         self._stale = True
 
     @property  # type: ignore
-    def standard_series(self):  # type: ignore
+    def standard_series(self) -> pd.Series:  # type: ignore
         """Standard dataset property."""  # type: ignore
         return self._standard_series  # type: ignore
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @standard_series.setter  # type: ignore
     def standard_series(self, value):  # type: ignore
         self._standard_series = value  # type: ignore
 
     @property
-    def check_series(self):
+    def check_series(self):  # type: ignore
         """Check dataset property."""
         return self._check_series
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @check_series.setter
     def check_series(self, value):
         self._check_series = value
 
     @property
-    def quality_series(self):
+    def quality_series(self):  # type: ignore
         """Quality dataset property."""
         return self._quality_series
 
-    @ClassLogger  # type: ignore
+    # @ClassLogger  # type: ignore
     @quality_series.setter
     def quality_series(self, value):
         self._quality_series = value
         self._stale = True
 
-    @ClassLogger
+    # @ClassLogger
     def import_range(
         self,
         from_date: str | None,
@@ -284,17 +293,22 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            insert_series = insert_series.asfreq(self.frequency, method="bfill")
-            slice_to_remove = self.standard_series.loc[
+            insert_series = insert_series.asfreq(self._frequency, method="bfill")
+            slice_to_remove = self._standard_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
-            cleaned_series = self.standard_series.drop(slice_to_remove.index)
-            self.standard_series = pd.concat(
-                [
-                    cleaned_series if not cleaned_series.empty else None,
-                    insert_series if not insert_series.empty else None,
-                ]
-            ).sort_index()
+            cleaned_series = self._standard_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.standard_series = pd.concat(
+                    [
+                        cleaned_series,
+                        insert_series,
+                    ]
+                ).sort_index()
         if check:
             insert_series = data_acquisition.get_series(
                 self._base_url,
@@ -305,16 +319,21 @@ class Processor:
                 to_date,
                 tstype="Check",
             )
-            slice_to_remove = self.check_series.loc[
+            slice_to_remove = self._check_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
-            cleaned_series = self.check_series.drop(slice_to_remove.index)
-            self.check_series = pd.concat(
-                [
-                    cleaned_series if not cleaned_series.empty else None,
-                    insert_series if not insert_series.empty else None,
-                ]
-            ).sort_index()
+            cleaned_series = self._check_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.check_series = pd.concat(
+                    [
+                        cleaned_series,
+                        insert_series,
+                    ]
+                ).sort_index()
         if quality:
             insert_series = data_acquisition.get_series(
                 self._base_url,
@@ -325,13 +344,18 @@ class Processor:
                 to_date,
                 tstype="Quality",
             )
-            slice_to_remove = self.quality_series.loc[
+            slice_to_remove = self._quality_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
-            cleaned_series = self.quality_series.drop(slice_to_remove.index)
-            self.quality_series = pd.concat(
-                [cleaned_series, insert_series]
-            ).sort_index()
+            cleaned_series = self._quality_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.quality_series = pd.concat(
+                    [cleaned_series, insert_series]
+                ).sort_index()
 
     def import_data(
         self,
@@ -344,7 +368,7 @@ class Processor:
         self._stale = False
 
     # @stale_warning  # type: ignore
-    @ClassLogger
+    # @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -354,7 +378,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    @ClassLogger
+    # @ClassLogger
     def quality_encoder(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -367,7 +391,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    @ClassLogger
+    # @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """Clip data.
 
@@ -382,7 +406,7 @@ class Processor:
         self.check_series = filters.clip(self._check_series, low_clip, high_clip)
 
     # @stale_warning  # type: ignore
-    @ClassLogger
+    # @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """Remove Outliers.
 
@@ -398,7 +422,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    @ClassLogger
+    # @ClassLogger
     def remove_spikes(
         self,
         low_clip: float | None = None,
@@ -422,7 +446,7 @@ class Processor:
             self._standard_series, span, low_clip, high_clip, delta
         )
 
-    @ClassLogger
+    # @ClassLogger
     def data_exporter(self, file_location):
         """Export data to csv."""
         data_sources.series_export_to_csv(

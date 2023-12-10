@@ -1,7 +1,6 @@
 """Using the utilities functions for various data sets."""
 
 import matplotlib.pyplot as plt
-from hilltoppy import Hilltop
 
 from hydrobot.data_acquisition import get_data
 

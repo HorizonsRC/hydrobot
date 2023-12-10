@@ -1,3 +1,4 @@
+"""Test the filters module."""
 import math
 
 import numpy as np
@@ -27,33 +28,37 @@ fbewma_data_dict = {
 }
 
 
-@pytest.fixture
+@pytest.fixture()
 def raw_data():
-    """Example data for testing. Do not change these values!"""
+    """Get example data for testing.
+
+    Do not change these values!
+    """
     # Allows parametrization with a list of keys to change to np.nan
-    data_series = pd.Series(raw_data_dict)
-    return data_series
+    return pd.Series(raw_data_dict)
 
 
 def insert_raw_data_gaps(gaps):
+    """Insert raw data gaps."""
     for gap in gaps:
         raw_data_dict[gap] = np.nan
-    data_series = pd.Series(raw_data_dict)
-    return data_series
+    return pd.Series(raw_data_dict)
 
 
-@pytest.fixture
+@pytest.fixture()
 def fbewma_data():
-    """Mock function returning correct values for fbewma running on one_outlier_data with span=4"""
-    data_series = pd.Series(fbewma_data_dict)
-    return data_series
+    """Mock function returning correct values for fbewma.
+
+    Running on one_outlier_data with span=4
+    """
+    return pd.Series(fbewma_data_dict)
 
 
 def insert_fbewma_data_gaps(gaps):
+    """Insert FBEWMA data gaps."""
     for gap in gaps:
         fbewma_data_dict[gap] = np.nan
-    data_series = pd.Series(fbewma_data_dict)
-    return data_series
+    return pd.Series(fbewma_data_dict)
 
 
 # Actual tests begin here:
@@ -61,6 +66,7 @@ def insert_fbewma_data_gaps(gaps):
 
 
 def test_clip(raw_data):
+    """Test the clip function."""
     # Setup
     low_clip = 2
     high_clip = 4
@@ -77,6 +83,7 @@ def test_clip(raw_data):
 
 
 def test_fbewma(raw_data, fbewma_data):
+    """Test the FBEWMA function."""
     # Setup
     span = 3
 
@@ -84,10 +91,13 @@ def test_fbewma(raw_data, fbewma_data):
     fbewmadf = filters.fbewma(raw_data, span)
 
     # pytest.approx accounts for floating point errors and such
-    assert fbewmadf.values == pytest.approx(fbewma_data.values), "FBEWMA failed!"
+    assert fbewmadf.to_numpy() == pytest.approx(
+        fbewma_data.to_numpy()
+    ), "FBEWMA failed!"
 
 
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
+    """Test the remove outliers function."""
     # Setting up a bug free mock version of fbewma to use in remove_outliers
     fbewma_mock = mocker.patch(
         "hydrobot.filters.fbewma",
@@ -100,6 +110,7 @@ def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
 
 
 def test_remove_spike(raw_data, fbewma_data, mocker):
+    """Test the spike removal function."""
     # Setup
     span = 2
     low_clip = 2
@@ -115,10 +126,10 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
         )
 
     # I can use the same mocker here because clip wouldn't do anything to this data
-    clip_mock = mocker.patch(
-        "hydrobot.filters.clip",
-        side_effect=clip_no_bugs,
-    )
+    # clip_mock = mocker.patch(
+    #     "hydrobot.filters.clip",
+    #     side_effect=clip_no_bugs,
+    # )
 
     remove_outlier_mock = mocker.patch(
         "hydrobot.filters.remove_outliers",
