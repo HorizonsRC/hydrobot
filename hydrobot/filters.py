@@ -140,7 +140,7 @@ def remove_spikes(
     return gaps_series
 
 
-def remove_range(input_series: pd.Series, from_date, to_date):
+def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | None):
     """
     Remove data from series in given range.
 
@@ -151,9 +151,9 @@ def remove_range(input_series: pd.Series, from_date, to_date):
     ----------
     input_series : pd.Series
         The series to have a section removed
-    from_date : str
+    from_date : str | None
         Start of removed section
-    to_date : str
+    to_date : str | None
         End of removed section
 
     Returns

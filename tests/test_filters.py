@@ -151,6 +151,17 @@ def test_remove_range(raw_data):
     b = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14")
     assert b.equals(a), "time rounding error"
 
+    c = filters.remove_range(raw_data, "2021-01-01 00:03", None)
+    assert "2021-01-01 00:00" in c.index, "removed first value"
+    assert len(c) == 1, "Start None value causes error"
+
+    d = filters.remove_range(raw_data, None, "2021-01-01 00:19")
+    assert "2021-01-01 00:20" in d.index, "removed last value"
+    assert len(d) == 1, "End None value causes error"
+
+    e = filters.remove_range(raw_data, None, None)
+    assert e.empty, "double None causes error"
+
 
 def test_trim_series(raw_data):
     """Testing a trimmed series."""
