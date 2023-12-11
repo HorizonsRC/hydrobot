@@ -2,4 +2,4 @@
 
 __author__ = """Nic Mostert"""
 __email__ = "nicolas.mostert@horizons.govt.nz"
-__version__ = "0.3.0"
+__version__ = "0.3.1"

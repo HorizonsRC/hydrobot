@@ -47,7 +47,7 @@ setup(
     test_suite="tests",
     tests_require=test_requirements,
     url="https://github.com/nicmostert/hydrobot",
-    version="0.3.0",
+    version="0.3.1",
     zip_safe=False,
     package_data={"hydrobot": ["config/*"]},
 )
