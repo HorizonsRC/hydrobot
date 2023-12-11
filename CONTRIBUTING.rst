@@ -159,12 +159,12 @@ A reminder for the maintainers on how to deploy.
 
 2. Then run `bump-my-version` to increment the release tags in the appropriate places. Consider using the `--dry-run` flag to make sure there are no errors first::
 
-    $ bump-my-version bump --dry-run --verbose patch # Optional, just to test if it runs without errors
-    $ bump-my-version patch # For real this time. Possible values: major / minor / patch
+    $ bump-my-version bump -v --dry-run patch # Optional, just to test if it runs without errors
+    $ bump-my-version bump patch # For real this time. Possible values: major / minor / patch
 
 3. Install the local development version of the package (make sure you're in the package root directory where setup.py is). You should see the package install with the correct version number.::
 
-    $ pip install -e .
+    $ pip install -e .[all]
 
 4. Run the tests to see that they still work with this local install::
 
