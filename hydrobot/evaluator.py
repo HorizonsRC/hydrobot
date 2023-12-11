@@ -106,7 +106,7 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
         or check_series.index[-1] > series.index[-1]
     ):
         # Can't check something that's not there
-        raise Exception("Error: check data out of range")
+        raise KeyError("Error: check data out of range")
     else:
         # Stuff actually working (hopefully)
         for check_time, check_value in check_series.items():
@@ -195,7 +195,7 @@ def find_nearest_time(series, dt):
     first_timestamp = series.index[0]
     last_timestamp = series.index[-1]
     if dt < first_timestamp or dt > last_timestamp:
-        raise IndexError("Timestamp not within data range")
+        raise KeyError("Timestamp not within data range")
 
     output_index = series.index.get_indexer([dt], method="nearest")
     return series.index[output_index][0]
@@ -222,7 +222,7 @@ def find_nearest_valid_time(series, dt):
     first_timestamp = series.index[0]
     last_timestamp = series.index[-1]
     if dt < first_timestamp or dt > last_timestamp:
-        raise IndexError("Timestamp not within data range")
+        raise KeyError("Timestamp not within data range")
 
     series = series.dropna()
     output_index = series.index.get_indexer([dt], method="nearest")
@@ -328,7 +328,6 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
             f"{len(split_data[qc].dropna()) / len(base_series) * 100}% of the time "
             "period"
         )
-    print("Now it's your job to figure out if that's good enough")
 
 
 def splitter(base_series, qc_series, frequency):

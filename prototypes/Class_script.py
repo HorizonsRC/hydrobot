@@ -10,7 +10,7 @@ processing_parameters = {
     "check_hts_filename": "boo.hts",
     "site": "Whanganui at Te Rewa",
     "from_date": "2021-06-01 00:00",
-    "to_date": "2023-08-12 8:30",
+    "to_date": "2023-11-30 8:30",
     "frequency": "5T",
     "standard_measurement": "Water level statistics: Point Sample",
     "check_measurement": "External S.G. [Water Level NRT]",
@@ -51,6 +51,10 @@ data.import_data()
 
 data.clip()
 data.remove_spikes()
+
+data.delete_range("2021-06-29 11:00", "2021-06-30 11:25")
+data.insert_missing_nans()
+
 data.gap_closer()
 data.quality_encoder()
 
@@ -58,6 +62,6 @@ data.data_exporter("output_dump/")
 
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
-    data.plot_qc_series(show=False)
-    data.plot_gaps(show=False)
-    data.plot_checks()
+    data.plot_qc_series()
+    # data.plot_gaps(show=False)
+    # data.plot_checks()

@@ -105,8 +105,11 @@ def test_processor_init(
 
     assert ann_output[0] == "standard_series | Mid Stream at Cowtoilet Farm"
     assert ann_output[1] == "check_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[2] == "import_range | Mid Stream at Cowtoilet Farm"
-    assert ann_output[3] == "__init__ | Mid Stream at Cowtoilet Farm"
+    assert ann_output[2] == "quality_series | Mid Stream at Cowtoilet Farm"
+    assert ann_output[3] == "standard_series | Mid Stream at Cowtoilet Farm"
+    assert ann_output[4] == "check_series | Mid Stream at Cowtoilet Farm"
+    assert ann_output[5] == "import_range | Mid Stream at Cowtoilet Farm"
+    assert ann_output[6] == "__init__ | Mid Stream at Cowtoilet Farm"
 
     assert isinstance(pr.standard_series, pd.Series)
     assert pr.standard_series.loc["2020-10-01 08:00:00"] == pytest.approx(

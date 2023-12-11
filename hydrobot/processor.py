@@ -5,6 +5,7 @@ from functools import wraps
 
 import pandas as pd
 from annalist.annalist import Annalist
+from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 from hydrobot import data_acquisition, data_sources, evaluator, filters, plotter
@@ -67,7 +68,7 @@ def stale_warning(method):
 class Processor:
     """docstring for Processor."""
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     def __init__(
         self,
         base_url: str,
@@ -101,30 +102,31 @@ class Processor:
             self._site = site
         else:
             raise ValueError(
-                f"Site '{site}' not found for both base_url and hts combos. "
-                "Available sites in standard_hts are "
-                f"{[s for s in standard_hilltop.available_sites]}. "
-                "Available sites in check_hts are "
-                f"{[s for s in check_hilltop.available_sites]}."
+                f"Site '{site}' not found for both base_url and hts combos."
+                f"Available sites in standard_hts are: "
+                f"{[s for s in standard_hilltop.available_sites]}"
+                f"Available sites in check_hts are: "
+                f"{[s for s in check_hilltop.available_sites]}"
             )
 
-        self._standard_measurement_list = standard_hilltop.get_measurement_list(site)
-        if standard_measurement in self._standard_measurement_list.to_numpy():
+        standard_measurement_list = standard_hilltop.get_measurement_list(site)
+        if standard_measurement in list(standard_measurement_list.MeasurementName):
             self._standard_measurement = standard_measurement
         else:
             raise ValueError(
-                f"Standard measurement '{standard_measurement}' not found at"
-                " site '{site}'. Available measurements are "
-                f"{[str(m[0]) for m in self._standard_measurement_list.to_numpy()]}"
+                f"Standard measurement '{standard_measurement}' not found at "
+                f"site '{site}'. "
+                "Available measurements are "
+                f"{list(standard_measurement_list.MeasurementName)}"
             )
-        self._check_measurement_list = check_hilltop.get_measurement_list(site)
-        if check_measurement in self._check_measurement_list.to_numpy():
+        check_measurement_list = check_hilltop.get_measurement_list(site)
+        if check_measurement in list(check_measurement_list.MeasurementName):
             self._check_measurement = check_measurement
         else:
             raise ValueError(
-                f"Check measurement '{check_measurement}' not found at "
-                f"site '{site}'. Available measurements are "
-                f"{[str(m[0]) for m in self._check_measurement_list.to_numpy()]}"
+                f"Check measurement '{check_measurement}' not found at site '{site}'. "
+                "Available measurements are "
+                f"{list(check_measurement_list.MeasurementName)}"
             )
 
         self._base_url = base_url
@@ -148,7 +150,7 @@ class Processor:
         """Site property."""
         return self._site
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @site.setter
     def site(self, value):
         self._site = value
@@ -159,7 +161,7 @@ class Processor:
         """From_date property."""
         return self._from_date
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @from_date.setter
     def from_date(self, value):
         self._from_date = value
@@ -170,7 +172,7 @@ class Processor:
         """To_date property."""
         return self._to_date
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @to_date.setter
     def to_date(self, value):
         self._to_date = value
@@ -181,7 +183,7 @@ class Processor:
         """Frequency property."""
         return self._frequency
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @frequency.setter
     def frequency(self, value):
         self._frequency = value
@@ -192,7 +194,7 @@ class Processor:
         """Base_url property."""
         return self._base_url
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @base_url.setter
     def base_url(self, value):
         self._base_url = value
@@ -203,7 +205,7 @@ class Processor:
         """Standard_hts property."""
         return self._standard_hts
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @standard_hts.setter
     def standard_hts(self, value):
         self._standard_hts = value
@@ -214,7 +216,7 @@ class Processor:
         """Check_hts property."""
         return self._check_hts
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @check_hts.setter
     def check_hts(self, value):
         self._check_hts = value
@@ -225,7 +227,7 @@ class Processor:
         """Measurement property."""
         return self._measurement
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @measurement.setter
     def measurement(self, value):
         self._measurement = value
@@ -236,7 +238,7 @@ class Processor:
         """Defaults property."""
         return self._defaults
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @defaults.setter
     def defaults(self, value):
         self._defaults = value
@@ -247,7 +249,7 @@ class Processor:
         """Standard dataset property."""  # type: ignore
         return self._standard_series  # type: ignore
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @standard_series.setter  # type: ignore
     def standard_series(self, value):  # type: ignore
         self._standard_series = value  # type: ignore
@@ -257,7 +259,7 @@ class Processor:
         """Check dataset property."""
         return self._check_series
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @check_series.setter
     def check_series(self, value):
         self._check_series = value
@@ -267,13 +269,13 @@ class Processor:
         """Quality dataset property."""
         return self._quality_series
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @quality_series.setter
     def quality_series(self, value):
         self._quality_series = value
         self._stale = True
 
-    # @ClassLogger
+    @ClassLogger
     def import_range(
         self,
         from_date: str | None,
@@ -364,11 +366,14 @@ class Processor:
         quality: bool = False,
     ):
         """Import data using class parameter range."""
+        self.standard_series = pd.Series({})
+        self.check_series = pd.Series({})
+        self.quality_series = pd.Series({})
         self.import_range(self._from_date, self._to_date, standard, check, quality)
         self._stale = False
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -378,7 +383,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def quality_encoder(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -391,7 +396,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """Clip data.
 
@@ -406,7 +411,7 @@ class Processor:
         self.check_series = filters.clip(self._check_series, low_clip, high_clip)
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """Remove Outliers.
 
@@ -422,7 +427,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def remove_spikes(
         self,
         low_clip: float | None = None,
@@ -446,7 +451,35 @@ class Processor:
             self._standard_series, span, low_clip, high_clip, delta
         )
 
-    # @ClassLogger
+    @ClassLogger
+    def delete_range(
+        self,
+        from_date,
+        to_date,
+        tstype_standard=True,
+        tstype_check=False,
+        tstype_quality=False,
+    ):
+        """Delete range of data a la remove_range."""
+        if tstype_standard:
+            self.standard_series = filters.remove_range(
+                self._standard_series, from_date, to_date
+            )
+        if tstype_check:
+            self.standard_series = filters.remove_range(
+                self._standard_series, from_date, to_date
+            )
+        if tstype_quality:
+            self.standard_series = filters.remove_range(
+                self._standard_series, from_date, to_date
+            )
+
+    @ClassLogger
+    def insert_missing_nans(self):
+        """Set the data to the correct frequency, filled with NaNs as appropriate."""
+        self.standard_series = self._standard_series.asfreq(self._frequency)
+
+    @ClassLogger
     def data_exporter(self, file_location):
         """Export data to csv."""
         data_sources.series_export_to_csv(
