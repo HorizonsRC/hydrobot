@@ -145,7 +145,10 @@ def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | 
     Remove data from series in given range.
 
     Returns the input series without data between from_date and to_date
-    inclusive
+    inclusive.
+
+    A None to_date will remove all data since the from_date (and vice versa).
+    A double None for to_date/from_date removes all data.
 
     Parameters
     ----------
