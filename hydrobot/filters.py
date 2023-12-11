@@ -163,3 +163,31 @@ def remove_range(input_series: pd.Series, from_date, to_date):
     """
     slice_to_remove = input_series.loc[from_date:to_date]
     return input_series.drop(slice_to_remove.index)
+
+
+def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
+    """
+    Remove end of std series to match check series.
+
+    All data after the last entry in check_series is presumed to be unchecked,
+    so that data is removed from the std_series
+
+    If check_series is empty, returns the entire std_series
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be trimmed
+    check_series : pd.Series
+        Indicates the end of the usable data
+
+    Returns
+    -------
+    pd.Series
+        std_series with the unchecked elements trimmed
+    """
+    if check_series.empty:
+        return std_series
+    else:
+        last_check_date = check_series.index[-1]
+        return std_series.loc[:last_check_date]

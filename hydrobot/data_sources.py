@@ -200,7 +200,7 @@ def series_export_to_csv(
     std_series: pd.Series | None,
     check_series: pd.Series | None,
     qc_series: pd.Series | None,
-):
+) -> None:
     """Export the 3 main series to csv.
 
     Parameters

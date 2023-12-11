@@ -150,3 +150,38 @@ def test_remove_range(raw_data):
 
     b = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14")
     assert b.equals(a), "time rounding error"
+
+
+def test_trim_series(raw_data):
+    """Testing a trimmed series."""
+    raw_check = pd.Series(
+        {
+            "2021-01-01 00:05": 3,
+            "2021-01-01 00:15": 2,
+        }
+    )
+    trimmed = filters.trim_series(raw_data, raw_check)
+    assert len(trimmed) == 4, "Trimming returned wrong number"
+    assert trimmed["2021-01-01 00:15"] == 4.0, "end value changed"
+
+    untrimmed = filters.trim_series(raw_data, pd.Series({}))
+    assert raw_data.equals(untrimmed), "empty check series modified the data"
+
+    raw_check = pd.Series(
+        {
+            "2021-01-01 00:05": 3,
+            "2021-01-01 00:25": 2,
+        }
+    )
+    over_trimmed = filters.trim_series(raw_data, raw_check)
+    assert raw_data.equals(
+        over_trimmed
+    ), "check data beyond standard series modifies data"
+
+    raw_check = pd.Series(
+        {
+            "2021-01-01 00:07": 3,
+        }
+    )
+    big_trim = filters.trim_series(raw_data, raw_check)
+    assert len(big_trim) == 2, "off-centre check data screws things up somehow"

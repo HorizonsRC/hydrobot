@@ -31,3 +31,8 @@ History
 ------------------
 
 * Can delete data now lol
+
+0.3.1 (2023-12-11)
+------------------
+
+* No longer exports the ending QC0 data
