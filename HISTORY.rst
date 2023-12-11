@@ -26,3 +26,8 @@ History
 ------------------
 
 * Fixed some tests and hopefully fixed the config file issue this time.
+
+0.3.0 (2023-12-11)
+------------------
+
+* Can delete data now lol
