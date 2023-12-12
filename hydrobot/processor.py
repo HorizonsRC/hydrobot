@@ -143,7 +143,6 @@ class Processor:
         self._quality_series = pd.Series({})
 
         # Load data for the first time
-        print("Hwhat")
         self.import_data()
 
     @property
@@ -296,14 +295,21 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            insert_series = insert_series.asfreq(self._frequency)
-            cleaned_series = filters.remove_range(
-                self._standard_series, insert_series.index[0], insert_series.index[-1]
-            )
+            insert_series = insert_series.asfreq(self._frequency, method="bfill")
+            slice_to_remove = self._standard_series.loc[
+                insert_series.index[0] : insert_series.index[-1]
+            ]
+            cleaned_series = self._standard_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
             with warnings.catch_warnings():
                 warnings.simplefilter(action="ignore", category=FutureWarning)
                 self.standard_series = pd.concat(
-                    [cleaned_series, insert_series]
+                    [
+                        cleaned_series,
+                        insert_series,
+                    ]
                 ).sort_index()
         if check:
             insert_series = data_acquisition.get_series(

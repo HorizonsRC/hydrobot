@@ -34,7 +34,6 @@ Documentation = "https://hydrobot.readthedocs.io"
 Package = "https://pypi.org/project/hydrobot"
 
 
-
 [project.optional-dependencies]
 test = [
     "pytest>=7.4.2",
@@ -68,10 +67,8 @@ addopts = "--cov --cov-fail-under 100"
 source = ["hydrobot"]
 
 
-
-
-
-[tool.ruff.lint]
+[tool.ruff]
+extend-exclude = ["docs/*"]
 extend-select = [
     "W505", # Line too long as a warning, not an error. Default set to 88.
     "UP",
@@ -89,7 +86,7 @@ extend-ignore = ["D401", "D203", "D212"]
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
-# logger-objects = ["annalist.annalist.Annalist.logger"]
+
 [tool.ruff.per-file-ignores]
 "tests/*" = ["S311", "S101", "F841"]
 "prototypes" = ["D"]

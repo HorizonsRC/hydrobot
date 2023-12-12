@@ -46,6 +46,7 @@ def insert_raw_data_gaps(gaps):
     data_series = pd.Series(gap_data_dict)
     return data_series
 
+
 @pytest.fixture()
 def fbewma_data():
     """Mock function returning correct values for fbewma.
@@ -96,6 +97,7 @@ def test_fbewma(raw_data, fbewma_data):
         fbewma_data.to_numpy()
     ), "FBEWMA failed!"
 
+
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     """Test the remove outliers function."""
     # Setting up a bug free mock version of fbewma to use in remove_outliers
@@ -131,7 +133,7 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
     #     side_effect=clip_no_bugs,
     # )
 
-    remove_outlier_mock = mocker.patch(
+    outlier_mock = mocker.patch(
         "hydrobot.filters.remove_outliers",
         side_effect=remove_outliers_no_bugs,
     )
