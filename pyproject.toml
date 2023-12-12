@@ -55,10 +55,10 @@ all = [
 ]
 
 [tool.setuptools]
-include-package-data = true
+packages = ["hydrobot"]
 
-[tool.setuptools.packages.find]
-where = ["hydrobot"]
+[tool.setuptools.package-data]
+hydrobot = ["hydrobot/config/*"]
 
 [tool.pytest.ini_options]
 addopts = "--cov --cov-fail-under 100"

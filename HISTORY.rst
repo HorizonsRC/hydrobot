@@ -42,3 +42,8 @@ History
 ------------------
 
 * Fixed a documentation build bug
+
+0.3.2 (2023-12-12)
+------------------
+
+* Fixed a documentation build bug
