@@ -47,3 +47,8 @@ History
 ------------------
 
 * Fixed a documentation build bug again.
+
+0.3.4 (2023-12-12)
+------------------
+
+* Implementing the QC0 data removal tool promised in 0.3.1
