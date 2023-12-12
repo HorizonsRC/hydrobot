@@ -22,9 +22,9 @@
 import os
 import sys
 
-import hydrobot
-
 sys.path.insert(0, os.path.abspath(".."))
+
+import hydrobot
 
 
 # -- General configuration ---------------------------------------------

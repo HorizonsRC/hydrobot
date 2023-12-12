@@ -322,11 +322,9 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
     split_data = splitter(base_series, qc_series, frequency)
     for qc in split_data:
         print(
-            f"Data that is QC{qc} makes up "
-            f"{len(split_data[qc].dropna()) / len(base_series.dropna()) * 100}% of the"
-            " workable data and "
-            f"{len(split_data[qc].dropna()) / len(base_series) * 100}% of the time "
-            "period"
+            f"Data that is QC{qc} makes up {len(split_data[qc].dropna()) / len(base_series.dropna()) * 100:.2f}% of "
+            f"the "
+            f"workable data and {len(split_data[qc].dropna()) / len(base_series) * 100:.2f}% of the time period"
         )
 
 

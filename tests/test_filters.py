@@ -40,9 +40,11 @@ def raw_data():
 
 def insert_raw_data_gaps(gaps):
     """Insert raw data gaps."""
+    gap_data_dict = dict(raw_data_dict)
     for gap in gaps:
-        raw_data_dict[gap] = np.nan
-    return pd.Series(raw_data_dict)
+        gap_data_dict[gap] = np.nan
+    data_series = pd.Series(gap_data_dict)
+    return data_series
 
 
 @pytest.fixture()

@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hydrobot"
 description = "A suite of processing tools for Hilltop hydrological data."
-version = "0.3.1"
+version = "0.3.3"
 authors = [
     { name = "Nic Mostert", email = "nicolas.mostert@horizons.govt.nz" },
     { name = "Sam Irvine", email = "sam.irvine@horizons.govt.nz" }
@@ -54,11 +54,18 @@ all = [
     "hydrobot[test, dev, docs]"
 ]
 
+[tool.setuptools]
+packages = ["hydrobot"]
+
+[tool.setuptools.package-data]
+hydrobot = ["hydrobot/config/*"]
+
 [tool.pytest.ini_options]
 addopts = "--cov --cov-fail-under 100"
 
 [tool.coverage.run]
 source = ["hydrobot"]
+
 
 [tool.ruff]
 extend-exclude = ["docs/*"]
@@ -82,4 +89,21 @@ convention = "numpy"
 
 [tool.ruff.per-file-ignores]
 "tests/*" = ["S311", "S101", "F841"]
+"docs/*" = ["I001"]
 "prototypes" = ["D"]
+
+[tool.bumpversion]
+current_version = "0.3.3"
+commit = true
+tag = true
+tag_name = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "pyproject.toml"
+search = "{current_version}"
+replace = "{new_version}"
+
+[[tool.bumpversion.files]]
+filename = "hydrobot/__init__.py"
+search = "__version__ = \"{current_version}\""
+replace = "__version__ = \"{new_version}\""

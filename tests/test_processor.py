@@ -103,13 +103,18 @@ def test_processor_init(
     captured = capsys.readouterr()
     ann_output = captured.err.split("\n")
 
-    assert ann_output[0] == "standard_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[1] == "check_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[2] == "quality_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[3] == "standard_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[4] == "check_series | Mid Stream at Cowtoilet Farm"
-    assert ann_output[5] == "import_range | Mid Stream at Cowtoilet Farm"
-    assert ann_output[6] == "__init__ | Mid Stream at Cowtoilet Farm"
+    correct = [
+        "standard_series | Mid Stream at Cowtoilet Farm",
+        "check_series | Mid Stream at Cowtoilet Farm",
+        "quality_series | Mid Stream at Cowtoilet Farm",
+        "standard_series | Mid Stream at Cowtoilet Farm",
+        "check_series | Mid Stream at Cowtoilet Farm",
+        "import_range | Mid Stream at Cowtoilet Farm",
+        "__init__ | Mid Stream at Cowtoilet Farm",
+    ]
+
+    for i, out in enumerate(ann_output[0:-1]):
+        assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
     assert pr.standard_series.loc["2020-10-01 08:00:00"] == pytest.approx(
