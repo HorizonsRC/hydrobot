@@ -2,11 +2,6 @@
 # %% [markdown]
 # # Saddle Road Spike Removal Test
 
-# matplotlib.use("module://ipympl.backend_nbagg")
-import hilltoppy
-
-# %%
-import matplotlib
 import matplotlib.pyplot as plt
 
 import hydrobot.data_acquisition as data_acquisition

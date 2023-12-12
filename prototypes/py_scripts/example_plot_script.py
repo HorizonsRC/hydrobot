@@ -1,9 +1,9 @@
 """Just a dummy script."""
-from hydrobot.plotter import gap_plotter, check_plotter
-import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import pandas as pd
 from annalist.annalist import Annalist
+
+from hydrobot.plotter import check_plotter, gap_plotter
 
 ann = Annalist()
 ann.configure("Processing Water Temp Data.", "Hot Dameul, Sameul!")

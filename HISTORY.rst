@@ -26,3 +26,24 @@ History
 ------------------
 
 * Fixed some tests and hopefully fixed the config file issue this time.
+
+0.3.0 (2023-12-11)
+------------------
+
+* Can delete data now.
+
+0.3.1 (2023-12-12)
+------------------
+
+* No longer exports the ending QC0 data.
+* Changed to pyproject.toml to get with the times.
+
+0.3.2 (2023-12-12)
+------------------
+
+* Fixed a documentation build bug
+
+0.3.2 (2023-12-12)
+------------------
+
+* Fixed a documentation build bug

@@ -36,10 +36,26 @@ hydrobot.filters module
    :undoc-members:
    :show-inheritance:
 
+hydrobot.plotter module
+-----------------------
+
+.. automodule:: hydrobot.plotter
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 hydrobot.processor module
 -------------------------
 
 .. automodule:: hydrobot.processor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+hydrobot.testicle module
+------------------------
+
+.. automodule:: hydrobot.testicle
    :members:
    :undoc-members:
    :show-inheritance:

@@ -3,9 +3,6 @@
 import matplotlib.pyplot as plt
 from hilltoppy import web_service as ws
 
-import hydrobot.data_acquisition as data_acquisition
-import hydrobot.utilities as utilities
-
 # Location and attributes of data to be obtained
 base_url = "http://hilltopdev.horizons.govt.nz/"
 base_hts = "RawLogger.hts"
@@ -15,7 +12,7 @@ measurement = "Stage"
 from_date = "2021-01-01 00:00"
 to_date = "2023-10-12 8:30"
 # Used only for the check data
-itemName = "Internal S.G."
+item_name = "Internal S.G."
 
 base_data = ws.get_data(
     base_url,
@@ -34,7 +31,7 @@ check_data = ws.get_data(
     from_date,
     to_date,
     tstype="Check",
-    itemName=itemName,
+    itemName=item_name,
 )
 
 

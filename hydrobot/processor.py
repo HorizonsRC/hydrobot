@@ -1,31 +1,39 @@
 """Processor class."""
 
+import warnings
+from functools import wraps
+
+import pandas as pd
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
-import warnings
-import pandas as pd
-from hydrobot import filters, data_acquisition, evaluator, data_sources, plotter
-from functools import wraps
+
+from hydrobot import data_acquisition, data_sources, evaluator, filters, plotter
 
 annalizer = Annalist()
 
+DEFAULTS = {
+    "high_clip": 20000,
+    "low_clip": 0,
+    "delta": 1000,
+    "span": 10,
+    "gap_limit": 12,
+}
+
 
 def stale_warning(method):
-    """
-    Decorate dangerous functions.
+    """Decorate dangerous functions.
 
     Check whether the data is stale, and warn user if so.
-    Warning will then take input form user to determine whether to proceed
-    or cancel.
-    Cancelling will return a null function, which returns None with no side
-    effects no matter what the input
+    Warning will then take input form user to determine whether to proceed or cancel.
+    Cancelling will return a null function, which returns None with no side effects no
+    matter what the input
 
     Parameters
     ----------
     method : function
-        A function that might have some problems if the parameters have been
-        changed but the data hasn't been updated
+        A function that might have some problems if the parameters have been changed
+        but the data hasn't been updated
 
     Returns
     -------
@@ -37,8 +45,9 @@ def stale_warning(method):
     def _impl(self, *method_args, **method_kwargs):
         if self._stale:
             warnings.warn(
-                "Warning: a key parameter of the data has changed but the "
-                "data itself has not been reloaded."
+                "Warning: a key parameter of the data has changed but the data itself "
+                "has not been reloaded.",
+                stacklevel=2,
             )
             while True:
                 user_input = input("Do you want to continue? y/n: ")
@@ -46,13 +55,10 @@ def stale_warning(method):
                 if user_input.lower() in ["y", "ye", "yes"]:
                     print("Continuing")
                     return method(self, *method_args, **method_kwargs)
-                elif user_input.lower() in ["n", "no"]:
+                if user_input.lower() in ["n", "no"]:
                     print("Function cancelled")
                     return lambda *x: None
-                else:
-                    print(
-                        "Type y or n (or yes or no, or even ye, all ye who enter here)"
-                    )
+                print("Type y or n (or yes or no, or even ye, all ye who enter here)")
         else:
             return method(self, *method_args, **method_kwargs)
 
@@ -78,6 +84,10 @@ class Processor:
         **kwargs,
     ):
         """Initialize a Processor instance."""
+        if defaults is None:
+            self._defaults = DEFAULTS
+        else:
+            self._defaults = defaults
         if check_hts is None:
             check_hts = standard_hts
         if check_measurement is None:
@@ -125,7 +135,6 @@ class Processor:
         self._frequency = frequency
         self._from_date = from_date
         self._to_date = to_date
-        self._defaults = defaults
         self._measurement = data_sources.get_measurement(standard_measurement)
 
         self._stale = True
@@ -134,10 +143,10 @@ class Processor:
         self._quality_series = pd.Series({})
 
         # Load data for the first time
-        # self.import_data()
+        self.import_data()
 
     @property
-    def site(self):
+    def site(self):  # type: ignore
         """Site property."""
         return self._site
 
@@ -148,7 +157,7 @@ class Processor:
         self._stale = True
 
     @property
-    def from_date(self):
+    def from_date(self):  # type: ignore
         """From_date property."""
         return self._from_date
 
@@ -159,7 +168,7 @@ class Processor:
         self._stale = True
 
     @property
-    def to_date(self):
+    def to_date(self):  # type: ignore
         """To_date property."""
         return self._to_date
 
@@ -170,7 +179,7 @@ class Processor:
         self._stale = True
 
     @property
-    def frequency(self):
+    def frequency(self):  # type: ignore
         """Frequency property."""
         return self._frequency
 
@@ -181,7 +190,7 @@ class Processor:
         self._stale = True
 
     @property
-    def base_url(self):
+    def base_url(self):  # type: ignore
         """Base_url property."""
         return self._base_url
 
@@ -192,7 +201,7 @@ class Processor:
         self._stale = True
 
     @property
-    def standard_hts(self):
+    def standard_hts(self):  # type: ignore
         """Standard_hts property."""
         return self._standard_hts
 
@@ -203,7 +212,7 @@ class Processor:
         self._stale = True
 
     @property
-    def check_hts(self):
+    def check_hts(self):  # type: ignore
         """Check_hts property."""
         return self._check_hts
 
@@ -214,7 +223,7 @@ class Processor:
         self._stale = True
 
     @property
-    def measurement(self):
+    def measurement(self):  # type: ignore
         """Measurement property."""
         return self._measurement
 
@@ -225,7 +234,7 @@ class Processor:
         self._stale = True
 
     @property
-    def defaults(self):
+    def defaults(self):  # type: ignore
         """Defaults property."""
         return self._defaults
 
@@ -236,7 +245,7 @@ class Processor:
         self._stale = True
 
     @property  # type: ignore
-    def standard_series(self):  # type: ignore
+    def standard_series(self) -> pd.Series:  # type: ignore
         """Standard dataset property."""  # type: ignore
         return self._standard_series  # type: ignore
 
@@ -246,7 +255,7 @@ class Processor:
         self._standard_series = value  # type: ignore
 
     @property
-    def check_series(self):
+    def check_series(self):  # type: ignore
         """Check dataset property."""
         return self._check_series
 
@@ -256,7 +265,7 @@ class Processor:
         self._check_series = value
 
     @property
-    def quality_series(self):
+    def quality_series(self):  # type: ignore
         """Quality dataset property."""
         return self._quality_series
 
@@ -286,13 +295,22 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            insert_series = insert_series.asfreq(self.frequency)
-            cleaned_series = filters.remove_range(
-                self.standard_series, insert_series.index[0], insert_series.index[-1]
-            )
-            self.standard_series = pd.concat(
-                [cleaned_series, insert_series]
-            ).sort_index()
+            insert_series = insert_series.asfreq(self._frequency, method="bfill")
+            slice_to_remove = self._standard_series.loc[
+                insert_series.index[0] : insert_series.index[-1]
+            ]
+            cleaned_series = self._standard_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.standard_series = pd.concat(
+                    [
+                        cleaned_series,
+                        insert_series,
+                    ]
+                ).sort_index()
         if check:
             insert_series = data_acquisition.get_series(
                 self._base_url,
@@ -303,11 +321,21 @@ class Processor:
                 to_date,
                 tstype="Check",
             )
-            slice_to_remove = self.check_series.loc[
+            slice_to_remove = self._check_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
-            cleaned_series = self.check_series.drop(slice_to_remove.index)
-            self.check_series = pd.concat([cleaned_series, insert_series]).sort_index()
+            cleaned_series = self._check_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.check_series = pd.concat(
+                    [
+                        cleaned_series,
+                        insert_series,
+                    ]
+                ).sort_index()
         if quality:
             insert_series = data_acquisition.get_series(
                 self._base_url,
@@ -318,13 +346,18 @@ class Processor:
                 to_date,
                 tstype="Quality",
             )
-            slice_to_remove = self.quality_series.loc[
+            slice_to_remove = self._quality_series.loc[
                 insert_series.index[0] : insert_series.index[-1]
             ]
-            cleaned_series = self.quality_series.drop(slice_to_remove.index)
-            self.quality_series = pd.concat(
-                [cleaned_series, insert_series]
-            ).sort_index()
+            cleaned_series = self._quality_series.drop(slice_to_remove.index)
+
+            # Pandas doesn't like concatting possibly empty series anymore.
+            # Test before upgrading pandas for release.
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.quality_series = pd.concat(
+                    [cleaned_series, insert_series]
+                ).sort_index()
 
     def import_data(
         self,
@@ -430,21 +463,21 @@ class Processor:
         """Delete range of data a la remove_range."""
         if tstype_standard:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
         if tstype_check:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
         if tstype_quality:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
 
     @ClassLogger
     def insert_missing_nans(self):
         """Set the data to the correct frequency, filled with NaNs as appropriate."""
-        self.standard_series = self.standard_series.asfreq(self.frequency)
+        self.standard_series = self._standard_series.asfreq(self._frequency)
 
     @ClassLogger
     def data_exporter(self, file_location):

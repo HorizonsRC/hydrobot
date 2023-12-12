@@ -1,3 +1,4 @@
+"""Test the data_sources module."""
 import pytest
 from annalist.annalist import Annalist
 
@@ -9,6 +10,7 @@ ann.configure()
 
 @pytest.mark.dependency(name="test_get_measurement_dict")
 def test_get_measurement_dict():
+    """Testing the measurement dictionary."""
     m_dict = data_sources.get_measurement_dict()
     assert isinstance(m_dict, dict), "not a dict somehow"
     assert (
@@ -21,6 +23,7 @@ def test_get_measurement_dict():
 
 @pytest.mark.dependency(depends=["test_get_measurement_dict"])
 def test_get_measurement():
+    """Testing the get_measurement method."""
     wt_meas = data_sources.get_measurement(
         "Water Temperature [Dissolved Oxygen sensor]"
     )
