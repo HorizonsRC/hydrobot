@@ -143,6 +143,7 @@ class Processor:
         self._quality_series = pd.Series({})
 
         # Load data for the first time
+        print("Hwhat")
         self.import_data()
 
     @property
@@ -299,9 +300,11 @@ class Processor:
             cleaned_series = filters.remove_range(
                 self._standard_series, insert_series.index[0], insert_series.index[-1]
             )
-            self.standard_series = pd.concat(
-                [cleaned_series, insert_series]
-            ).sort_index()
+            with warnings.catch_warnings():
+                warnings.simplefilter(action="ignore", category=FutureWarning)
+                self.standard_series = pd.concat(
+                    [cleaned_series, insert_series]
+                ).sort_index()
         if check:
             insert_series = data_acquisition.get_series(
                 self._base_url,

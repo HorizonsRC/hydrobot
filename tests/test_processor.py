@@ -113,8 +113,8 @@ def test_processor_init(
         "__init__ | Mid Stream at Cowtoilet Farm",
     ]
 
-    for i, out in enumerate(ann_output[::-1]):
-        assert out == correct[i], f"Failed on log number {i}"
+    for i, out in enumerate(ann_output[0:-1]):
+        assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
     assert pr.standard_series.loc["2020-10-01 08:00:00"] == pytest.approx(
