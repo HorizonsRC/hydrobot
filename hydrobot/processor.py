@@ -480,13 +480,20 @@ class Processor:
         self.standard_series = self._standard_series.asfreq(self._frequency)
 
     @ClassLogger
-    def data_exporter(self, file_location):
+    def data_exporter(self, file_location, trimmed=True):
         """Export data to csv."""
+        if trimmed:
+            std_series = filters.trim_series(
+                self._standard_series,
+                self._check_series,
+            )
+        else:
+            std_series = self._standard_series
         data_sources.series_export_to_csv(
             file_location,
             self._site,
             self._measurement.name,
-            self._standard_series,
+            std_series,
             self._check_series,
             self._quality_series,
         )

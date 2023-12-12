@@ -140,20 +140,23 @@ def remove_spikes(
     return gaps_series
 
 
-def remove_range(input_series: pd.Series, from_date, to_date):
+def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | None):
     """
     Remove data from series in given range.
 
     Returns the input series without data between from_date and to_date
-    inclusive
+    inclusive.
+
+    A None to_date will remove all data since the from_date (and vice versa).
+    A double None for to_date/from_date removes all data.
 
     Parameters
     ----------
     input_series : pd.Series
         The series to have a section removed
-    from_date : str
+    from_date : str | None
         Start of removed section
-    to_date : str
+    to_date : str | None
         End of removed section
 
     Returns
@@ -163,3 +166,31 @@ def remove_range(input_series: pd.Series, from_date, to_date):
     """
     slice_to_remove = input_series.loc[from_date:to_date]
     return input_series.drop(slice_to_remove.index)
+
+
+def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
+    """
+    Remove end of std series to match check series.
+
+    All data after the last entry in check_series is presumed to be unchecked,
+    so that data is removed from the std_series
+
+    If check_series is empty, returns the entire std_series
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be trimmed
+    check_series : pd.Series
+        Indicates the end of the usable data
+
+    Returns
+    -------
+    pd.Series
+        std_series with the unchecked elements trimmed
+    """
+    if check_series.empty:
+        return std_series
+    else:
+        last_check_date = check_series.index[-1]
+        return std_series.loc[:last_check_date]
