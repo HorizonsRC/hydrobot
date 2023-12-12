@@ -68,7 +68,7 @@ def stale_warning(method):
 class Processor:
     """docstring for Processor."""
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     def __init__(
         self,
         base_url: str,
@@ -150,7 +150,7 @@ class Processor:
         """Site property."""
         return self._site
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @site.setter
     def site(self, value):
         self._site = value
@@ -161,7 +161,7 @@ class Processor:
         """From_date property."""
         return self._from_date
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @from_date.setter
     def from_date(self, value):
         self._from_date = value
@@ -172,7 +172,7 @@ class Processor:
         """To_date property."""
         return self._to_date
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @to_date.setter
     def to_date(self, value):
         self._to_date = value
@@ -183,7 +183,7 @@ class Processor:
         """Frequency property."""
         return self._frequency
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @frequency.setter
     def frequency(self, value):
         self._frequency = value
@@ -194,7 +194,7 @@ class Processor:
         """Base_url property."""
         return self._base_url
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @base_url.setter
     def base_url(self, value):
         self._base_url = value
@@ -205,7 +205,7 @@ class Processor:
         """Standard_hts property."""
         return self._standard_hts
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @standard_hts.setter
     def standard_hts(self, value):
         self._standard_hts = value
@@ -216,7 +216,7 @@ class Processor:
         """Check_hts property."""
         return self._check_hts
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @check_hts.setter
     def check_hts(self, value):
         self._check_hts = value
@@ -227,7 +227,7 @@ class Processor:
         """Measurement property."""
         return self._measurement
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @measurement.setter
     def measurement(self, value):
         self._measurement = value
@@ -238,7 +238,7 @@ class Processor:
         """Defaults property."""
         return self._defaults
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @defaults.setter
     def defaults(self, value):
         self._defaults = value
@@ -249,7 +249,7 @@ class Processor:
         """Standard dataset property."""  # type: ignore
         return self._standard_series  # type: ignore
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @standard_series.setter  # type: ignore
     def standard_series(self, value):  # type: ignore
         self._standard_series = value  # type: ignore
@@ -259,7 +259,7 @@ class Processor:
         """Check dataset property."""
         return self._check_series
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @check_series.setter
     def check_series(self, value):
         self._check_series = value
@@ -269,13 +269,13 @@ class Processor:
         """Quality dataset property."""
         return self._quality_series
 
-    # @ClassLogger  # type: ignore
+    @ClassLogger  # type: ignore
     @quality_series.setter
     def quality_series(self, value):
         self._quality_series = value
         self._stale = True
 
-    # @ClassLogger
+    @ClassLogger
     def import_range(
         self,
         from_date: str | None,
@@ -295,9 +295,9 @@ class Processor:
                 to_date,
                 tstype="Standard",
             )
-            insert_series = insert_series.asfreq(self.frequency)
+            insert_series = insert_series.asfreq(self._frequency)
             cleaned_series = filters.remove_range(
-                self.standard_series, insert_series.index[0], insert_series.index[-1]
+                self._standard_series, insert_series.index[0], insert_series.index[-1]
             )
             self.standard_series = pd.concat(
                 [cleaned_series, insert_series]
@@ -364,7 +364,7 @@ class Processor:
         self._stale = False
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -374,7 +374,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def quality_encoder(self, gap_limit: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
@@ -387,7 +387,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """Clip data.
 
@@ -402,7 +402,7 @@ class Processor:
         self.check_series = filters.clip(self._check_series, low_clip, high_clip)
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """Remove Outliers.
 
@@ -418,7 +418,7 @@ class Processor:
         )
 
     # @stale_warning  # type: ignore
-    # @ClassLogger
+    @ClassLogger
     def remove_spikes(
         self,
         low_clip: float | None = None,
@@ -454,21 +454,21 @@ class Processor:
         """Delete range of data a la remove_range."""
         if tstype_standard:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
         if tstype_check:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
         if tstype_quality:
             self.standard_series = filters.remove_range(
-                self.standard_series, from_date, to_date
+                self._standard_series, from_date, to_date
             )
 
     @ClassLogger
     def insert_missing_nans(self):
         """Set the data to the correct frequency, filled with NaNs as appropriate."""
-        self.standard_series = self.standard_series.asfreq(self.frequency)
+        self.standard_series = self._standard_series.asfreq(self._frequency)
 
     @ClassLogger
     def data_exporter(self, file_location):

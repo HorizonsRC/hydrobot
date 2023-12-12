@@ -149,10 +149,10 @@ def test_find_nearest_time(gap_data):
     assert evaluator.find_nearest_time(
         gap_data, pd.Timestamp("2021-01-01 02:45")
     ) == pd.Timestamp("2021-01-01 02:45"), "end time not accepted"
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         # out of range forwards
         evaluator.find_nearest_time(gap_data, pd.Timestamp("2021-01-01 02:46"))
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         # out of range backwards
         evaluator.find_nearest_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
 
@@ -179,10 +179,10 @@ def test_find_nearest_valid_time(gap_data, qc_data):
     assert evaluator.find_nearest_valid_time(
         qc_data, pd.Timestamp("2021-01-01 02:45")
     ) == pd.Timestamp("2021-01-01 02:45"), "end time not accepted"
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         # out of range forwards
         evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2021-01-01 02:46"))
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         # out of range backwards
         evaluator.find_nearest_valid_time(gap_data, pd.Timestamp("2020-12-31 23:59"))
 
@@ -287,7 +287,7 @@ def test_missing_data_quality_code(gap_data, qc_data):
     assert new_qc[pd.Timestamp("2021-01-01 00:00")] == 100, "Starting gap not added"
     assert new_qc[pd.Timestamp("2021-01-01 00:15")] == 500, "Starting gap not closed"
     assert new_qc[pd.Timestamp("2021-01-01 02:30")] == 100, "Ending gap not added"
-    with pytest.raises(IndexError):
+    with pytest.raises(KeyError):
         # Mid-gap QC not replaced
         new_qc[pd.Timestamp("2021-01-01 01:30")]
     assert new_qc[pd.Timestamp("2021-01-01 02:00")] == 500, "Gap in middle not closed"

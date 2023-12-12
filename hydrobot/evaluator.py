@@ -66,8 +66,7 @@ def small_gap_closer(series, gap_limit):
             # Determine the range of rows to remove
             mask = ~series.index.isin(
                 series.index[
-                    series.index.get_loc(gap[0]) : series.index.get_loc(gap[0])
-                    + gap[1]
+                    series.index.get_loc(gap[0]) : series.index.get_loc(gap[0]) + gap[1]
                 ]
             )
             # Remove the bad rows
@@ -75,9 +74,7 @@ def small_gap_closer(series, gap_limit):
     return series
 
 
-def check_data_quality_code(
-    series, check_series, measurement, gap_limit=10800
-):
+def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
     """
     Quality Code Check Data.
 
@@ -109,15 +106,13 @@ def check_data_quality_code(
         or check_series.index[-1] > series.index[-1]
     ):
         # Can't check something that's not there
-        raise Exception("Error: check data out of range")
+        raise KeyError("Error: check data out of range")
     else:
         # Stuff actually working (hopefully)
         for check_time, check_value in check_series.items():
             adjusted_time = find_nearest_valid_time(series, check_time)
             if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
-                qc_value = measurement.find_qc(
-                    series[adjusted_time], check_value
-                )
+                qc_value = measurement.find_qc(series[adjusted_time], check_value)
             else:
                 qc_value = 200
             qc_series[check_time] = qc_value
@@ -150,18 +145,14 @@ def missing_data_quality_code(series, qc_series, gap_limit):
             end_idx = series.index.get_loc(gap[0]) + gap[1]
             # end of gap should recover the value from previous
             if end_idx < len(series):
-                prev_values = qc_series[
-                    qc_series.index <= series.index[end_idx]
-                ]
+                prev_values = qc_series[qc_series.index <= series.index[end_idx]]
                 prev_values = prev_values[prev_values > 100]
                 qc_series[series.index[end_idx]] = prev_values.iloc[-1]
 
             # getting rid of any stray QC codes in the middle
             drop_series = qc_series
             drop_series = drop_series[drop_series.index > gap[0]]
-            drop_series = drop_series[
-                drop_series.index <= series.index[end_idx - 1]
-            ]
+            drop_series = drop_series[drop_series.index <= series.index[end_idx - 1]]
             qc_series = qc_series.drop(drop_series.index)
 
             # start of gap
@@ -204,7 +195,7 @@ def find_nearest_time(series, dt):
     first_timestamp = series.index[0]
     last_timestamp = series.index[-1]
     if dt < first_timestamp or dt > last_timestamp:
-        raise IndexError("Timestamp not within data range")
+        raise KeyError("Timestamp not within data range")
 
     output_index = series.index.get_indexer([dt], method="nearest")
     return series.index[output_index][0]
@@ -231,7 +222,7 @@ def find_nearest_valid_time(series, dt):
     first_timestamp = series.index[0]
     last_timestamp = series.index[-1]
     if dt < first_timestamp or dt > last_timestamp:
-        raise IndexError("Timestamp not within data range")
+        raise KeyError("Timestamp not within data range")
 
     series = series.dropna()
     output_index = series.index.get_indexer([dt], method="nearest")
@@ -258,9 +249,7 @@ def base_data_qc_filter(base_series, qc_filter):
         The filtered data
 
     """
-    base_filter = qc_filter.reindex(base_series.index, method="ffill").fillna(
-        False
-    )
+    base_filter = qc_filter.reindex(base_series.index, method="ffill").fillna(False)
     return base_series[base_filter]
 
 
@@ -318,9 +307,7 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
     first_timestamp = base_series.index[0]
     last_timestamp = base_series.index[-1]
     total_time = last_timestamp - first_timestamp
-    print(
-        f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}"
-    )
+    print(f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}")
     print(
         f"Have check data for {check_series.index[-1] - first_timestamp} "
         f"(last check {check_series.index[-1]})"
@@ -372,9 +359,9 @@ def splitter(base_series, qc_series, frequency):
                 .asfreq(frequency)
             )
         else:
-            return_dict[qc] = base_data_meets_qc(
-                base_series, qc_series, qc
-            ).asfreq(frequency)
+            return_dict[qc] = base_data_meets_qc(base_series, qc_series, qc).asfreq(
+                frequency
+            )
     return return_dict
 
 
@@ -399,9 +386,7 @@ def quality_encoder(base_series, check_series, measurement, gap_limit):
         The modified QC series, indexed by the start time of the QC period
     """
     qc_series = check_data_quality_code(base_series, check_series, measurement)
-    qc_series = missing_data_quality_code(
-        base_series, qc_series, gap_limit=gap_limit
-    )
+    qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series.index.name = "Time"
     qc_series.name = "Value"
     return qc_series
