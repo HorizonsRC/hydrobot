@@ -249,3 +249,83 @@ def series_export_to_csv(
             + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
             + ".csv"
         )
+
+
+def hilltop_export(
+    file_location: str,
+    site_name: str,
+    measurement_name: str,
+    std_series: pd.Series,
+    check_series: pd.Series,
+    qc_series: pd.Series,
+):
+    """
+    Export the 3 main series to csv files ready to import into hilltop.
+
+    Parameters
+    ----------
+    file_location : str
+        Where the files are exported to
+    site_name : str
+        Site name
+    measurement_name : str
+        Measurement name
+    std_series : pd.Series
+        Standard series
+    check_series : pd.Series
+        Check series
+    qc_series : pd.Series
+        Quality code series
+
+    Returns
+    -------
+    None, but makes files
+    """
+    qc_series = qc_series.reindex(std_series.index, method="ffill")
+    std_series.name = "std"
+    qc_series.name = "qual"
+    export_df = std_series.to_frame().join(qc_series)
+    export_df.to_csv(
+        file_location
+        + "hilltop_combined_std_QC_"
+        + site_name
+        + "-"
+        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+        + ".csv"
+    )
+
+    keys = [
+        "Sitename",
+        "Inspection_Date",
+        "Inspection_Time",
+        "External S.G.",
+        "Recorder Time",
+        "Internal S.G.",
+        "Comment",
+    ]
+
+    export_check_df = pd.concat(
+        [
+            pd.Series(site_name, index=check_series.index),
+            pd.Series(
+                [str(dt.date()) for dt in check_series.index], index=check_series.index
+            ),
+            pd.Series(
+                [str(dt.time()) for dt in check_series.index], index=check_series.index
+            ),
+            check_series,
+            pd.Series(check_series.index, index=check_series.index),
+            pd.Series(-1, index=check_series.index),
+            pd.Series("hydrobot comment", index=check_series.index),
+        ],
+        axis=1,
+        keys=keys,
+    )
+    export_check_df.to_csv(
+        file_location
+        + "hilltop_check_import_"
+        + site_name
+        + "-"
+        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+        + ".csv"
+    )

@@ -489,7 +489,7 @@ class Processor:
             )
         else:
             std_series = self._standard_series
-        data_sources.series_export_to_csv(
+        data_sources.hilltop_export(
             file_location,
             self._site,
             self._measurement.name,
