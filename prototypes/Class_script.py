@@ -20,6 +20,7 @@ processing_parameters = {
         "delta": 1000,
         "span": 10,
         "gap_limit": 12,
+        "max_qc": 600,
     },
 }
 

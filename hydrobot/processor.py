@@ -3,6 +3,7 @@
 import warnings
 from functools import wraps
 
+import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
@@ -18,6 +19,7 @@ DEFAULTS = {
     "delta": 1000,
     "span": 10,
     "gap_limit": 12,
+    "max_qc": np.NaN,
 }
 
 
@@ -28,6 +30,8 @@ def stale_warning(method):
     Warning will then take input form user to determine whether to proceed or cancel.
     Cancelling will return a null function, which returns None with no side effects no
     matter what the input
+
+    Currently broken
 
     Parameters
     ----------
@@ -384,15 +388,18 @@ class Processor:
 
     # @stale_warning  # type: ignore
     @ClassLogger
-    def quality_encoder(self, gap_limit: int | None = None):
+    def quality_encoder(self, gap_limit: int | None = None, max_qc: int | None = None):
         """Gap closer implementation."""
         if gap_limit is None:
             gap_limit = self._defaults["gap_limit"]
+        if max_qc is None:
+            max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
         self.quality_series = evaluator.quality_encoder(
             self._standard_series,
             self._check_series,
             self._measurement,
             gap_limit=gap_limit,
+            max_qc=max_qc,
         )
 
     # @stale_warning  # type: ignore

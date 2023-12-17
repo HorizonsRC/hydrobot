@@ -365,7 +365,28 @@ def splitter(base_series, qc_series, frequency):
     return return_dict
 
 
-def quality_encoder(base_series, check_series, measurement, gap_limit):
+def max_qc_limiter(qc_series, max_qc):
+    """
+    Enforce max_qc on a QC series.
+
+    Replaces all values with QCs above max_qc with max_qc
+
+    Parameters
+    ----------
+    qc_series : pd.Series
+        The series to be limited.
+    max_qc : numerical
+        maximum allowed value. None imposes no limit.
+
+    Returns
+    -------
+    pd.Series
+        qc_series with too high QCs limited to max_qc
+    """
+    return qc_series.clip(np.NaN, max_qc)
+
+
+def quality_encoder(base_series, check_series, measurement, gap_limit, max_qc=np.NaN):
     """
     Return complete QC series.
 
@@ -379,6 +400,8 @@ def quality_encoder(base_series, check_series, measurement, gap_limit):
         Handler for QC comparisons
     gap_limit
         Maximum size of gaps which will be ignored
+    max_qc
+        Maximum allowed QC value
 
     Returns
     -------
@@ -387,6 +410,7 @@ def quality_encoder(base_series, check_series, measurement, gap_limit):
     """
     qc_series = check_data_quality_code(base_series, check_series, measurement)
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
+    qc_series = max_qc_limiter(qc_series, max_qc)
     qc_series.index.name = "Time"
     qc_series.name = "Value"
     return qc_series
