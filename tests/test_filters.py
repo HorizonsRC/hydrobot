@@ -164,6 +164,15 @@ def test_remove_range(raw_data):
     e = filters.remove_range(raw_data, None, None)
     assert e.empty, "double None causes error"
 
+    f = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", True)
+    assert f.isna().sum() == 1, "gap failed to be inserted for true case"
+
+    g = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", 2)
+    assert g.isna().sum() == 0, "gap inserted when gap threshold too big"
+
+    h = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", 1)
+    assert h.isna().sum() == 1, "gap not inserted when gap threshold is met"
+
 
 def test_trim_series(raw_data):
     """Testing a trimmed series."""

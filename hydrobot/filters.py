@@ -140,7 +140,12 @@ def remove_spikes(
     return gaps_series
 
 
-def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | None):
+def remove_range(
+    input_series: pd.Series,
+    from_date: str | None,
+    to_date: str | None,
+    insert_gaps: bool | int = False,
+):
     """
     Remove data from series in given range.
 
@@ -150,6 +155,8 @@ def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | 
     A None to_date will remove all data since the from_date (and vice versa).
     A double None for to_date/from_date removes all data.
 
+    Inserts gaps or not depending on insert_gaps
+
     Parameters
     ----------
     input_series : pd.Series
@@ -158,6 +165,10 @@ def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | 
         Start of removed section
     to_date : str | None
         End of removed section
+    insert_gaps : bool or int
+        If True, inserts a gap.
+        If False, does not insert a gap.
+        If int, will insert gaps if missing more data points than insert_gaps
 
     Returns
     -------
@@ -165,7 +176,14 @@ def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | 
         The series with relevant slice removed
     """
     slice_to_remove = input_series.loc[from_date:to_date]
-    return input_series.drop(slice_to_remove.index)
+    series_to_return = input_series.drop(slice_to_remove.index)
+    if isinstance(insert_gaps, bool):
+        if insert_gaps:
+            series_to_return[from_date] = np.NaN
+    else:
+        if len(slice_to_remove) > insert_gaps:
+            series_to_return[from_date] = np.NaN
+    return series_to_return.sort_index()
 
 
 def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
