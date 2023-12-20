@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-class Measurement:
+class QualityCodeEvaluator:
     """Basic measurement only compares magnitude of differences."""
 
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
@@ -54,7 +54,7 @@ class Measurement:
         return 400
 
 
-class TwoLevelMeasurement(Measurement):
+class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
     """Measurement for standards such as water level.
 
     Fixed error up to given threshold, percentage error after that.
@@ -87,7 +87,7 @@ class TwoLevelMeasurement(Measurement):
         name : str
             Name of the data source
         """
-        Measurement.__init__(self, qc_500_limit, qc_600_limit)
+        QualityCodeEvaluator.__init__(self, qc_500_limit, qc_600_limit)
         # self.qc_500_limit = qc_500_limit
         # self.qc_600_limit = qc_600_limit
         self.qc_500_percent = qc_500_percent
@@ -147,7 +147,9 @@ def get_measurement_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = Measurement(float(row[1]), float(row[2]), row[0])
+            measurement_dict[row[0]] = QualityCodeEvaluator(
+                float(row[1]), float(row[2]), row[0]
+            )
         csv_file.close()
 
     # Two stage Measurements
@@ -156,7 +158,7 @@ def get_measurement_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = TwoLevelMeasurement(
+            measurement_dict[row[0]] = TwoLevelQualityCodeEvaluator(
                 float(row[1]),
                 float(row[2]),
                 float(row[3]),
@@ -181,7 +183,7 @@ def get_measurement(measurement_name):
 
     Returns
     -------
-    Measurement
+    QualityCodeEvaluator
         The Measurement class initiated with the standard config data
     """
     m_dict = get_measurement_dict()
@@ -249,3 +251,83 @@ def series_export_to_csv(
             + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
             + ".csv"
         )
+
+
+def hilltop_export(
+    file_location: str,
+    site_name: str,
+    measurement_name: str,
+    std_series: pd.Series,
+    check_series: pd.Series,
+    qc_series: pd.Series,
+):
+    """
+    Export the 3 main series to csv files ready to import into hilltop.
+
+    Parameters
+    ----------
+    file_location : str
+        Where the files are exported to
+    site_name : str
+        Site name
+    measurement_name : str
+        Measurement name
+    std_series : pd.Series
+        Standard series
+    check_series : pd.Series
+        Check series
+    qc_series : pd.Series
+        Quality code series
+
+    Returns
+    -------
+    None, but makes files
+    """
+    qc_series = qc_series.reindex(std_series.index, method="ffill")
+    std_series.name = "std"
+    qc_series.name = "qual"
+    export_df = std_series.to_frame().join(qc_series)
+    export_df.to_csv(
+        file_location
+        + "hilltop_combined_std_QC_"
+        + site_name
+        + "-"
+        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+        + ".csv"
+    )
+
+    keys = [
+        "Sitename",
+        "Inspection_Date",
+        "Inspection_Time",
+        "External S.G.",
+        "Recorder Time",
+        "Internal S.G.",
+        "Comment",
+    ]
+
+    export_check_df = pd.concat(
+        [
+            pd.Series(site_name, index=check_series.index),
+            pd.Series(
+                [str(dt.date()) for dt in check_series.index], index=check_series.index
+            ),
+            pd.Series(
+                [str(dt.time()) for dt in check_series.index], index=check_series.index
+            ),
+            check_series,
+            pd.Series(check_series.index, index=check_series.index),
+            pd.Series(-1, index=check_series.index),
+            pd.Series("hydrobot comment", index=check_series.index),
+        ],
+        axis=1,
+        keys=keys,
+    )
+    export_check_df.to_csv(
+        file_location
+        + "hilltop_check_import_"
+        + site_name
+        + "-"
+        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
+        + ".csv"
+    )

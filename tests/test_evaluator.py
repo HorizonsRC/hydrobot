@@ -189,7 +189,7 @@ def test_find_nearest_valid_time(gap_data, qc_data):
 
 def test_check_data_quality_code(raw_data, check_data):
     """Test check data quality code function."""
-    meas = data_sources.Measurement(10, 2.0)
+    meas = data_sources.QualityCodeEvaluator(10, 2.0)
     with pytest.warns(Warning):
         assert (
             len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 1
@@ -291,3 +291,19 @@ def test_missing_data_quality_code(gap_data, qc_data):
         # Mid-gap QC not replaced
         new_qc[pd.Timestamp("2021-01-01 01:30")]
     assert new_qc[pd.Timestamp("2021-01-01 02:00")] == 500, "Gap in middle not closed"
+
+
+def test_max_qc_limiter(qc_data):
+    """Test max_QC_limiter."""
+    limited_qcs = evaluator.max_qc_limiter(qc_data, 500)
+    assert (limited_qcs == 500).all(), "maximum not enforced"
+    assert len(limited_qcs) == len(qc_data), "data going missing or being added"
+    assert (limited_qcs.index == qc_data.index).all(), "index modified"
+
+    unlimited_power = evaluator.max_qc_limiter(qc_data, 600)
+    assert (unlimited_power == qc_data).all(), "maximum over enforced"
+    assert len(unlimited_power) == len(qc_data), "data going missing or being added"
+    assert (unlimited_power.index == qc_data.index).all(), "index modified"
+
+    whoops_maybe_the_power_had_a_limit = evaluator.max_qc_limiter(pd.Series({}), 600)
+    assert (whoops_maybe_the_power_had_a_limit == pd.Series({})).all(), "trivial case"
