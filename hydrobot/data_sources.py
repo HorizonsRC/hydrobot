@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 
 
-class Measurement:
+class QualityCodeEvaluator:
     """Basic measurement only compares magnitude of differences."""
 
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
@@ -54,7 +54,7 @@ class Measurement:
         return 400
 
 
-class TwoLevelMeasurement(Measurement):
+class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
     """Measurement for standards such as water level.
 
     Fixed error up to given threshold, percentage error after that.
@@ -87,7 +87,7 @@ class TwoLevelMeasurement(Measurement):
         name : str
             Name of the data source
         """
-        Measurement.__init__(self, qc_500_limit, qc_600_limit)
+        QualityCodeEvaluator.__init__(self, qc_500_limit, qc_600_limit)
         # self.qc_500_limit = qc_500_limit
         # self.qc_600_limit = qc_600_limit
         self.qc_500_percent = qc_500_percent
@@ -147,7 +147,9 @@ def get_measurement_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = Measurement(float(row[1]), float(row[2]), row[0])
+            measurement_dict[row[0]] = QualityCodeEvaluator(
+                float(row[1]), float(row[2]), row[0]
+            )
         csv_file.close()
 
     # Two stage Measurements
@@ -156,7 +158,7 @@ def get_measurement_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = TwoLevelMeasurement(
+            measurement_dict[row[0]] = TwoLevelQualityCodeEvaluator(
                 float(row[1]),
                 float(row[2]),
                 float(row[3]),
@@ -181,7 +183,7 @@ def get_measurement(measurement_name):
 
     Returns
     -------
-    Measurement
+    QualityCodeEvaluator
         The Measurement class initiated with the standard config data
     """
     m_dict = get_measurement_dict()

@@ -189,7 +189,7 @@ def test_find_nearest_valid_time(gap_data, qc_data):
 
 def test_check_data_quality_code(raw_data, check_data):
     """Test check data quality code function."""
-    meas = data_sources.Measurement(10, 2.0)
+    meas = data_sources.QualityCodeEvaluator(10, 2.0)
     with pytest.warns(Warning):
         assert (
             len(evaluator.check_data_quality_code(raw_data, pd.Series({}), meas)) == 1
