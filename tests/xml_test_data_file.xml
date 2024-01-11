@@ -1,0 +1,444 @@
+<?xml version="1.0" ?>
+<Hilltop>
+    <Agency>Horizons</Agency>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="General Nastiness" NumItems="1">
+            <TSType>StdSeries</TSType>
+            <DataType>SimpleTimeSeries</DataType>
+            <Interpolation>Incremental</Interpolation>
+            <ItemFormat>0</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>General Nastiness</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units>out of 10</Units>
+                <Format>#.###</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619302400 10</V>
+            <V>2619302760 10</V>
+            <V>2619303120 10</V>
+            <V>2619303480 10</V>
+            <V>2619303840 10</V>
+            <V>2619304200 10</V>
+            <V>2619304560 10</V>
+            <V>2619304920 10</V>
+            <V>2619305280 10</V>
+            <V>2619305640 10</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="General Nastiness" NumItems="1">
+            <TSType>StdQualSeries</TSType>
+            <DataType>SimpleTimeSeries</DataType>
+            <Interpolation>Event</Interpolation>
+            <ItemFormat>0</ItemFormat>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619302400 500</V>
+            <V>2636370000 0</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="General Nastiness" NumItems="4">
+            <TSType>CheckSeries</TSType>
+            <DataType>SimpleTimeSeries</DataType>
+            <Interpolation>Discrete</Interpolation>
+            <ItemFormat>140</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Check Gauge Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>mm</Units>
+                <Format>#.#</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="2">
+                <ItemName>Recorder Time</ItemName>
+                <ItemFormat>D</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="3">
+                <ItemName>Recorder Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="4">
+                <ItemName>Comment</ItemName>
+                <ItemFormat>S</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="4">
+            <E>
+                <T>2620801800</T>
+                <I1>537000</I1>
+                <I2>2620801800</I2>
+                <I3>677000</I3>
+                <I4>
+                    Site has been replaced by a dairy selling really good real fruit ice cream.
+                </I4>
+            </E>
+            <E>
+                <T>2627391240</T>
+                <I1>309000</I1>
+                <I2>2627391240</I2>
+                <I3>303000</I3>
+                <I4>
+                    Was chased from site by furious peacock.
+                </I4>
+            </E>
+            <E>
+                <T>2631619080</T>
+                <I1>176000</I1>
+                <I2>2631619080</I2>
+                <I3>173000</I3>
+                <I4>Ute stolen. Walking back to regional house.</I4>
+            </E>
+            <E>
+                <T>2636370000</T>
+                <I1>79000</I1>
+                <I2>2636370000</I2>
+                <I3>80500</I3>
+                <I4>Can't even begin to describe the carnage I have witness. I can still hear the screams.</I4>
+            </E>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Atmospheric Pressure" NumItems="1">
+            <TSType>StdSeries</TSType>
+            <DataType>Pressure</DataType>
+            <Interpolation>Incremental</Interpolation>
+            <ItemFormat>0</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Atmospheric Pressure</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>mm</Units>
+                <Format>####.#</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 500</V>
+            <V>2619665107 500</V>
+            <V>2619667154 500</V>
+            <V>2619667846 500</V>
+            <V>2619671108 500</V>
+            <V>2619672332 500</V>
+            <V>2619787338 500</V>
+            <V>2619864917 500</V>
+            <V>2619866134 500</V>
+            <V>2619866482 500</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Atmospheric Pressure" NumItems="1">
+            <TSType>StdQualSeries</TSType>
+            <DataType>Pressure</DataType>
+            <Interpolation>Event</Interpolation>
+            <ItemFormat>0</ItemFormat>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 0</V>
+            <V>2636371657 200</V>
+            <V>2649661200 200</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Atmospheric Pressure" NumItems="4">
+            <TSType>CheckSeries</TSType>
+            <DataType>Pressure</DataType>
+            <Interpolation>Discrete</Interpolation>
+            <ItemFormat>140</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Check Gauge Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>mm</Units>
+                <Format>#.#</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="2">
+                <ItemName>Recorder Time</ItemName>
+                <ItemFormat>D</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="3">
+                <ItemName>Recorder Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="4">
+                <ItemName>Comment</ItemName>
+                <ItemFormat>S</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="4">
+            <E>
+                <T>2620801800</T>
+                <I1>537000</I1>
+                <I2>2620801800</I2>
+                <I3>677000</I3>
+                <I4>
+                    Site is completely covered in 3 metres of cow shit. Just another Tuesday.
+                </I4>
+            </E>
+            <E>
+                <T>2627391240</T>
+                <I1>309000</I1>
+                <I2>2627391240</I2>
+                <I3>303000</I3>
+                <I4>
+                    The horrors I have seen here will haunt me for the rest of my life.
+                </I4>
+            </E>
+            <E>
+                <T>2631619080</T>
+                <I1>176000</I1>
+                <I2>2631619080</I2>
+                <I3>173000</I3>
+                <I4>Stumbled upon a nudist colony.</I4>
+            </E>
+            <E>
+                <T>2636370000</T>
+                <I1>79000</I1>
+                <I2>2636370000</I2>
+                <I3>80500</I3>
+                <I4>Nice weather.</I4>
+            </E>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Number of Actual Whole Turds Floating By" NumItems="1">
+            <TSType>StdSeries</TSType>
+            <DataType>Turds per Second</DataType>
+            <Interpolation>Incremental</Interpolation>
+            <ItemFormat>0</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Number of Actual Whole Turds Floating By</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>t/s</Units>
+                <Format>####.#</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 500</V>
+            <V>2619665107 500</V>
+            <V>2619667154 500</V>
+            <V>2619667846 500</V>
+            <V>2619671108 500</V>
+            <V>2619672332 500</V>
+            <V>2619787338 500</V>
+            <V>2619864917 500</V>
+            <V>2619866134 500</V>
+            <V>2619866482 500</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Number of Actual Whole Turds Floating By" NumItems="1">
+            <TSType>StdQualSeries</TSType>
+            <DataType>Turds per Second</DataType>
+            <Interpolation>Event</Interpolation>
+            <ItemFormat>0</ItemFormat>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 0</V>
+            <V>2636371657 200</V>
+            <V>2649661200 200</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Number of Actual Whole Turds Floating By" NumItems="4">
+            <TSType>CheckSeries</TSType>
+            <DataType>Turds per Second</DataType>
+            <Interpolation>Discrete</Interpolation>
+            <ItemFormat>140</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Check Gauge Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>t/s</Units>
+                <Format>#.#</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="2">
+                <ItemName>Recorder Time</ItemName>
+                <ItemFormat>D</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="3">
+                <ItemName>Recorder Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="4">
+                <ItemName>Comment</ItemName>
+                <ItemFormat>S</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="4">
+            <E>
+                <T>2620801800</T>
+                <I1>537000</I1>
+                <I2>2620801800</I2>
+                <I3>677000</I3>
+                <I4>
+                    Accidentally opened a portal to the Fey Realm. DO NOT ENTER THE POOL WITH THE NYMPHS.
+                </I4>
+            </E>
+            <E>
+                <T>2627391240</T>
+                <I1>309000</I1>
+                <I2>2627391240</I2>
+                <I3>303000</I3>
+                <I4>
+                    Friendly cow. Possibly a spy.
+                </I4>
+            </E>
+            <E>
+                <T>2631619080</T>
+                <I1>176000</I1>
+                <I2>2631619080</I2>
+                <I3>173000</I3>
+                <I4>Had a cold shiver run down my spine. Should not have come here at 3am.</I4>
+            </E>
+            <E>
+                <T>2636370000</T>
+                <I1>79000</I1>
+                <I2>2636370000</I2>
+                <I3>80500</I3>
+                <I4>Met an old woman who claimed this site was once an ancient native american burial ground. Seems unlikely.</I4>
+            </E>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Dead Cow Concentration" NumItems="1">
+            <TSType>StdSeries</TSType>
+            <DataType>ppm</DataType>
+            <Interpolation>Incremental</Interpolation>
+            <ItemFormat>0</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Dead Cow Concentration</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>t/s</Units>
+                <Format>####.#</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 500</V>
+            <V>2619665107 500</V>
+            <V>2619667154 500</V>
+            <V>2619667846 500</V>
+            <V>2619671108 500</V>
+            <V>2619672332 500</V>
+            <V>2619787338 500</V>
+            <V>2619864917 500</V>
+            <V>2619866134 500</V>
+            <V>2619866482 500</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Dead Cow Concentration" NumItems="1">
+            <TSType>StdQualSeries</TSType>
+            <DataType>Dead Cows</DataType>
+            <Interpolation>Event</Interpolation>
+            <ItemFormat>0</ItemFormat>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="1">
+            <V>2619651888 0</V>
+            <V>2636371657 200</V>
+            <V>2649661200 200</V>
+        </Data>
+    </Measurement>
+    <Measurement SiteName="Mid Stream at Cowtoilet Farm">
+        <DataSource Name="Dead Cow Concentration" NumItems="4">
+            <TSType>CheckSeries</TSType>
+            <DataType>Dead Cows</DataType>
+            <Interpolation>Discrete</Interpolation>
+            <ItemFormat>140</ItemFormat>
+            <ItemInfo ItemNumber="1">
+                <ItemName>Check Gauge Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1000</Divisor>
+                <Units>t/s</Units>
+                <Format>#.#</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="2">
+                <ItemName>Recorder Time</ItemName>
+                <ItemFormat>D</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="3">
+                <ItemName>Recorder Total</ItemName>
+                <ItemFormat>I</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+            <ItemInfo ItemNumber="4">
+                <ItemName>Comment</ItemName>
+                <ItemFormat>S</ItemFormat>
+                <Divisor>1</Divisor>
+                <Units></Units>
+                <Format>###</Format>
+            </ItemInfo>
+        </DataSource>
+        <Data DateFormat="mowsecs" NumItems="4">
+            <E>
+                <T>2620801800</T>
+                <I1>537000</I1>
+                <I2>2620801800</I2>
+                <I3>677000</I3>
+                <I4>
+                    Carbon offsets are a massive scam.
+                </I4>
+            </E>
+            <E>
+                <T>2627391240</T>
+                <I1>309000</I1>
+                <I2>2627391240</I2>
+                <I3>303000</I3>
+                <I4>
+                    "Carbon credits" are nothing more than a free ticket to pollute in return for a promise that a piece of forest is preserved.
+                </I4>
+            </E>
+            <E>
+                <T>2631619080</T>
+                <I1>176000</I1>
+                <I2>2631619080</I2>
+                <I3>173000</I3>
+                <I4>PRESERVED, not restored. In most cases, all the money that does not go towards middlemen, go towards preventing an already protected forest from being cut down based on massively overblown population estimates.</I4>
+            </E>
+            <E>
+                <T>2636370000</T>
+                <I1>79000</I1>
+                <I2>2636370000</I2>
+                <I3>80500</I3>
+                <I4>In essence: "Can we pollute? We will give some money to this person who will use that money to overestimate the potential damage to a distant rainforest that is already protected. The small amount of leftover money can then go to the corrupt government of that small third world country."
+                Nothing is done, no changes are made, some rich people get richer.</I4>
+            </E>
+        </Data>
+    </Measurement>
+</Hilltop>

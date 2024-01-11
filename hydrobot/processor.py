@@ -8,7 +8,13 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
-from hydrobot import data_acquisition, data_sources, evaluator, filters, plotter
+from hydrobot import (
+    data_acquisition,
+    data_sources,
+    evaluator,
+    filters,
+    plotter,
+)
 
 annalizer = Annalist()
 
