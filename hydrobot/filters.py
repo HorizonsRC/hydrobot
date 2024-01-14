@@ -1,5 +1,6 @@
 """General filtering utilities."""
 
+
 import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
@@ -101,7 +102,7 @@ def remove_outliers(input_data, span: int, delta: float):
 
 
 def remove_spikes(
-    input_data, span: int, low_clip: float, high_clip: float, delta: float
+    input_data: pd.Series, span: int, low_clip: float, high_clip: float, delta: float
 ):
     """Remove spikes.
 
@@ -212,3 +213,37 @@ def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     else:
         last_check_date = check_series.index[-1]
         return std_series.loc[:last_check_date]
+
+
+def flatline_value_remover(
+    series: pd.Series,
+    span: int = 3,
+):
+    """
+    Remove repeated (flatlined) values in a series.
+
+    Examines the data to see if any values are exactly repeated over a period.
+    Where values exactly repeat it probably indicates a broken instrument.
+    Replaces all values after the first with NaN.
+    Uses math.isclose() to measure float "equality"
+
+    Parameters
+    ----------
+    series : pd.Series
+        Data to examine for flatlined values
+    span : int
+        Amount of allowed repeated values in a row before duplicates are removed
+
+    Returns
+    -------
+    pd.Series
+        Data with the flatlined values NaN'ed
+    """
+    # pandas bad day
+    consecutive_values = (
+        series.groupby((series != series.shift()).cumsum()).cumcount() + 1
+    )
+    working_step = consecutive_values.loc[~consecutive_values.between(2, span)]
+    length_filter = working_step.reindex(consecutive_values.index).bfill()
+    filtered_data = series[length_filter < span]
+    return filtered_data.reindex(series.index)

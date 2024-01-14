@@ -463,6 +463,13 @@ class Processor:
         )
 
     @ClassLogger
+    def remove_flatlined_values(self, span: float = 3):
+        """Remove repeated values in std series a la flatline_value_remover()."""
+        self.standard_series = filters.flatline_value_remover(
+            self.standard_series, span=span
+        )
+
+    @ClassLogger
     def delete_range(
         self,
         from_date,

@@ -53,6 +53,7 @@ data.import_data()
 data.clip()
 data.remove_spikes()
 
+data.remove_flatlined_values()
 data.delete_range("2021-06-29 11:00", "2021-06-30 11:25")
 data.insert_missing_nans()
 

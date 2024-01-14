@@ -27,6 +27,22 @@ fbewma_data_dict = {
     "2021-01-01 00:20": 5.032258,
 }
 
+constant_data_dict = {
+    "2021-01-01 00:00": 1.9,
+    "2021-01-01 00:05": 3.0,
+    "2021-01-01 00:10": 3.0,
+    "2021-01-01 00:15": 3.0,
+    "2021-01-01 00:20": 3.00001,
+    "2021-01-01 00:25": 3.001,
+    "2021-01-01 00:30": 3.1,
+    "2021-01-01 00:35": 6.1,
+    "2021-01-01 00:40": 6.1,
+    "2021-01-01 00:45": 6.1,
+    "2021-01-01 00:50": 6.1,
+    "2021-01-01 00:55": 6.1,
+    "2021-01-01 01:00": 6.2,
+}
+
 
 @pytest.fixture()
 def raw_data():
@@ -54,6 +70,15 @@ def fbewma_data():
     Running on one_outlier_data with span=4
     """
     return pd.Series(fbewma_data_dict)
+
+
+@pytest.fixture()
+def constant_data():
+    """Mock function returning correct values for fbewma.
+
+    Running on one_outlier_data with span=4
+    """
+    return pd.Series(constant_data_dict)
 
 
 def insert_fbewma_data_gaps(gaps):
@@ -207,3 +232,70 @@ def test_trim_series(raw_data):
     )
     big_trim = filters.trim_series(raw_data, raw_check)
     assert len(big_trim) == 2, "off-centre check data screws things up somehow"
+
+
+def test_flatline_value_remover(raw_data, constant_data):
+    """Testing removal of flatlining values."""
+    assert raw_data.equals(
+        filters.flatline_value_remover(raw_data)
+    ), "Changing data it shouldn't"
+    assert raw_data.equals(
+        filters.flatline_value_remover(raw_data, 100)
+    ), "Changing data it shouldn't when span is too big"
+
+    removed_3 = filters.flatline_value_remover(constant_data, 3)
+    assert len(removed_3) == len(constant_data), "shortened data for removed_3"
+    assert math.isclose(
+        removed_3["2021-01-01 00:35"], 6.1
+    ), "Incorrectly removed first consec value"
+    assert math.isnan(
+        removed_3["2021-01-01 00:40"]
+    ), "Failed to remove second consec value"
+    assert math.isnan(
+        removed_3["2021-01-01 00:45"]
+    ), "Failed to remove third consec value"
+    assert math.isnan(
+        removed_3["2021-01-01 00:50"]
+    ), "Failed to remove fourth consec value"
+    assert math.isnan(
+        removed_3["2021-01-01 00:55"]
+    ), "Failed to remove fifth consec value"
+    assert math.isclose(
+        removed_3["2021-01-01 01:00"], 6.2
+    ), "Incorrectly removed first nonconsec value"
+    assert math.isclose(
+        removed_3["2021-01-01 00:10"], 3.0
+    ), "Incorrectly removed value from too short sequence"
+
+    removed_2 = filters.flatline_value_remover(constant_data, 2)
+    assert len(removed_2) == len(constant_data), "shortened data for removed_2"
+    assert math.isclose(
+        removed_2["2021-01-01 00:05"], 3.0
+    ), "Incorrectly removed value from start of short sequence"
+    assert math.isnan(
+        removed_2["2021-01-01 00:10"]
+    ), "Failed to consec value from short sequence"
+    assert math.isnan(
+        removed_2["2021-01-01 00:15"]
+    ), "Failed to consec value from short sequence"
+    assert math.isclose(
+        removed_2["2021-01-01 00:20"], 3.00001
+    ), "Incorrectly removed value from end of short sequence"
+    assert math.isclose(
+        removed_2["2021-01-01 00:35"], 6.1
+    ), "Incorrectly removed first consec value2"
+    assert math.isnan(
+        removed_2["2021-01-01 00:40"]
+    ), "Failed to remove second consec value"
+    assert math.isnan(
+        removed_2["2021-01-01 00:45"]
+    ), "Failed to remove third consec value2"
+    assert math.isnan(
+        removed_2["2021-01-01 00:50"]
+    ), "Failed to remove fourth consec value2"
+    assert math.isnan(
+        removed_2["2021-01-01 00:55"]
+    ), "Failed to remove fifth consec value2"
+    assert math.isclose(
+        removed_2["2021-01-01 01:00"], 6.2
+    ), "Incorrectly removed first nonconsec value2"

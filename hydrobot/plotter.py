@@ -152,7 +152,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
             split_data[qc],
             label=f"QC{qc}",
             color=qc_colour(qc),
-            marker=f"{'x' if qc==100 else ''}",
+            marker=f"{'x' if qc==100 else '.'}",
         )
     plt.plot(
         check_series.index,
