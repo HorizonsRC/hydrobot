@@ -147,6 +147,7 @@ class Processor:
 
         self._stale = True
         self._standard_series = pd.Series({})
+        self._raw_series = pd.Series({})
         self._check_series = pd.Series({})
         self._quality_series = pd.Series({})
 
@@ -261,6 +262,11 @@ class Processor:
     @standard_series.setter  # type: ignore
     def standard_series(self, value):  # type: ignore
         self._standard_series = value  # type: ignore
+
+    @property
+    def raw_series(self):  # type: ignore
+        """raw_series property."""
+        return self._raw_series
 
     @property
     def check_series(self):  # type: ignore
@@ -378,6 +384,7 @@ class Processor:
         self.check_series = pd.Series({})
         self.quality_series = pd.Series({})
         self.import_range(self._from_date, self._to_date, standard, check, quality)
+        self._raw_series = self.standard_series
         self._stale = False
 
     # @stale_warning  # type: ignore
@@ -529,6 +536,17 @@ class Processor:
         """Implement qc_plotter()."""
         plotter.qc_plotter(
             self._standard_series,
+            self._check_series,
+            self._quality_series,
+            self._frequency,
+            show=show,
+        )
+
+    def plot_comparison_qc_series(self, show=True):
+        """Implement comparison_qc_plotter()."""
+        plotter.comparison_qc_plotter(
+            self._standard_series,
+            self._raw_series,
             self._check_series,
             self._quality_series,
             self._frequency,

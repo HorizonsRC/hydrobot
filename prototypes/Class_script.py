@@ -51,9 +51,10 @@ data = Processor(
 data.import_data()
 
 data.clip()
-data.remove_spikes()
+
 
 data.remove_flatlined_values()
+data.remove_spikes()
 data.delete_range("2021-06-29 11:00", "2021-06-30 11:25")
 data.insert_missing_nans()
 
@@ -64,6 +65,7 @@ data.data_exporter("output_dump/")
 
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
-    data.plot_qc_series()
+    data.plot_comparison_qc_series()
+    # data.plot_qc_series()
     # data.plot_gaps(show=False)
     # data.plot_checks()
