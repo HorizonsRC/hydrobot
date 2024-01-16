@@ -152,11 +152,11 @@ def missing_data_quality_code(series, qc_series, gap_limit):
                 qc_series = qc_series.sort_index()
 
             # getting rid of any stray QC codes in the middle
-            """
+
             drop_series = qc_series
             drop_series = drop_series[drop_series.index > gap[0]]
             drop_series = drop_series[drop_series.index <= series.index[end_idx - 1]]
-            qc_series = qc_series.drop(drop_series.index)"""
+            qc_series = qc_series.drop(drop_series.index)
 
             # start of gap
             qc_series[gap[0]] = 100
