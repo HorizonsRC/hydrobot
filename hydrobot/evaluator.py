@@ -147,9 +147,12 @@ def missing_data_quality_code(series, qc_series, gap_limit):
             if end_idx < len(series):
                 prev_values = qc_series[qc_series.index <= series.index[end_idx]]
                 prev_values = prev_values[prev_values > 100]
+                prev_values = prev_values.sort_index()
                 qc_series[series.index[end_idx]] = prev_values.iloc[-1]
+                qc_series = qc_series.sort_index()
 
             # getting rid of any stray QC codes in the middle
+
             drop_series = qc_series
             drop_series = drop_series[drop_series.index > gap[0]]
             drop_series = drop_series[drop_series.index <= series.index[end_idx - 1]]

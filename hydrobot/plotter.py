@@ -145,14 +145,14 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         Displays a plot
     """
     split_data = splitter(base_series, qc_series, frequency)
-    plt.figure(figsize=(10, 6))
+    plt.figure()
     for qc in split_data:
         plt.plot(
             split_data[qc].index,
             split_data[qc],
             label=f"QC{qc}",
             color=qc_colour(qc),
-            marker=f"{'x' if qc==100 else ''}",
+            marker=f"{'x' if qc==100 else '.'}",
         )
     plt.plot(
         check_series.index,
@@ -164,6 +164,45 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
     )
     plt.xticks(rotation=45, ha="right")
 
+    plt.legend()
+    if show:
+        plt.show()
+
+
+def comparison_qc_plotter(
+    base_series, raw_series, check_series, qc_series, frequency, show=True
+):
+    """Plot data with correct qc colour a la qc_plotter(), and the raw data overlaid.
+
+    Parameters
+    ----------
+    base_series : pd.Series
+        Data to be sorted by colour
+    raw_series : pd.Series
+        Data that has not been processed
+    check_series : pd.Series
+        Check data to plot
+    qc_series : pd.Series
+        QC ranges for colour coding
+    frequency : DateOffset or str
+        Frequency to which the data gets set to
+    show : bool
+        Whether to show the plot directly when called
+
+    Returns
+    -------
+    None
+        Displays a plot
+    """
+    qc_plotter(base_series, check_series, qc_series, frequency, show=False)
+    plt.plot(
+        raw_series.index,
+        raw_series,
+        label="Raw data",
+        color="black",
+        marker="",
+        linestyle="dashed",
+    )
     plt.legend()
     if show:
         plt.show()

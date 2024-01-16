@@ -79,7 +79,7 @@ def get_series(
         in the format 'YYYY-MM-DD HH:mm'.
     tstype : str
         Type of data that is sought
-        (default 'Standard, can be Standard, Check, or Quality)
+        (default 'Standard', can be Standard, Check, or Quality)
 
     Returns
     -------

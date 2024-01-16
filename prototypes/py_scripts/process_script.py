@@ -25,7 +25,7 @@ def process_data(processing_parameters):
         processing_parameters["base_url"],
         processing_parameters["standard_hts_filename"],
         processing_parameters["site"],
-        processing_parameters["standard_measurement"],
+        processing_parameters["standard_measurement_name"],
         processing_parameters["from_date"],
         processing_parameters["to_date"],
     )
@@ -35,7 +35,7 @@ def process_data(processing_parameters):
         processing_parameters["base_url"],
         processing_parameters["check_hts_filename"],
         processing_parameters["site"],
-        processing_parameters["check_measurement"],
+        processing_parameters["check_measurement_name"],
         processing_parameters["from_date"],
         processing_parameters["to_date"],
         tstype="Check",
@@ -66,7 +66,7 @@ def process_data(processing_parameters):
     qc_series = quality_encoder(
         base_series,
         check_series,
-        get_measurement(processing_parameters["standard_measurement"]),
+        get_measurement(processing_parameters["standard_measurement_name"]),
         gap_limit=parameters["defaults"]["gap_limit"],
     )
 
@@ -75,21 +75,21 @@ def process_data(processing_parameters):
         "output_dump/base_"
         + processing_parameters["site"]
         + "-"
-        + processing_parameters["standard_measurement"]
+        + processing_parameters["standard_measurement_name"]
         + ".csv"
     )
     check_series.to_csv(
         "output_dump/check_"
         + processing_parameters["site"]
         + "-"
-        + processing_parameters["check_measurement"]
+        + processing_parameters["check_measurement_name"]
         + ".csv"
     )
     qc_series.to_csv(
         "output_dump/QC_"
         + processing_parameters["site"]
         + "-"
-        + processing_parameters["standard_measurement"]
+        + processing_parameters["standard_measurement_name"]
         + ".csv"
     )
 
@@ -115,8 +115,8 @@ parameters = {
     "from_date": "2021-06-01 00:00",
     "to_date": "2023-08-12 8:30",
     "frequency": "5T",
-    "standard_measurement": "Water level statistics: Point Sample",
-    "check_measurement": "External S.G. [Water Level NRT]",
+    "standard_measurement_name": "Water level statistics: Point Sample",
+    "check_measurement_name": "External S.G. [Water Level NRT]",
     "defaults": {
         "high_clip": 20000,
         "low_clip": 0,
