@@ -1,5 +1,6 @@
 """General filtering utilities."""
 
+
 import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
@@ -141,7 +142,10 @@ def remove_spikes(
 
 
 def remove_range(
-    input_series: pd.Series | pd.DataFrame, from_date: str | None, to_date: str | None
+    input_series: pd.Series,
+    from_date: str | None,
+    to_date: str | None,
+    insert_gaps: bool | int = False,
 ):
     """
     Remove data from series in given range.
@@ -152,6 +156,8 @@ def remove_range(
     A None to_date will remove all data since the from_date (and vice versa).
     A double None for to_date/from_date removes all data.
 
+    Inserts gaps or not depending on insert_gaps
+
     Parameters
     ----------
     input_series : pd.Series
@@ -160,6 +166,10 @@ def remove_range(
         Start of removed section
     to_date : str | None
         End of removed section
+    insert_gaps : bool or int
+        If True, inserts a gap.
+        If False, does not insert a gap.
+        If int, will insert gaps if missing more data points than insert_gaps
 
     Returns
     -------
@@ -167,7 +177,14 @@ def remove_range(
         The series with relevant slice removed
     """
     slice_to_remove = input_series.loc[from_date:to_date]
-    return input_series.drop(slice_to_remove.index)
+    series_to_return = input_series.drop(slice_to_remove.index)
+    if isinstance(insert_gaps, bool):
+        if insert_gaps:
+            series_to_return[from_date] = np.NaN
+    else:
+        if len(slice_to_remove) > insert_gaps:
+            series_to_return[from_date] = np.NaN
+    return series_to_return.sort_index()
 
 
 def trim_series(
@@ -198,3 +215,37 @@ def trim_series(
     else:
         last_check_date = check_series.index[-1]
         return std_series.loc[:last_check_date]
+
+
+def flatline_value_remover(
+    series: pd.Series,
+    span: int = 3,
+):
+    """
+    Remove repeated (flatlined) values in a series.
+
+    Examines the data to see if any values are exactly repeated over a period.
+    Where values exactly repeat it probably indicates a broken instrument.
+    Replaces all values after the first with NaN.
+    Uses math.isclose() to measure float "equality"
+
+    Parameters
+    ----------
+    series : pd.Series
+        Data to examine for flatlined values
+    span : int
+        Amount of allowed repeated values in a row before duplicates are removed
+
+    Returns
+    -------
+    pd.Series
+        Data with the flatlined values NaN'ed
+    """
+    # pandas bad day
+    consecutive_values = (
+        series.groupby((series != series.shift()).cumsum()).cumcount() + 1
+    )
+    working_step = consecutive_values.loc[~consecutive_values.between(2, span)]
+    length_filter = working_step.reindex(consecutive_values.index).bfill()
+    filtered_data = pd.Series(series[length_filter < span])
+    return filtered_data.reindex(series.index)

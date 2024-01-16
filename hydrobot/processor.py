@@ -129,12 +129,12 @@ class Processor:
         base_url: str,
         site: str,
         standard_hts: str,
-        standard_measurement: str,
+        standard_measurement_name: str,
         frequency: str,
         from_date: str | None = None,
         to_date: str | None = None,
         check_hts: str | None = None,
-        check_measurement: str | None = None,
+        check_measurement_name: str | None = None,
         defaults: dict | None = None,
         **kwargs,
     ):
@@ -172,8 +172,8 @@ class Processor:
             self._defaults = defaults
         if check_hts is None:
             check_hts = standard_hts
-        if check_measurement is None:
-            check_measurement = standard_measurement
+        if check_measurement_name is None:
+            check_measurement_name = standard_measurement_name
 
         standard_hilltop = Hilltop(base_url, standard_hts, **kwargs)
         check_hilltop = Hilltop(base_url, check_hts, **kwargs)
@@ -191,24 +191,26 @@ class Processor:
                 f"{[s for s in check_hilltop.available_sites]}"
             )
 
-        standard_measurement_list = standard_hilltop.get_measurement_list(site)
-        if standard_measurement in list(standard_measurement_list.MeasurementName):
-            self._standard_measurement = standard_measurement
+        available_standard_measurements = standard_hilltop.get_measurement_list(site)
+        if standard_measurement_name in list(
+            available_standard_measurements.MeasurementName
+        ):
+            self._standard_measurement_name = standard_measurement_name
         else:
             raise ValueError(
-                f"Standard measurement '{standard_measurement}' not found at "
+                f"Standard measurement name '{standard_measurement_name}' not found at "
                 f"site '{site}'. "
                 "Available measurements are "
-                f"{list(standard_measurement_list.MeasurementName)}"
+                f"{list(available_standard_measurements.MeasurementName)}"
             )
-        check_measurement_list = check_hilltop.get_measurement_list(site)
-        if check_measurement in list(check_measurement_list.MeasurementName):
-            self._check_measurement = check_measurement
+        available_check_measurements = check_hilltop.get_measurement_list(site)
+        if check_measurement_name in list(available_check_measurements.MeasurementName):
+            self._check_measurement_name = check_measurement_name
         else:
             raise ValueError(
-                f"Check measurement '{check_measurement}' not found at site '{site}'. "
+                f"Check measurement name '{check_measurement_name}' not found at site '{site}'. "
                 "Available measurements are "
-                f"{list(check_measurement_list.MeasurementName)}"
+                f"{list(available_check_measurements.MeasurementName)}"
             )
 
         self._base_url = base_url
@@ -217,11 +219,13 @@ class Processor:
         self._frequency = frequency
         self._from_date = from_date
         self._to_date = to_date
-        self._qc_evaluator = data_sources.get_qc_evaluator(standard_measurement)
-
+        self._quality_code_evaluator = data_sources.get_qc_evaluator(
+            standard_measurement_name
+        )
         self._stale = True
         self._no_data = True
         self._standard_series = pd.Series({})
+        self._raw_series = pd.Series({})
         self._check_series = pd.Series({})
         self._quality_series = pd.DataFrame({})
 
@@ -229,9 +233,9 @@ class Processor:
         self.import_data()
 
     @property
-    def standard_measurement(self):  # type: ignore
+    def standard_measurement_name(self):  # type: ignore
         """str: The site to be processed."""
-        return self._standard_measurement
+        return self._standard_measurement_name
 
     @property
     def site(self):  # type: ignore
@@ -339,19 +343,15 @@ class Processor:
     #     self._stale = True
 
     @property
-    def qc_evaluator(self):  # type: ignore
-        """
-        Measurement: The measurement data.
+    def quality_code_evaluator(self):  # type: ignore
+        """Measurement property."""
+        return self._quality_code_evaluator
 
-        Setting this property will mark the data as stale.
-        """
-        return self._qc_evaluator
-
-    # @ClassLogger  # type: ignore
-    # @measurement.setter
-    # def measurement(self, value):
-    #     self._qc_evaluator = value
-    #     self._stale = True
+    @ClassLogger  # type: ignore
+    @quality_code_evaluator.setter
+    def quality_code_evaluator(self, value):
+        self._quality_code_evaluator = value
+        self._stale = True
 
     @property
     def defaults(self):  # type: ignore
@@ -369,7 +369,7 @@ class Processor:
     #     self._stale = True
 
     @property  # type: ignore
-    def standard_series(self):  # type: ignore
+    def standard_series(self) -> pd.Series:  # type: ignore
         """pd.Series: The standard series data."""
         return self._standard_series
 
@@ -377,6 +377,11 @@ class Processor:
     @standard_series.setter
     def standard_series(self, value):
         self._standard_series = value
+
+    @property
+    def raw_series(self):  # type: ignore
+        """raw_series property."""
+        return self._raw_series
 
     @property
     def check_series(self):  # type: ignore
@@ -522,7 +527,7 @@ class Processor:
                 self._base_url,
                 self._standard_hts,
                 self._site,
-                self._standard_measurement,
+                self._standard_measurement_name,
                 from_date,
                 to_date,
                 tstype=req_type,
@@ -531,7 +536,7 @@ class Processor:
             blob_found = False
             # Iterating through all the blobs to find the timeseries for this data_type
             for blob in blob_list:
-                if (blob.data_source.name == self._standard_measurement) and (
+                if (blob.data_source.name == self._standard_measurement_name) and (
                     blob.data_source.ts_type == ds_type
                 ):
                     # Found it. Now we extract it.
@@ -632,6 +637,7 @@ class Processor:
         self._check_series = pd.DataFrame({})
         self._quality_series = pd.Series({})
         self.import_range(self._from_date, self._to_date, standard, check, quality)
+        self._raw_series = self.standard_series
         self._stale = False
 
     # @stale_warning  # type: ignore
@@ -709,7 +715,7 @@ class Processor:
         self.quality_series = evaluator.quality_encoder(
             self._standard_series,
             pd.Series(self._check_series["Check Guage Total"]),
-            self._qc_evaluator,
+            self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,
         )
@@ -869,6 +875,13 @@ class Processor:
             )
 
     @ClassLogger
+    def remove_flatlined_values(self, span: int = 3):
+        """Remove repeated values in std series a la flatline_value_remover()."""
+        self.standard_series = filters.flatline_value_remover(
+            self._standard_series, span=span
+        )
+
+    @ClassLogger
     def delete_range(
         self,
         from_date,
@@ -1000,7 +1013,7 @@ class Processor:
             data_sources.series_export_to_csv(
                 file_location,
                 self._site,
-                self._qc_evaluator.name,
+                self._quality_code_evaluator.name,
                 std_series,
                 self._check_series,
                 self._quality_series,
@@ -1013,7 +1026,7 @@ class Processor:
         data_sources.hilltop_export(
             file_location,
             self._site,
-            self._qc_evaluator.name,
+            self._quality_code_evaluator.name,
             std_series,
             self._check_series,
             self._quality_series,
@@ -1051,6 +1064,17 @@ class Processor:
         """Implement qc_plotter()."""
         plotter.qc_plotter(
             self._standard_series,
+            self._check_series,
+            self._quality_series,
+            self._frequency,
+            show=show,
+        )
+
+    def plot_comparison_qc_series(self, show=True):
+        """Implement comparison_qc_plotter()."""
+        plotter.comparison_qc_plotter(
+            self._standard_series,
+            self._raw_series,
             self._check_series,
             self._quality_series,
             self._frequency,
@@ -1170,7 +1194,7 @@ class Processor:
                 item_info_list = []
 
             data_source = xml_data_structure.DataSource(
-                name=self._standard_measurement,
+                name=self._standard_measurement_name,
                 num_items=len(item_info_list),
                 ts_type=raw_blob.data_source.ts_type,
                 data_type=raw_blob.data_source.data_type,

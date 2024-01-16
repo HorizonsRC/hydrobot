@@ -31,12 +31,12 @@ data = Processor(
     processing_parameters["base_url"],
     processing_parameters["site"],
     processing_parameters["standard_hts_filename"],
-    processing_parameters["standard_measurement"],
+    processing_parameters["standard_measurement_name"],
     processing_parameters["frequency"],
     processing_parameters["from_date"],
     processing_parameters["to_date"],
     processing_parameters["check_hts_filename"],
-    processing_parameters["check_measurement"],
+    processing_parameters["check_measurement_name"],
     processing_parameters["defaults"],
 )
 

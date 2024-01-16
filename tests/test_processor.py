@@ -117,5 +117,5 @@ def test_processor_init(
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
-    assert pr.standard_measurement == pr.raw_data_dict["standard"].data_source.name
+    assert pr.standard_measurement_name == pr.raw_data_dict["standard"].data_source.name
     assert int(pr.standard_series.loc["2023-01-05 01:04:48"]) == 500
