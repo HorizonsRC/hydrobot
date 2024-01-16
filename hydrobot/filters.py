@@ -67,7 +67,7 @@ def fbewma(input_data, span: int):
     return stacked_ewma.groupby(level=0).mean()
 
 
-def remove_outliers(input_data, span: int, delta: float):
+def remove_outliers(input_data: pd.Series, span: int, delta: float):
     """Remove outliers.
 
     Remove outliers from a time series by comparing it to the
@@ -101,7 +101,7 @@ def remove_outliers(input_data, span: int, delta: float):
 
 
 def remove_spikes(
-    input_data, span: int, low_clip: float, high_clip: float, delta: float
+    input_data: pd.Series, span: int, low_clip: float, high_clip: float, delta: float
 ):
     """Remove spikes.
 
@@ -140,7 +140,9 @@ def remove_spikes(
     return gaps_series
 
 
-def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | None):
+def remove_range(
+    input_series: pd.Series | pd.DataFrame, from_date: str | None, to_date: str | None
+):
     """
     Remove data from series in given range.
 
@@ -168,7 +170,9 @@ def remove_range(input_series: pd.Series, from_date: str | None, to_date: str | 
     return input_series.drop(slice_to_remove.index)
 
 
-def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
+def trim_series(
+    std_series: pd.Series, check_series: pd.Series | pd.DataFrame
+) -> pd.Series:
     """
     Remove end of std series to match check series.
 
@@ -181,7 +185,7 @@ def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     ----------
     std_series : pd.Series
         The series to be trimmed
-    check_series : pd.Series
+    check_series : pd.Series | pd.DataFrame
         Indicates the end of the usable data
 
     Returns

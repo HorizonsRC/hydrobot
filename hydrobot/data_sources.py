@@ -198,7 +198,7 @@ def series_export_to_csv(
     site_name: str,
     measurement_name: str,
     std_series: pd.Series | None,
-    check_series: pd.Series | None,
+    check_series: pd.DataFrame | None,
     qc_series: pd.Series | None,
 ) -> None:
     """Export the 3 main series to csv.

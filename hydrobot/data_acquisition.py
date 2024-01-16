@@ -113,9 +113,6 @@ def get_series(
         data.index.name = "Time"
         data.name = "Value"
         mowsecs_offset = 946771200
-        # data.index = pd.to_datetime(
-        #     data.index.map(lambda x: int(x) - mowsecs_offset)
-        # )
         timestamps = data.index.map(
             lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
         )

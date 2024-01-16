@@ -2,6 +2,7 @@
 
 from xml.etree import ElementTree
 
+import pandas as pd
 import pytest
 from defusedxml import ElementTree as DefusedElementTree
 
@@ -78,13 +79,20 @@ def correct_blobs():
         "CheckSeries",
     ]
 
+    data_types = [
+        pd.Series,
+        pd.Series,
+        pd.DataFrame,
+    ]
+
     blob_list = []
     for ds in datasources:
-        for ts in tstypes:
+        for ts, dt in zip(tstypes, data_types):
             blob = {
                 "site_name": sitename,
                 "data_source_name": ds,
                 "ts_type": ts,
+                "data_type": dt,
             }
             blob_list.append(blob)
 
@@ -126,6 +134,7 @@ def test_parse_xml_file_object(sample_data_source_xml_file, correct_blobs):
             assert blob.site_name == correct_blobs[i]["site_name"]
             assert blob.data_source.name == correct_blobs[i]["data_source_name"]
             assert blob.data_source.ts_type == correct_blobs[i]["ts_type"]
+            assert isinstance(blob.data.timeseries, correct_blobs[i]["data_type"])
 
 
 def test_parse_xml_string(sample_data_source_xml_file, correct_blobs):
@@ -163,6 +172,7 @@ def test_parse_xml_string(sample_data_source_xml_file, correct_blobs):
         assert blob.site_name == correct_blobs[i]["site_name"]
         assert blob.data_source.name == correct_blobs[i]["data_source_name"]
         assert blob.data_source.ts_type == correct_blobs[i]["ts_type"]
+        assert isinstance(blob.data.timeseries, correct_blobs[i]["data_type"])
 
 
 def test_parse_xml_bytes(sample_data_source_xml_file, correct_blobs):
@@ -200,6 +210,7 @@ def test_parse_xml_bytes(sample_data_source_xml_file, correct_blobs):
         assert blob.site_name == correct_blobs[i]["site_name"]
         assert blob.data_source.name == correct_blobs[i]["data_source_name"]
         assert blob.data_source.ts_type == correct_blobs[i]["ts_type"]
+        assert isinstance(blob.data.timeseries, correct_blobs[i]["data_type"])
 
 
 def test_parse_xml_etree(sample_data_source_xml_file, correct_blobs):
@@ -238,6 +249,7 @@ def test_parse_xml_etree(sample_data_source_xml_file, correct_blobs):
         assert blob.site_name == correct_blobs[i]["site_name"]
         assert blob.data_source.name == correct_blobs[i]["data_source_name"]
         assert blob.data_source.ts_type == correct_blobs[i]["ts_type"]
+        assert isinstance(blob.data.timeseries, correct_blobs[i]["data_type"])
 
 
 def test_data_source_to_xml_tree(tmp_path, sample_data_source_xml_file):
@@ -272,7 +284,6 @@ def test_data_source_to_xml_tree(tmp_path, sample_data_source_xml_file):
     output_path = tmp_path / "output.xml"
     xml_data_structure.write_hilltop_xml(blob_list, output_path)
 
-    print("DONE")
     with open(output_path) as f:
         output_xml = f.read()
 

@@ -1,5 +1,4 @@
 """Test the processor module."""
-from xml.etree import ElementTree
 
 import pandas as pd
 import pytest
@@ -17,10 +16,10 @@ SITES = [
 ]
 
 MEASUREMENTS = [
-    "General Nastiness (out of 10)",
+    "General Nastiness",
     "Atmospheric Pressure",
-    "Number of Actual Whole Turds Floating By (t/s)",
-    "Dead Cow Concentration (ppm)",
+    "Number of Actual Whole Turds Floating By",
+    "Dead Cow Concentration",
 ]
 
 
@@ -57,19 +56,19 @@ def mock_xml_data():
         xml_string = f.read()
 
     xml_data_list = xml_data_structure.parse_xml(xml_string)
+    #
+    # first_blob = xml_data_list[0]
+    #
+    # root = ElementTree.Element("Hilltop")
+    # agency = ElementTree.Element("Agency")
+    # agency.text = "Horizons"
+    # root.append(agency)
+    #
+    # root.append(first_blob.to_xml_tree())
+    #
+    # first_blob_string = ElementTree.tostring(root)
 
-    first_blob = xml_data_list[0]
-
-    root = ElementTree.Element("Hilltop")
-    agency = ElementTree.Element("Agency")
-    agency.text = "Horizons"
-    root.append(agency)
-
-    root.append(first_blob.to_xml_tree())
-
-    first_blob_string = ElementTree.tostring(root)
-
-    return first_blob_string
+    return xml_string
 
 
 def test_processor_init(
@@ -110,9 +109,6 @@ def test_processor_init(
     correct = [
         "standard_series | Mid Stream at Cowtoilet Farm",
         "check_series | Mid Stream at Cowtoilet Farm",
-        "quality_series | Mid Stream at Cowtoilet Farm",
-        "standard_series | Mid Stream at Cowtoilet Farm",
-        "check_series | Mid Stream at Cowtoilet Farm",
         "import_range | Mid Stream at Cowtoilet Farm",
         "__init__ | Mid Stream at Cowtoilet Farm",
     ]
@@ -120,7 +116,6 @@ def test_processor_init(
     for i, out in enumerate(ann_output[0:-1]):
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
-    print(pr.standard_series)
-
     assert isinstance(pr.standard_series, pd.Series)
-    assert int(pr.standard_series.loc["2023-01-01 00:00:00"]) == 10
+    assert pr.standard_measurement == pr.raw_data_dict["standard"].data_source.name
+    assert int(pr.standard_series.loc["2023-01-05 01:04:48"]) == 500

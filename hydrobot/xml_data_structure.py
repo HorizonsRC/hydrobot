@@ -16,7 +16,7 @@ class ItemInfo:
         divisor: str,
         units: str,
         format: str,
-    ) -> None:
+    ):
         """
         Initialize an ItemInfo instance.
 
@@ -165,7 +165,7 @@ class DataSource:
         interpolation: str,
         item_format: str,
         item_info: list[ItemInfo] | None,
-    ) -> None:
+    ):
         """
         Initialize a DataSource instance.
 
@@ -344,7 +344,7 @@ class Data:
         date_format: str,
         num_items: int,
         timeseries: pd.Series | pd.DataFrame,
-    ) -> None:
+    ):
         """
         Initialize a Data instance.
 
@@ -521,7 +521,7 @@ class DataSourceBlob:
         data_source: DataSource,
         data: Data,
         tideda_site_number: str | None = None,
-    ) -> None:
+    ):
         """
         Initialize a DataSourceBlob instance.
 
@@ -707,18 +707,24 @@ def parse_xml(source) -> list[DataSourceBlob]:
     for child in root.iter():
         if child.tag == "Measurement":
             data_source_blob = DataSourceBlob.from_xml(child)
-            item_names = [
-                info.item_name for info in data_source_blob.data_source.item_info
-            ]
-            if len(item_names) > 1:
-                data_source_blob.data.timeseries.rename(
-                    columns={
-                        col: name
-                        for col, name in zip(
-                            data_source_blob.data.timeseries.columns,
-                            item_names,
-                        )
-                    }
+            if data_source_blob.data_source.item_info is not None:
+                item_names = [
+                    info.item_name for info in data_source_blob.data_source.item_info
+                ]
+            else:
+                item_names = []
+            if len(item_names) > 1 and isinstance(
+                data_source_blob.data.timeseries, pd.DataFrame
+            ):
+                cols = {
+                    col: name
+                    for col, name in zip(
+                        data_source_blob.data.timeseries.columns,
+                        item_names,
+                    )
+                }
+                data_source_blob.data.timeseries = (
+                    data_source_blob.data.timeseries.rename(columns=cols)
                 )
             elif len(item_names) > 0:
                 data_source_blob.data.timeseries.name = item_names[0]
