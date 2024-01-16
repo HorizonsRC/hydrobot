@@ -246,6 +246,7 @@ def test_parse_xml_etree(sample_data_source_xml_file, correct_blobs):
     blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
 
     for i, blob in enumerate(blob_list):
+        print(blob.data.timeseries.index.to_numpy()[0])
         assert blob.site_name == correct_blobs[i]["site_name"]
         assert blob.data_source.name == correct_blobs[i]["data_source_name"]
         assert blob.data_source.ts_type == correct_blobs[i]["ts_type"]

@@ -7,7 +7,7 @@ from annalist.annalist import Annalist
 annalizer = Annalist()
 
 
-def clip(unclipped, low_clip: float, high_clip: float):
+def clip(unclipped: pd.Series, low_clip: float, high_clip: float):
     """Clip values in a pandas Series within a specified range.
 
     Parameters
@@ -102,7 +102,7 @@ def remove_outliers(input_data: pd.Series, span: int, delta: float):
 
 def remove_spikes(
     input_data: pd.Series, span: int, low_clip: float, high_clip: float, delta: float
-):
+) -> pd.Series:
     """Remove spikes.
 
     Remove spikes from a time series data using a combination of clipping and

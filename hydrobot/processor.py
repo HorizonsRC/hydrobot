@@ -3,6 +3,7 @@
 import warnings
 from functools import wraps
 
+import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
@@ -25,6 +26,7 @@ DEFAULTS = {
     "delta": 1000,
     "span": 10,
     "gap_limit": 12,
+    "max_qc": np.NaN,
 }
 
 MOWSECS_OFFSET = 946771200
@@ -37,6 +39,8 @@ def stale_warning(method):
     Warning will then take input form user to determine whether to proceed or cancel.
     Cancelling will return a null function, which returns None with no side effects no
     matter what the input
+
+    Currently broken
 
     Parameters
     ----------
@@ -213,7 +217,7 @@ class Processor:
         self._frequency = frequency
         self._from_date = from_date
         self._to_date = to_date
-        self._measurement = data_sources.get_measurement(standard_measurement)
+        self._qc_evaluator = data_sources.get_qc_evaluator(standard_measurement)
 
         self._stale = True
         self._no_data = True
@@ -335,18 +339,18 @@ class Processor:
     #     self._stale = True
 
     @property
-    def measurement(self):  # type: ignore
+    def qc_evaluator(self):  # type: ignore
         """
         Measurement: The measurement data.
 
         Setting this property will mark the data as stale.
         """
-        return self._measurement
+        return self._qc_evaluator
 
     # @ClassLogger  # type: ignore
     # @measurement.setter
     # def measurement(self, value):
-    #     self._measurement = value
+    #     self._qc_evaluator = value
     #     self._stale = True
 
     @property
@@ -660,14 +664,16 @@ class Processor:
         <updated standard series with closed gaps>
         """
         if gap_limit is None:
-            gap_limit = self._defaults["gap_limit"]
+            gap_limit = int(self._defaults["gap_limit"])
         self.standard_series = evaluator.small_gap_closer(
             self._standard_series, gap_limit=gap_limit
         )
 
     # @stale_warning  # type: ignore
     @ClassLogger
-    def quality_encoder(self, gap_limit: int | None = None):
+    def quality_encoder(
+        self, gap_limit: int | None = None, max_qc: int | float | None = None
+    ):
         """
         Encode quality information in the quality series.
 
@@ -697,12 +703,15 @@ class Processor:
         <updated quality series with encoded quality flags>
         """
         if gap_limit is None:
-            gap_limit = self._defaults["gap_limit"]
+            gap_limit = int(self._defaults["gap_limit"])
+        if max_qc is None:
+            max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
         self.quality_series = evaluator.quality_encoder(
             self._standard_series,
-            self._check_series,
-            self._measurement,
+            pd.Series(self._check_series["Check Guage Total"]),
+            self._qc_evaluator,
             gap_limit=gap_limit,
+            max_qc=max_qc,
         )
 
     # @stale_warning  # type: ignore
@@ -740,12 +749,14 @@ class Processor:
         <clipped check series within the specified range>
         """
         if low_clip is None:
-            low_clip = self._defaults["low_clip"]
+            low_clip = float(self._defaults["low_clip"])
         if high_clip is None:
-            high_clip = self._defaults["high_clip"]
+            high_clip = float(self._defaults["high_clip"])
 
         self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
-        self.check_series = filters.clip(self._check_series, low_clip, high_clip)
+        self.check_series = filters.clip(
+            pd.Series(self._check_series["Check Guage Total"]), low_clip, high_clip
+        )
 
     # @stale_warning  # type: ignore
     @ClassLogger
@@ -780,9 +791,9 @@ class Processor:
         <standard series with outliers removed>
         """
         if span is None:
-            span = self._defaults["span"]
+            span = int(self._defaults["span"])
         if delta is None:
-            delta = self._defaults["delta"]
+            delta = float(self._defaults["delta"])
 
         if isinstance(self._standard_series, pd.Series):
             self.standard_series = filters.remove_outliers(
@@ -839,13 +850,13 @@ class Processor:
         <standard series with spikes removed>
         """
         if low_clip is None:
-            low_clip = self._defaults["low_clip"]
+            low_clip = float(self._defaults["low_clip"])
         if high_clip is None:
-            high_clip = self._defaults["high_clip"]
+            high_clip = float(self._defaults["high_clip"])
         if span is None:
-            span = self._defaults["span"]
+            span = int(self._defaults["span"])
         if delta is None:
-            delta = self._defaults["delta"]
+            delta = float(self._defaults["delta"])
 
         if isinstance(self._standard_series, pd.Series):
             self.standard_series = filters.remove_spikes(
@@ -989,7 +1000,7 @@ class Processor:
             data_sources.series_export_to_csv(
                 file_location,
                 self._site,
-                self._measurement.name,
+                self._qc_evaluator.name,
                 std_series,
                 self._check_series,
                 self._quality_series,
@@ -999,6 +1010,14 @@ class Processor:
                 "Standard Series should be pd.Series, "
                 f"found {type(self._standard_series)}"
             )
+        data_sources.hilltop_export(
+            file_location,
+            self._site,
+            self._qc_evaluator.name,
+            std_series,
+            self._check_series,
+            self._quality_series,
+        )
 
     def diagnosis(self):
         """

@@ -71,7 +71,7 @@ def get_series(
     from_date,
     to_date,
     tstype="Standard",
-):
+) -> pd.Series | pd.DataFrame:
     """Pack data from det_data as a pd.Series.
 
     Parameters
@@ -96,7 +96,7 @@ def get_series(
 
     Returns
     -------
-    pandas.Series
+    pandas.Series or pandas.DataFrame
         A pd.Series containing the acquired time series data.
     """
     data_object = get_data(
@@ -110,8 +110,6 @@ def get_series(
     )
     data = data_object[0].data.timeseries
     if not data.empty:
-        data.index.name = "Time"
-        data.name = "Value"
         mowsecs_offset = 946771200
         timestamps = data.index.map(
             lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
