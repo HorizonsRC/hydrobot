@@ -1,12 +1,13 @@
 """Script to run through various processing tasks."""
 import matplotlib.pyplot as plt
+import pandas as pd
 
 # import pandas as pd
 from annalist.annalist import Annalist
 
 import hydrobot.plotter as plotter
 from hydrobot.data_acquisition import get_series
-from hydrobot.data_sources import get_measurement
+from hydrobot.data_sources import get_qc_evaluator
 from hydrobot.evaluator import diagnose_data, quality_encoder, small_gap_closer
 from hydrobot.filters import clip, remove_spikes
 
@@ -30,8 +31,10 @@ def process_data(processing_parameters):
         processing_parameters["to_date"],
     )
     base_series = base_series.asfreq(processing_parameters["frequency"])
+    if not isinstance(base_series, pd.Series):
+        raise TypeError("This should be a pd.Series, but it's a pd.DataFrame")
 
-    check_series = get_series(
+    check_data = get_series(
         processing_parameters["base_url"],
         processing_parameters["check_hts_filename"],
         processing_parameters["site"],
@@ -40,10 +43,12 @@ def process_data(processing_parameters):
         processing_parameters["to_date"],
         tstype="Check",
     )
+    if not isinstance(base_series, pd.Series):
+        raise TypeError("This should be a pd.Series, but it's a pd.DataFrame")
 
     # Clip check data
     check_series = clip(
-        check_series,
+        pd.Series(check_data["Check Guage Total"]),
         processing_parameters["defaults"]["low_clip"],
         processing_parameters["defaults"]["high_clip"],
     )
@@ -66,7 +71,7 @@ def process_data(processing_parameters):
     qc_series = quality_encoder(
         base_series,
         check_series,
-        get_measurement(processing_parameters["standard_measurement_name"]),
+        get_qc_evaluator(processing_parameters["standard_measurement_name"]),
         gap_limit=parameters["defaults"]["gap_limit"],
     )
 

@@ -1,13 +1,11 @@
 """Test the processor module."""
-import random
-from datetime import datetime, timedelta
 
 import pandas as pd
 import pytest
 from annalist.annalist import Annalist
 from hilltoppy import Hilltop
 
-from hydrobot import processor
+from hydrobot import processor, xml_data_structure
 
 ann = Annalist()
 
@@ -18,10 +16,10 @@ SITES = [
 ]
 
 MEASUREMENTS = [
-    "General Nastiness (out of 10)",
+    "General Nastiness",
     "Atmospheric Pressure",
-    "Number of Actual Whole Turds Floating By (t/s)",
-    "Dead Cow Concentration (ppm)",
+    "Number of Actual Whole Turds Floating By",
+    "Dead Cow Concentration",
 ]
 
 
@@ -52,28 +50,29 @@ def mock_measurement_list():
 
 
 @pytest.fixture()
-def mock_dataset():
-    """Mock response from GetData server call method."""
-    num_obs = 5
-    random.seed(69420)
+def mock_xml_data():
+    """Mock response from get_hilltop_xml server call method."""
+    with open("tests/xml_test_data_file.xml") as f:
+        xml_string = f.read()
 
-    site_name = SITES[1]
-    measurement_name = MEASUREMENTS[1]
-    start_time = datetime(2020, 10, 1, 8, 0, 0)
-    time_intervals = [start_time + timedelta(minutes=i * 5) for i in range(num_obs)]
-    values = [random.uniform(0, 100) * 10000 for _ in range(num_obs)]
-    data = {
-        "SiteName": [site_name] * num_obs,
-        "MeasurementName": [measurement_name] * num_obs,
-        "Time": [str(time) for time in time_intervals],
-        "Value": values,
-    }
+    xml_data_list = xml_data_structure.parse_xml(xml_string)
+    #
+    # first_blob = xml_data_list[0]
+    #
+    # root = ElementTree.Element("Hilltop")
+    # agency = ElementTree.Element("Agency")
+    # agency.text = "Horizons"
+    # root.append(agency)
+    #
+    # root.append(first_blob.to_xml_tree())
+    #
+    # first_blob_string = ElementTree.tostring(root)
 
-    return pd.DataFrame(data)
+    return xml_string
 
 
 def test_processor_init(
-    capsys, monkeypatch, mock_site_list, mock_measurement_list, mock_dataset
+    capsys, monkeypatch, mock_site_list, mock_measurement_list, mock_xml_data
 ):
     """Test the processor function."""
 
@@ -83,14 +82,18 @@ def test_processor_init(
     def get_mock_measurement_list(*args, **kwargs):
         return mock_measurement_list
 
-    def get_mock_dataset(*args, **kwargs):
-        return mock_dataset
+    def get_mock_xml_data(*args, **kwargs):
+        return mock_xml_data
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
+    # Here we patch the Hilltop Class
     monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
-    monkeypatch.setattr(Hilltop, "get_data", get_mock_dataset)
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_hilltop_xml", get_mock_xml_data)
 
     pr = processor.Processor(
         "https://greenwashed.and.pleasant/",
@@ -106,9 +109,6 @@ def test_processor_init(
     correct = [
         "standard_series | Mid Stream at Cowtoilet Farm",
         "check_series | Mid Stream at Cowtoilet Farm",
-        "quality_series | Mid Stream at Cowtoilet Farm",
-        "standard_series | Mid Stream at Cowtoilet Farm",
-        "check_series | Mid Stream at Cowtoilet Farm",
         "import_range | Mid Stream at Cowtoilet Farm",
         "__init__ | Mid Stream at Cowtoilet Farm",
     ]
@@ -117,6 +117,5 @@ def test_processor_init(
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
-    assert pr.standard_series.loc["2020-10-01 08:00:00"] == pytest.approx(
-        681993.770479116
-    )
+    assert pr.standard_measurement_name == pr.raw_data_dict["standard"].data_source.name
+    assert int(pr.standard_series.loc["2023-01-05 01:04:48"]) == 500

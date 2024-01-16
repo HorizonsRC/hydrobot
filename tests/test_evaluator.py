@@ -112,7 +112,7 @@ def test_small_gap_closer(raw_data, gap_data):
 
 
 @pytest.mark.dependency(depends=["test_gap_finder", "test_small_gap_closer"])
-def test_small_gap_closer_part2(raw_data, gap_data):
+def test_small_gap_closer_part2(gap_data):
     """Test the small gap closer some more."""
     # All gaps should be closed
     removed_gaps = evaluator.small_gap_closer(gap_data, 5)

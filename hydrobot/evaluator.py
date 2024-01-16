@@ -5,10 +5,12 @@ import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
 
+from hydrobot.data_sources import QualityCodeEvaluator
+
 annalizer = Annalist()
 
 
-def gap_finder(data):
+def gap_finder(data: pd.Series):
     """
     Find gaps in a series of data (indicated by np.isnan()).
 
@@ -32,12 +34,13 @@ def gap_finder(data):
     valid_mask = np.isnan(data.iloc[idx])
     out_idx = idx[valid_mask]
     out_count = count[valid_mask]
-    out = zip(data.index[out_idx], out_count)
+    indices = data.iloc[out_idx].index
+    out = zip(indices, out_count)
 
     return list(out)
 
 
-def small_gap_closer(series, gap_limit):
+def small_gap_closer(series: pd.Series, gap_limit: int) -> pd.Series:
     """
     Remove small gaps from a series.
 
@@ -70,11 +73,16 @@ def small_gap_closer(series, gap_limit):
                 ]
             )
             # Remove the bad rows
-            series = series[mask]
+            series = pd.Series(series[mask])
     return series
 
 
-def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
+def check_data_quality_code(
+    series: pd.Series,
+    check_series: pd.Series,
+    qc_evaluator: QualityCodeEvaluator,
+    gap_limit=10800,
+) -> pd.Series:
     """
     Quality Code Check Data.
 
@@ -87,7 +95,7 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
         Data to be quality coded
     check_series : pd.Series
         Check data
-    measurement : data_sources.Measurement
+    qc_evaluator : data_sources.QualityCodeEvaluator
         Handler for QC comparisons
     gap_limit : integer (seconds)
         If the nearest real data point is more than this many seconds away, return 200
@@ -97,27 +105,43 @@ def check_data_quality_code(series, check_series, measurement, gap_limit=10800):
     pd.Series
         The QC values of the series, indexed by the END time of the QC period
     """
-    qc_series = pd.Series({series.index[0]: np.NaN})
-    if check_series.empty:
+    first_data_date = series.index[0]
+    last_data_date = series.index[-1]
+    print(check_series.index)
+    if check_series.empty and isinstance(first_data_date, pd.Timestamp):
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
-    elif (
-        check_series.index[0] < series.index[0]
-        or check_series.index[-1] > series.index[-1]
+        return pd.Series({first_data_date: np.NaN})
+    first_check_date = check_series.index[0]
+    last_check_date = check_series.index[-1]
+    if (
+        isinstance(first_data_date, pd.Timestamp)
+        and isinstance(last_data_date, pd.Timestamp)
+        and isinstance(first_check_date, pd.Timestamp)
+        and isinstance(last_check_date, pd.Timestamp)
     ):
-        # Can't check something that's not there
-        raise KeyError("Error: check data out of range")
+        qc_series = pd.Series({first_data_date: np.NaN})
+        if first_check_date < first_data_date or last_check_date > last_data_date:
+            # Can't check something that's not there
+            raise KeyError("Error: check data out of range")
+        else:
+            # Stuff actually working (hopefully)
+            for check_time, check_value in check_series.items():
+                if isinstance(check_time, pd.Timestamp):
+                    adjusted_time = find_nearest_valid_time(series, check_time)
+                    if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
+                        qc_value = qc_evaluator.find_qc(
+                            series[adjusted_time], check_value
+                        )
+                    else:
+                        qc_value = 200
+                    qc_series[check_time] = qc_value
+                else:
+                    raise KeyError("Series indices should be pandas.Timestamp.")
+            qc_series = qc_series.shift(-1, fill_value=0)
+        return pd.Series(qc_series)
     else:
-        # Stuff actually working (hopefully)
-        for check_time, check_value in check_series.items():
-            adjusted_time = find_nearest_valid_time(series, check_time)
-            if abs((adjusted_time - check_time).total_seconds()) < gap_limit:
-                qc_value = measurement.find_qc(series[adjusted_time], check_value)
-            else:
-                qc_value = 200
-            qc_series[check_time] = qc_value
-        qc_series = qc_series.shift(-1, fill_value=0)
-    return qc_series
+        raise KeyError("Series indices should be pandas.Timestamp.")
 
 
 def missing_data_quality_code(series, qc_series, gap_limit):
@@ -204,7 +228,7 @@ def find_nearest_time(series, dt):
     return series.index[output_index][0]
 
 
-def find_nearest_valid_time(series, dt):
+def find_nearest_valid_time(series, dt) -> pd.Timestamp:
     """
     Find the time in the series that is closest to dt, but ignoring NaN values (gaps).
 
@@ -368,7 +392,7 @@ def splitter(base_series, qc_series, frequency):
     return return_dict
 
 
-def max_qc_limiter(qc_series, max_qc):
+def max_qc_limiter(qc_series: pd.Series, max_qc) -> pd.Series:
     """
     Enforce max_qc on a QC series.
 
@@ -386,10 +410,16 @@ def max_qc_limiter(qc_series, max_qc):
     pd.Series
         qc_series with too high QCs limited to max_qc
     """
-    return qc_series.clip(np.NaN, max_qc)
+    return pd.Series(qc_series.clip(np.NaN, max_qc))
 
 
-def quality_encoder(base_series, check_series, measurement, gap_limit, max_qc=np.NaN):
+def quality_encoder(
+    base_series: pd.Series,
+    check_series: pd.Series,
+    qc_evaluator: QualityCodeEvaluator,
+    gap_limit: int,
+    max_qc=np.NaN,
+) -> pd.Series:
     """
     Return complete QC series.
 
@@ -399,7 +429,7 @@ def quality_encoder(base_series, check_series, measurement, gap_limit, max_qc=np
         Base time series data
     check_series : pd.Series
         Check data time series
-    measurement : data_sources.Measurement
+    qc_evaluator : data_sources.QualityCodeEvaluator
         Handler for QC comparisons
     gap_limit
         Maximum size of gaps which will be ignored
@@ -411,9 +441,9 @@ def quality_encoder(base_series, check_series, measurement, gap_limit, max_qc=np
     pd.Series
         The modified QC series, indexed by the start time of the QC period
     """
-    qc_series = check_data_quality_code(base_series, check_series, measurement)
+    qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series = max_qc_limiter(qc_series, max_qc)
-    qc_series.index.name = "Time"
-    qc_series.name = "Value"
+    # qc_series.index.name = "Time"
+    # qc_series.name = "Value"
     return qc_series
