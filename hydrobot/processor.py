@@ -1,5 +1,6 @@
 """Processor class."""
 
+import re
 import warnings
 from functools import wraps
 
@@ -246,12 +247,6 @@ class Processor:
         """
         return self._site
 
-    # @ClassLogger  # type: ignore
-    # @site.setter
-    # def site(self, value):
-    #     self._site = value
-    #     self._stale = True
-
     @property
     def from_date(self):  # type: ignore
         """
@@ -260,12 +255,6 @@ class Processor:
         Setting this property will mark the data as stale.
         """
         return self._from_date
-
-    # @ClassLogger  # type: ignore
-    # @from_date.setter
-    # def from_date(self, value):
-    #     self._from_date = value
-    #     self._stale = True
 
     @property
     def to_date(self):  # type: ignore
@@ -276,12 +265,6 @@ class Processor:
         """
         return self._to_date
 
-    # @ClassLogger  # type: ignore
-    # @to_date.setter
-    # def to_date(self, value):
-    #     self._to_date = value
-    #     self._stale = True
-
     @property
     def frequency(self):  # type: ignore
         """
@@ -290,12 +273,6 @@ class Processor:
         Setting this property will mark the data as stale.
         """
         return self._frequency
-
-    # @ClassLogger  # type: ignore
-    # @frequency.setter
-    # def frequency(self, value):
-    #     self._frequency = value
-    #     self._stale = True
 
     @property
     def base_url(self):  # type: ignore
@@ -306,12 +283,6 @@ class Processor:
         """
         return self._base_url
 
-    # @ClassLogger  # type: ignore
-    # @base_url.setter
-    # def base_url(self, value):
-    #     self._base_url = value
-    #     self._stale = True
-
     @property
     def standard_hts(self):  # type: ignore
         """
@@ -321,12 +292,6 @@ class Processor:
         """
         return self._standard_hts
 
-    # @ClassLogger  # type: ignore
-    # @standard_hts.setter
-    # def standard_hts(self, value):
-    #     self._standard_hts = value
-    #     self._stale = True
-
     @property
     def check_hts(self):  # type: ignore
         """
@@ -335,12 +300,6 @@ class Processor:
         Setting this property will mark the data as stale.
         """
         return self._check_hts
-
-    # @ClassLogger  # type: ignore
-    # @check_hts.setter
-    # def check_hts(self, value):
-    #     self._check_hts = value
-    #     self._stale = True
 
     @property
     def quality_code_evaluator(self):  # type: ignore
@@ -361,12 +320,6 @@ class Processor:
         Setting this property will mark the data as stale.
         """
         return self._defaults
-
-    # @ClassLogger  # type: ignore
-    # @defaults.setter
-    # def defaults(self, value):
-    #     self._defaults = value
-    #     self._stale = True
 
     @property  # type: ignore
     def standard_series(self) -> pd.Series:  # type: ignore
@@ -414,8 +367,9 @@ class Processor:
         from_date: str | None,
         to_date: str | None,
         standard: bool = True,
+        quality: bool = True,
         check: bool = True,
-        quality: bool = False,
+        overwrite: bool = False,
     ):
         """
         Load Raw Data from Hilltop within a specified date range.
@@ -430,10 +384,10 @@ class Processor:
             used.
         standard : bool, optional
             Whether to import standard data, by default True.
-        check : bool, optional
-            Whether to import check data, by default True.
         quality : bool, optional
             Whether to import quality data, by default False.
+        check : bool, optional
+            Whether to import check data, by default True.
 
         Returns
         -------
@@ -466,14 +420,15 @@ class Processor:
         if self._no_data:
             self.raw_data_dict = {}
 
-        # These will become the keys for the raw_data_dict
-        ts_types = ["standard", "check", "qual"]
+        # These will become the keys for the raw_data_dict.
+        ts_types = ["standard", "quality", "check"]
 
         # Boolean flag arguments for the three types of timeseries
-        inc_types = [standard, check, quality]
+        inc_types = [standard, quality, check]
 
         # Dropping keys from ts_types if corresponding flag is set to False
         import_types = [ts for ts, inc in zip(ts_types, inc_types) if inc]
+        print(import_types)
 
         # Iterating through all the data_types to be imported here
         for data_type in import_types:
@@ -491,6 +446,19 @@ class Processor:
                     )
                     curr_series = pd.Series({})
                 data_series = pd.Series({})
+            elif data_type == "quality":
+                req_type = "Quality"
+                ds_type = "StdQualSeries"
+                data_series = pd.Series({})
+                if isinstance(self._quality_series, pd.Series):
+                    curr_series = self._quality_series
+                else:
+                    warnings.warn(
+                        "Existing Standard Series should be pandas.Series, but found "
+                        f"{type(self._standard_series)}. Setting to empty pd.Series",
+                        stacklevel=1,
+                    )
+                    curr_series = pd.Series({})
             elif data_type == "check":
                 req_type = "Check"
                 ds_type = "CheckSeries"
@@ -505,22 +473,10 @@ class Processor:
                         stacklevel=1,
                     )
                     curr_series = pd.DataFrame({})
-            elif data_type == "qual":
-                req_type = "Quality"
-                ds_type = "StdQualSeries"
-                data_series = pd.Series({})
-                if isinstance(self._quality_series, pd.Series):
-                    curr_series = self._quality_series
-                else:
-                    warnings.warn(
-                        "Existing Standard Series should be pandas.Series, but found "
-                        f"{type(self._standard_series)}. Setting to empty pd.Series",
-                        stacklevel=1,
-                    )
-                    curr_series = pd.Series({})
             else:
                 raise ValueError(
-                    "I believe this error is unreachable, but Pyright disagrees"
+                    "No data types specified for import. At least one of 'standard', "
+                    "'quality' or 'check' arguments must be set to True."
                 )
 
             blob_list = data_acquisition.get_data(
@@ -547,27 +503,28 @@ class Processor:
                     if self._no_data:
                         self.raw_data_dict[data_type] = blob
                     if not data_series.empty:
-                        raw_time = data_series.index.astype("int64")
-                        mowsec_time = raw_time.map(lambda x: x - MOWSECS_OFFSET)
-                        timestamps = mowsec_time.map(
-                            lambda x: pd.Timestamp(x, unit="s")
-                            if x is not None
-                            else None
-                        )
-                        data_series.index = pd.to_datetime(timestamps)
+                        data_series.index = mowsecs_to_datetime_index(data_series.index)
             if not blob_found:
                 raise ValueError(f"{req_type} Data Not Found")
 
             if data_type == "standard":
-                insert_series = data_series.asfreq(self._frequency, method="bfill")
+                insert_series = data_series.asfreq(self._frequency, fill_value=np.NaN)
             else:
                 insert_series = data_series
 
+            print("Insert: ", insert_series.index.dtype)
+            print("Current: ", curr_series.index.dtype)
             if not curr_series.empty:
-                slice_to_remove = curr_series.loc[
-                    insert_series.index[0] : insert_series.index[-1]
-                ]
-                curr_series = curr_series.drop(slice_to_remove.index)
+                if overwrite:
+                    slice_to_remove = curr_series.loc[
+                        insert_series.index[0] : insert_series.index[-1]
+                    ]
+                    curr_series = curr_series.drop(slice_to_remove.index)
+                elif overwrite:
+                    slice_to_remove = insert_series.loc[
+                        curr_series.index[0] : curr_series.index[-1]
+                    ]
+                    insert_series = insert_series.drop(slice_to_remove.index)
 
             # Pandas doesn't like concatting possibly empty series anymore.
             # Test before upgrading pandas for release.
@@ -575,32 +532,64 @@ class Processor:
                 warnings.simplefilter(action="ignore", category=FutureWarning)
                 # Check for performance at some point
                 if data_type == "standard":
-                    self.standard_series = pd.concat(
+                    self._standard_series = pd.concat(
                         [
                             curr_series,
                             insert_series,
                         ]
                     ).sort_index()
+                    fmt = (
+                        self.raw_data_dict[data_type]
+                        .data_source.item_info[0]
+                        .item_format
+                    )
+                    if fmt == "I":
+                        self.standard_series = self._standard_series.astype(int)
+                    elif fmt == "F":
+                        self.standard_series = self._standard_series.astype(np.float32)
+                    elif fmt == "D":
+                        self.standard_series = mowsecs_to_datetime_index(
+                            self._standard_series
+                        )
+                if data_type == "quality":
+                    self._quality_series = pd.concat(
+                        [
+                            curr_series,
+                            insert_series,
+                        ]
+                    ).sort_index()
+                    self.quality_series = self._quality_series.astype(int)
                 if data_type == "check":
-                    self.check_series = pd.concat(
+                    # Not going to assign the class attribute just yet.
+                    # Don't want to call the annalist until the types are sorted.
+                    check_series = pd.concat(
                         [
                             curr_series,
                             insert_series,
                         ]
                     ).sort_index()
-                if data_type == "qual":
-                    self.quality_series = pd.concat(
-                        [
-                            curr_series,
-                            insert_series,
-                        ]
-                    ).sort_index()
+                    for i, item in enumerate(
+                        self.raw_data_dict[data_type].data_source.item_info
+                    ):
+                        fmt = item.item_format
+                        col = check_series.iloc[:, i]
+                        if fmt == "I":
+                            check_series.iloc[:, i] = col.astype(int)
+                        elif fmt == "F":
+                            check_series.iloc[:, i] = col.astype(np.float32)
+                        elif fmt == "D":
+                            if check_series.iloc[:, i].dtype != pd.Timestamp:
+                                # Oh god this formatting. What the heck, black.
+                                check_series.iloc[:, i] = mowsecs_to_datetime_index(col)
+                        elif fmt == "S":
+                            check_series.iloc[:, i] = col.astype(str)
+                    self.check_series = check_series
 
     def import_data(
         self,
         standard: bool = True,
         check: bool = True,
-        quality: bool = False,
+        quality: bool = True,
     ):
         """
         Import data using the class parameter range.
@@ -634,9 +623,9 @@ class Processor:
         False
         """
         self._standard_series = pd.Series({})
-        self._check_series = pd.DataFrame({})
         self._quality_series = pd.Series({})
-        self.import_range(self._from_date, self._to_date, standard, check, quality)
+        self._check_series = pd.DataFrame({})
+        self.import_range(self._from_date, self._to_date, standard, quality, check)
         self._raw_series = self.standard_series
         self._stale = False
 
@@ -714,7 +703,7 @@ class Processor:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
         self.quality_series = evaluator.quality_encoder(
             self._standard_series,
-            pd.Series(self._check_series["Check Guage Total"]),
+            pd.Series(self._check_series.loc[0]),
             self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,
@@ -761,7 +750,9 @@ class Processor:
 
         self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
         self.check_series = filters.clip(
-            pd.Series(self._check_series["Check Guage Total"]), low_clip, high_clip
+            pd.Series(self._check_series["Check Guage Total"]),
+            low_clip,
+            high_clip,
         )
 
     # @stale_warning  # type: ignore
@@ -1178,7 +1169,7 @@ class Processor:
         data_blob_list = []
 
         for dtype, raw_blob in self.raw_data_dict.items():
-            if raw_blob.item_info is not None:
+            if hasattr(raw_blob, "item_info") and (raw_blob.item_info) is not None:
                 item_info_list = []
                 for i, info in enumerate(raw_blob.item_info):
                     item_info = xml_data_structure.ItemInfo(
@@ -1195,12 +1186,12 @@ class Processor:
 
             data_source = xml_data_structure.DataSource(
                 name=self._standard_measurement_name,
-                num_items=len(item_info_list),
+                num_items=raw_blob.data_source.num_items,
                 ts_type=raw_blob.data_source.ts_type,
                 data_type=raw_blob.data_source.data_type,
-                interpolation=raw_blob.data_source.data_type,
+                interpolation=raw_blob.data_source.interpolation,
                 item_format=raw_blob.data_source.item_format,
-                item_info=raw_blob.data_source.item_format,
+                item_info=raw_blob.data_source.item_info,
             )
 
             if dtype == "standard":
@@ -1211,24 +1202,47 @@ class Processor:
                         "Standard Series should be pd.Series, "
                         f"found {type(self._standard_series)}"
                     )
+
+            elif dtype == "quality":
+                if isinstance(self._quality_series, pd.Series):
+                    timeseries = self._quality_series
+                else:
+                    raise TypeError(
+                        "Quality Series should be pd.Series, "
+                        f"found {type(self._quality_series)}"
+                    )
             elif dtype == "check":
                 if isinstance(self._check_series, pd.DataFrame):
                     timeseries = self._check_series
                 else:
                     raise TypeError(
-                        "Standard Series should be pd.DataFrame, "
+                        "Check Series should be pd.DataFrame, "
                         f"found {type(self._check_series)}"
                     )
-            elif dtype == "qual":
-                if isinstance(self._quality_series, pd.Series):
-                    timeseries = self._quality_series
-                else:
-                    raise TypeError(
-                        "Standard Series should be pd.Series, "
-                        f"found {type(self._quality_series)}"
-                    )
             else:
-                raise ValueError("I don't think anyone will ever get this error.")
+                raise ValueError("No data found for export.")
+            timeseries.index = datetime_index_to_mowsecs(timeseries.index)
+            if (
+                hasattr(raw_blob.data_source, "item_info")
+                and raw_blob.data_source.item_info is not None
+            ):
+                for i, info in enumerate(raw_blob.data_source.item_info):
+                    if info.item_format == "F":
+                        pattern = re.compile(r"#+\.?(#*)")
+                        match = pattern.match(info.format)
+                        float_format = "{:.1f}"
+                        if match:
+                            group = match.group(1)
+                            dp = len(group)
+                            float_format = "{:." + str(dp) + "f}"
+                        if isinstance(timeseries, pd.DataFrame):
+                            timeseries.iloc[:, i] = timeseries.iloc[:, i].map(
+                                lambda x, f=float_format: f.format(x)
+                            )
+                        elif isinstance(timeseries, pd.Series):
+                            timeseries = timeseries.map(
+                                lambda x, f=float_format: f.format(x)
+                            )
             data = xml_data_structure.Data(
                 date_format=raw_blob.data.date_format,
                 num_items=raw_blob.data.num_items,
@@ -1243,3 +1257,67 @@ class Processor:
 
             data_blob_list += [data_blob]
         return data_blob_list
+
+
+def mowsecs_to_datetime_index(index):
+    """
+    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+
+    Parameters
+    ----------
+    index : pd.Index
+        The input index in MOWSECS format.
+
+    Returns
+    -------
+    pd.DatetimeIndex
+        The converted datetime index.
+
+    Notes
+    -----
+    This function takes an index representing time in Ministry of Works Seconds
+    (MOWSECS) format and converts it to a pandas DatetimeIndex.
+
+    Examples
+    --------
+    >>> mowsecs_index = pd.Index([0, 1440, 2880], name="Time")
+    >>> converted_index = mowsecs_to_datetime_index(mowsecs_index)
+    >>> isinstance(converted_index, pd.DatetimeIndex)
+    True
+    """
+    mowsec_time = index.astype(int)
+    unix_time = mowsec_time.map(lambda x: x - MOWSECS_OFFSET)
+    timestamps = unix_time.map(
+        lambda x: pd.Timestamp(x, unit="s") if x is not None else None
+    )
+    datetime_index = pd.to_datetime(timestamps)
+    return datetime_index
+
+
+def datetime_index_to_mowsecs(index):
+    """
+    Convert datetime index to MOWSECS (Ministry of Works Seconds).
+
+    Parameters
+    ----------
+    index : pd.DatetimeIndex
+        The input datetime index.
+
+    Returns
+    -------
+    pd.Index
+        The converted MOWSECS index.
+
+    Notes
+    -----
+    This function takes a pandas DatetimeIndex and converts it to an index
+    representing time in Ministry of Works Seconds (MOWSECS) format.
+
+    Examples
+    --------
+    >>> datetime_index = pd.date_range("2023-01-01", periods=3, freq="D")
+    >>> mowsecs_index = datetime_index_to_mowsecs(datetime_index)
+    >>> isinstance(mowsecs_index, pd.Index)
+    True
+    """
+    return (index.astype(int) // 10**9) + MOWSECS_OFFSET

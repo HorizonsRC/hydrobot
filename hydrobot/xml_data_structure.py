@@ -784,7 +784,7 @@ def write_hilltop_xml(data_source_blob_list, output_path):
         elem = blob.to_xml_tree()
         root.append(elem)
 
-    ElementTree.indent(root)
+    ElementTree.indent(root, space="    ")
     etree = ElementTree.ElementTree(element=root)
 
     # Write the XML file to the specified output path

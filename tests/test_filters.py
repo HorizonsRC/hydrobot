@@ -144,8 +144,8 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
     high_clip = 4
     delta = 2
 
-    def clip_no_bugs(*args, **kwargs):
-        return insert_raw_data_gaps(["2021-01-01 00:00", "2021-01-01 00:20"])
+    # def clip_no_bugs(*args, **kwargs):
+    #     return insert_raw_data_gaps(["2021-01-01 00:00", "2021-01-01 00:20"])
 
     def remove_outliers_no_bugs(*args, **kwargs):
         return insert_fbewma_data_gaps(
@@ -158,10 +158,10 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
     #     side_effect=clip_no_bugs,
     # )
 
-    outlier_mock = mocker.patch(
-        "hydrobot.filters.remove_outliers",
-        side_effect=remove_outliers_no_bugs,
-    )
+    # outlier_mock = mocker.patch(
+    #     "hydrobot.filters.remove_outliers",
+    #     side_effect=remove_outliers_no_bugs,
+    # )
 
     spike_removed = filters.remove_spikes(raw_data, span, high_clip, low_clip, delta)
     assert math.isnan(spike_removed["2021-01-01 00:10"]), "Spike not removed!"

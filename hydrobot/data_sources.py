@@ -160,7 +160,7 @@ def get_qc_evaluator_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            qc_evaluator_dict[row[0]] = TwoLevelQualityCodeEvaluator(
+            qc_evaluator_dict[row[-1]] = TwoLevelQualityCodeEvaluator(
                 float(row[1]),
                 float(row[2]),
                 float(row[3]),
@@ -188,12 +188,12 @@ def get_qc_evaluator(qc_evaluator_name):
     QualityCodeEvaluator
         The QualityCodeEvaluator class initiated with the standard config data
     """
-    m_dict = get_qc_evaluator_dict()
-    if qc_evaluator_name in m_dict:
-        return m_dict[qc_evaluator_name]
+    qce_dict = get_qc_evaluator_dict()
+    if qc_evaluator_name in qce_dict:
+        return qce_dict[qc_evaluator_name]
     raise Exception(
         f"qc_evaluator {qc_evaluator_name} not found in the config file. "
-        f"Available qc_evaluators are {list(m_dict.keys())}."
+        f"Available qc_evaluators are {list(qce_dict.keys())}."
     )
 
 

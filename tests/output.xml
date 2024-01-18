@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='utf-8'?>
 <Hilltop>
     <Agency>Horizons</Agency>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -56,14 +56,14 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>
@@ -155,21 +155,21 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Handheld Turdidity Sensor Reading</ItemName>
                 <ItemFormat>F</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###.#</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="4">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>
@@ -263,14 +263,14 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>

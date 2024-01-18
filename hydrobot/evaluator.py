@@ -107,7 +107,6 @@ def check_data_quality_code(
     """
     first_data_date = series.index[0]
     last_data_date = series.index[-1]
-    print(check_series.index)
     if check_series.empty and isinstance(first_data_date, pd.Timestamp):
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
