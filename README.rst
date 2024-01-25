@@ -22,13 +22,20 @@ Features
 
 * Processes data downloaded from Hilltop Server
 * Uses annalist to record all changes to data
-* Capable of clipping data, removing spikes based on FBEWMA smoothing, closing gaps of a given size, QCing data based on NEMS standards
-* Plotting stuff (lots of it)
-* Probably more things I cannot think of right now
-* This is a professional document
-* Work in progress
-* TODO - actual feature list
+* Capable of various automated processing techniques, including:
 
+  * Clipping data
+  * Removing spikes based on FBEWMA smoothing
+  * Identifying and removing 'flatlining' data, where an instrument repeats it's last collected data point
+  * Identifying gaps and gap lengths and closing small gaps
+  * Quality coding data based on NEMS standards
+
+* Plotting data, including:
+
+  * Processed data with quality codes
+  * Comparing raw data to processed data
+  * Plotting data near checks
+  * Plotting data near gaps
 
 Credits
 -------
