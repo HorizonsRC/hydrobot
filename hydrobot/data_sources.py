@@ -160,7 +160,7 @@ def get_qc_evaluator_dict():
         reader = csv.reader(csv_file)
 
         for row in reader:
-            qc_evaluator_dict[row[-1]] = TwoLevelQualityCodeEvaluator(
+            qc_evaluator_dict[row[0]] = TwoLevelQualityCodeEvaluator(
                 float(row[1]),
                 float(row[2]),
                 float(row[3]),
@@ -169,7 +169,7 @@ def get_qc_evaluator_dict():
                 row[0],
             )
         csv_file.close()
-
+    print(qc_evaluator_dict.keys())
     return qc_evaluator_dict
 
 
@@ -202,7 +202,7 @@ def series_export_to_csv(
     site_name: str,
     measurement_name: str,
     std_series: pd.Series | None,
-    check_series: pd.DataFrame | None,
+    check_series: pd.Series | None,
     qc_series: pd.Series | None,
 ) -> None:
     """Export the 3 main series to csv.
@@ -228,7 +228,7 @@ def series_export_to_csv(
     """
     if std_series is not None:
         std_series.to_csv(
-            file_location
+            str(file_location)
             + "std_"
             + site_name
             + "-"
@@ -237,7 +237,7 @@ def series_export_to_csv(
         )
     if check_series is not None:
         check_series.to_csv(
-            file_location
+            str(file_location)
             + "check_"
             + site_name
             + "-"
@@ -246,7 +246,7 @@ def series_export_to_csv(
         )
     if qc_series is not None:
         qc_series.to_csv(
-            file_location
+            str(file_location)
             + "QC_"
             + site_name
             + "-"
@@ -260,7 +260,7 @@ def hilltop_export(
     site_name: str,
     measurement_name: str,
     std_series: pd.Series,
-    check_series: pd.DataFrame,
+    check_series: pd.Series,
     qc_series: pd.Series,
 ):
     """
@@ -290,7 +290,7 @@ def hilltop_export(
     qc_series.name = "qual"
     export_df = std_series.to_frame().join(qc_series)
     export_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_combined_std_QC_"
         + site_name
         + "-"
@@ -326,7 +326,7 @@ def hilltop_export(
         keys=keys,
     )
     export_check_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_check_import_"
         + site_name
         + "-"

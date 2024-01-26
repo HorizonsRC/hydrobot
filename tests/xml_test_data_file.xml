@@ -46,7 +46,7 @@
             <Interpolation>Discrete</Interpolation>
             <ItemFormat>140</ItemFormat>
             <ItemInfo ItemNumber="1">
-                <ItemName>Nastimeter Reading</ItemName>
+                <ItemName>General Nastiness</ItemName>
                 <ItemFormat>I</ItemFormat>
                 <Divisor>1</Divisor>
                 <Units>out of 10</Units>
@@ -154,7 +154,7 @@
             <ItemInfo ItemNumber="2">
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
-                <Divisor>1</Divisor>
+                <Divisor>0</Divisor>
                 <Units></Units>
                 <Format>###</Format>
             </ItemInfo>
@@ -253,7 +253,7 @@
             <Interpolation>Discrete</Interpolation>
             <ItemFormat>140</ItemFormat>
             <ItemInfo ItemNumber="1">
-                <ItemName>Eye-ometer</ItemName>
+                <ItemName>Dead Cow Concentration</ItemName>
                 <ItemFormat>I</ItemFormat>
                 <Divisor>1</Divisor>
                 <Units>ppm</Units>

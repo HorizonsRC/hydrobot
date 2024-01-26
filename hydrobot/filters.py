@@ -187,9 +187,7 @@ def remove_range(
     return series_to_return.sort_index()
 
 
-def trim_series(
-    std_series: pd.Series, check_series: pd.Series | pd.DataFrame
-) -> pd.Series:
+def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     """
     Remove end of std series to match check series.
 

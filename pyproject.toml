@@ -61,7 +61,11 @@ packages = ["hydrobot"]
 hydrobot = ["hydrobot/config/*"]
 
 [tool.pytest.ini_options]
-addopts = "--cov --cov-fail-under 100"
+addopts = "--cov --cov-fail-under 100 --strict-markers"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "remote: depends on remote server calls (deselect with '-m \"not remote\"')"
+]
 
 [tool.coverage.run]
 source = ["hydrobot"]
@@ -71,16 +75,16 @@ source = ["hydrobot"]
 extend-exclude = ["docs/*"]
 extend-select = [
     "W505", # Line too long as a warning, not an error. Default set to 88.
-    "UP",
+    "UP", # pyupgrade: Checks for out-dated syntax use.
 	"B", # Flake8 Bugbears:
 	"PD", # Pandas pro-gamer tips and conventions
 	"S", # Flake8 Bandit: Common security flaws.
-	"SLF",
-	"SIM",
-	"I",
-	"N",
-	"D",
-	"PT",
+	"SLF", # Checks that private members are not accessed outside of classes.
+    "SIM", # Flake8 simplify: Mostly checks for code duplication and such.
+	"I", # Isort. Import order sorting? Why not.
+    "N", # pep8-naming: naming conventions
+	"D", # pydocstyle.
+	"PT", # flake8-pytest-style checking for pytests
 ]
 extend-ignore = ["D401", "D203", "D212"]
 

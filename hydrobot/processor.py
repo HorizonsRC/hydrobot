@@ -16,6 +16,7 @@ from hydrobot import (
     evaluator,
     filters,
     plotter,
+    utils,
     xml_data_structure,
 )
 
@@ -29,8 +30,6 @@ DEFAULTS = {
     "gap_limit": 12,
     "max_qc": np.NaN,
 }
-
-MOWSECS_OFFSET = 946771200
 
 
 def stale_warning(method):
@@ -80,49 +79,7 @@ def stale_warning(method):
 
 
 class Processor:
-    """
-    A class used to process data from a Hilltop server.
-
-    Attributes
-    ----------
-    _defaults : dict
-        The default settings.
-    _site : str
-        The site to be processed.
-    _standard_measurement : str
-        The standard measurement to be processed.
-    _check_measurement : str
-        The measurement to be checked.
-    _base_url : str
-        The base URL of the Hilltop server.
-    _standard_hts : str
-        The standard Hilltop service.
-    _check_hts : str
-        The Hilltop service to be checked.
-    _frequency : str
-        The frequency of the data.
-    _from_date : str
-        The start date of the data.
-    _to_date : str
-        The end date of the data.
-    _measurement : Measurement
-        The measurement data.
-    _stale : bool
-        The stale status of the data.
-    _no_data : bool
-        The no data status of the data.
-    _standard_series : pd.Series
-        The standard series data.
-    _check_series : pd.Series
-        The check series data.
-    _quality_series : pd.Series
-        The quality series data.
-
-    Methods
-    -------
-    import_data():
-        Loads the data for the first time.
-    """
+    """A class used to process data from a Hilltop server."""
 
     @ClassLogger  # type: ignore
     def __init__(
@@ -205,11 +162,20 @@ class Processor:
                 f"{list(available_standard_measurements.MeasurementName)}"
             )
         available_check_measurements = check_hilltop.get_measurement_list(site)
-        if check_measurement_name in list(available_check_measurements.MeasurementName):
-            self._check_measurement_name = check_measurement_name
-        else:
+        self._check_measurement_name = check_measurement_name
+        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
+
+        if matches is not None:
+            self.check_item_name = matches.groups()[0].strip(" ")
+            self.check_data_source_name = matches.groups()[2]
+            if self.check_data_source_name is None:
+                self.check_data_source_name = self.check_item_name
+        if self._check_measurement_name not in list(
+            available_check_measurements.MeasurementName
+        ):
             raise ValueError(
-                f"Check measurement name '{check_measurement_name}' not found at site '{site}'. "
+                f"Check measurement name '{self._check_measurement_name}' "
+                f"not found at site '{site}'. "
                 "Available measurements are "
                 f"{list(available_check_measurements.MeasurementName)}"
             )
@@ -226,12 +192,18 @@ class Processor:
         self._stale = True
         self._no_data = True
         self._standard_series = pd.Series({})
-        self._raw_series = pd.Series({})
         self._check_series = pd.Series({})
-        self._quality_series = pd.DataFrame({})
+        self._check_data = pd.DataFrame({})
+        self._quality_series = pd.Series({})
+
+        self.raw_data_dict = {
+            "standard": {},
+            "quality": {},
+            "check": {},
+        }
 
         # Load data for the first time
-        self.import_data()
+        self.import_data(from_date=self.from_date, to_date=self.to_date)
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -332,9 +304,14 @@ class Processor:
         self._standard_series = value
 
     @property
-    def raw_series(self):  # type: ignore
-        """raw_series property."""
-        return self._raw_series
+    def check_data(self):  # type: ignore
+        """pd.DataFrame: The DataFrame containing check data."""
+        return self._check_data
+
+    @check_data.setter
+    def check_data(self, value):
+        self._check_data = value
+        self._check_series = self._check_data[self.check_item_name]
 
     @property
     def check_series(self):  # type: ignore
@@ -345,6 +322,7 @@ class Processor:
     @check_series.setter
     def check_series(self, value):
         self._check_series = value
+        self._check_data[self.check_item_name] = value
 
     @property
     def quality_series(self):  # type: ignore
@@ -362,231 +340,436 @@ class Processor:
         self._stale = True
 
     @ClassLogger
-    def import_range(
+    def import_standard(
         self,
-        from_date: str | None,
-        to_date: str | None,
-        standard: bool = True,
-        quality: bool = True,
-        check: bool = True,
+        from_date: str | None = None,
+        to_date: str | None = None,
         overwrite: bool = False,
     ):
         """
-        Load Raw Data from Hilltop within a specified date range.
+        Import standard data.
 
         Parameters
         ----------
-        from_date : str or None
-            The start date for data import. If None, the earliest available data will
-            be used.
-        to_date : str or None
-            The end date for data import. If None, the latest available data will be
-            used.
-        standard : bool, optional
-            Whether to import standard data, by default True.
-        quality : bool, optional
-            Whether to import quality data, by default False.
-        check : bool, optional
-            Whether to import check data, by default True.
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to earliest available data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available data.
+        overwrite : bool, optional
+            If True, overwrite existing data with newly acquired data for overlapping timestamps.
+            If False, keep existing data and only add new datapoints if they don't already exist.
 
         Returns
         -------
         None
 
-        Notes
-        -----
-        This method retrieves raw data from Hilltop for the specified date range and
-        updates the internal series data in the Processor instance. The data can be
-        imported for standard, check, and quality measurements separately.
-
         Raises
         ------
         ValueError
-            If the specified data type is not found or if no data is found for the
-            given range.
+            - If no standard data is found within the specified date range.
+            - If standard data is not found in the server response.
+
+        TypeError
+            If the parsed Standard data is not a pandas.Series.
 
         Warnings
         --------
-        This method modifies the internal series data based on the retrieved Hilltop
-        data.
+        UserWarning
+            - If the existing Standard Series is not a pandas.Series, it is set to an empty Series.
+
+        Notes
+        -----
+        This method imports Standard data from the specified server based on the provided parameters.
+        It retrieves data using the `data_acquisition.get_data` function and updates the Standard Series in the instance.
+        The data is parsed and formatted according to the item_info in the data source.
 
         Examples
         --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_range(from_date="2022-01-01", to_date="2022-12-31", \
-            standard=True)
+        >>> processor = Processor(...)  # initialize processor instance
+        >>> processor.import_standard(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
         """
-        # If this is the first data import, initialize with an empty dict
-        if self._no_data:
-            self.raw_data_dict = {}
+        xml_tree, blob_list = data_acquisition.get_data(
+            self._base_url,
+            self._standard_hts,
+            self._site,
+            self._standard_measurement_name,
+            from_date,
+            to_date,
+            tstype="Standard",
+        )
 
-        # These will become the keys for the raw_data_dict.
-        ts_types = ["standard", "quality", "check"]
+        if isinstance(self._standard_series, pd.Series):
+            curr_series = self._standard_series
+        else:
+            warnings.warn(
+                "Existing Standard Series should be pandas.Series, but found "
+                f"{type(self._standard_series)}. Setting to empty pd.Series",
+                stacklevel=1,
+            )
+            curr_series = pd.Series({})
+        insert_series = pd.Series({})
+        blob_found = False
 
-        # Boolean flag arguments for the three types of timeseries
-        inc_types = [standard, quality, check]
-
-        # Dropping keys from ts_types if corresponding flag is set to False
-        import_types = [ts for ts, inc in zip(ts_types, inc_types) if inc]
-        print(import_types)
-
-        # Iterating through all the data_types to be imported here
-        for data_type in import_types:
-            # Setting up some defaults for each timeseries type
-            if data_type == "standard":
-                req_type = "Standard"
-                ds_type = "StdSeries"
-                if isinstance(self._standard_series, pd.Series):
-                    curr_series = self._standard_series
-                else:
-                    warnings.warn(
-                        "Existing Standard Series should be pandas.Series, but found "
-                        f"{type(self._standard_series)}. Setting to empty pd.Series",
-                        stacklevel=1,
-                    )
-                    curr_series = pd.Series({})
-                data_series = pd.Series({})
-            elif data_type == "quality":
-                req_type = "Quality"
-                ds_type = "StdQualSeries"
-                data_series = pd.Series({})
-                if isinstance(self._quality_series, pd.Series):
-                    curr_series = self._quality_series
-                else:
-                    warnings.warn(
-                        "Existing Standard Series should be pandas.Series, but found "
-                        f"{type(self._standard_series)}. Setting to empty pd.Series",
-                        stacklevel=1,
-                    )
-                    curr_series = pd.Series({})
-            elif data_type == "check":
-                req_type = "Check"
-                ds_type = "CheckSeries"
-                # Check data has many fields, so it comes in as a DataFrame
-                data_series = pd.DataFrame({})
-                if isinstance(self._check_series, pd.DataFrame):
-                    curr_series = self._check_series
-                else:
-                    warnings.warn(
-                        "Existing Check Series should be pandas.DataFrame, but found"
-                        f" {type(self._check_series)}. Setting to empty pd.DataFrame",
-                        stacklevel=1,
-                    )
-                    curr_series = pd.DataFrame({})
-            else:
-                raise ValueError(
-                    "No data types specified for import. At least one of 'standard', "
-                    "'quality' or 'check' arguments must be set to True."
-                )
-
-            blob_list = data_acquisition.get_data(
-                self._base_url,
-                self._standard_hts,
-                self._site,
-                self._standard_measurement_name,
-                from_date,
-                to_date,
-                tstype=req_type,
+        if blob_list is None or len(blob_list) == 0:
+            raise ValueError("No standard data found within specified date range.")
+        date_format = "Calendar"
+        data_source_list = []
+        for blob in blob_list:
+            data_source_list += [blob.data_source.name]
+            if (blob.data_source.name == self._standard_measurement_name) and (
+                blob.data_source.ts_type == "StdSeries"
+            ):
+                insert_series = blob.data.timeseries
+                date_format = blob.data.date_format
+                if insert_series is not None:
+                    # Found it. Now we extract it.
+                    blob_found = True
+                    self.raw_data_dict["standard"] = {
+                        "data_blob": blob,
+                        "raw_xml": xml_tree,
+                    }
+        if not blob_found:
+            raise ValueError(
+                f"Standard Data Not Found under name {self._standard_measurement_name}. "
+                f"Available data sources are: {data_source_list}"
             )
 
-            blob_found = False
-            # Iterating through all the blobs to find the timeseries for this data_type
+        if not isinstance(insert_series, pd.Series):
+            raise TypeError(
+                f"Expecting pd.Series for Standard data, but got {type(insert_series)}"
+                "from parser."
+            )
+        if not insert_series.empty:
+            if date_format == "mowsecs":
+                insert_series.index = utils.mowsecs_to_datetime_index(
+                    insert_series.index
+                )
+            else:
+                insert_series.index = pd.to_datetime(insert_series.index)
+            insert_series = insert_series.asfreq(self._frequency, method="ffill")
+        if not curr_series.empty:
+            if overwrite:
+                # Combine, but overwrite overlapping timestamps with newly acquired
+                # data
+                self._standard_series = insert_series.combine_first(
+                    curr_series
+                ).sort_index()
+            else:
+                # Combine, keeping all existing values and only adding new datapoints
+                # if they don't already exist.
+                self._standard_series = curr_series.combine_first(
+                    insert_series
+                ).sort_index()
+        else:
+            self._standard_series = insert_series
+
+        fmt = (
+            self.raw_data_dict["standard"]["data_blob"]
+            .data_source.item_info[0]
+            .item_format
+        )
+        div = (
+            self.raw_data_dict["standard"]["data_blob"].data_source.item_info[0].divisor
+        )
+        if div is None or div == "None":
+            div = 1
+        if fmt == "I":
+            self.standard_series = self._standard_series.astype(int) / int(div)
+        elif fmt == "F":
+            self.standard_series = self._standard_series.astype(np.float32) / float(div)
+        elif fmt == "D":  # Not sure if this would ever really happen, but...
+            self.standard_series = utils.mowsecs_to_datetime_index(
+                self._standard_series
+            )
+        else:
+            raise ValueError(f"Unknown Format Spec: {fmt}")
+
+    @ClassLogger
+    def import_quality(
+        self,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        overwrite: bool = False,
+    ):
+        """
+        Import quality data.
+
+        Parameters
+        ----------
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to earliest available data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available data.
+        overwrite : bool, optional
+            If True, overwrite existing data with newly acquired data for overlapping timestamps.
+            If False, keep existing data and only add new datapoints if they don't already exist.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        TypeError
+            If the parsed Quality data is not a pandas.Series.
+
+        Warnings
+        --------
+        UserWarning
+            - If the existing Quality Series is not a pandas.Series, it is set to an empty Series.
+            - If no Quality data is available for the specified date range.
+            - If Quality data is not found in the server response.
+
+        Notes
+        -----
+        This method imports Quality data from the specified server based on the provided parameters.
+        It retrieves data using the `data_acquisition.get_data` function and updates the Quality Series in the instance.
+        The data is parsed and formatted according to the item_info in the data source.
+
+        Examples
+        --------
+        >>> processor = Processor(...)  # initialize processor instance
+        >>> processor.import_quality(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
+        """
+        xml_tree, blob_list = data_acquisition.get_data(
+            self._base_url,
+            self._standard_hts,
+            self._site,
+            self._standard_measurement_name,
+            from_date,
+            to_date,
+            tstype="Quality",
+        )
+
+        if isinstance(self._quality_series, pd.Series):
+            curr_series = self._quality_series
+        else:
+            warnings.warn(
+                "Existing Quality Series should be pandas.Series, but found "
+                f"{type(self._quality_series)}. Setting to empty pd.Series",
+                stacklevel=1,
+            )
+            curr_series = pd.Series({})
+        insert_series = pd.Series({})
+        blob_found = False
+
+        if blob_list is None or len(blob_list) == 0:
+            warnings.warn(
+                "No Quality data available for the range specified.",
+                stacklevel=2,
+            )
+        else:
+            date_format = "Calendar"
             for blob in blob_list:
                 if (blob.data_source.name == self._standard_measurement_name) and (
-                    blob.data_source.ts_type == ds_type
+                    blob.data_source.ts_type == "StdQualSeries"
                 ):
                     # Found it. Now we extract it.
                     blob_found = True
 
-                    # This could be a pd.Series or a pd.DataFrame
-                    data_series = blob.data.timeseries
-                    if self._no_data:
-                        self.raw_data_dict[data_type] = blob
-                    if not data_series.empty:
-                        data_series.index = mowsecs_to_datetime_index(data_series.index)
+                    insert_series = blob.data.timeseries
+                    date_format = blob.data.date_format
+                    if insert_series is not None:
+                        self.raw_data_dict["quality"] = {
+                            "data_blob": blob,
+                            "raw_xml": xml_tree,
+                        }
             if not blob_found:
-                raise ValueError(f"{req_type} Data Not Found")
+                warnings.warn(
+                    "No Quality data found in the server response.",
+                    stacklevel=2,
+                )
 
-            if data_type == "standard":
-                insert_series = data_series.asfreq(self._frequency, fill_value=np.NaN)
-            else:
-                insert_series = data_series
+            if not isinstance(insert_series, pd.Series):
+                raise TypeError(
+                    f"Expecting pd.Series for Quality data, but got {type(insert_series)}"
+                    "from parser."
+                )
+            if not insert_series.empty:
+                if date_format == "mowsecs":
+                    insert_series.index = utils.mowsecs_to_datetime_index(
+                        insert_series.index
+                    )
+                else:
+                    insert_series.index = pd.to_datetime(insert_series.index)
 
-            print("Insert: ", insert_series.index.dtype)
-            print("Current: ", curr_series.index.dtype)
             if not curr_series.empty:
                 if overwrite:
-                    slice_to_remove = curr_series.loc[
-                        insert_series.index[0] : insert_series.index[-1]
-                    ]
-                    curr_series = curr_series.drop(slice_to_remove.index)
-                elif overwrite:
-                    slice_to_remove = insert_series.loc[
-                        curr_series.index[0] : curr_series.index[-1]
-                    ]
-                    insert_series = insert_series.drop(slice_to_remove.index)
+                    # Combine, but overwrite overlapping timestamps with newly acquired
+                    # data
+                    self._quality_series = insert_series.combine_first(
+                        curr_series
+                    ).sort_index()
+                else:
+                    # Combine, keeping all existing values and only adding new datapoints
+                    # if they don't already exist.
+                    self._quality_series = curr_series.combine_first(
+                        insert_series
+                    ).sort_index()
+            elif not insert_series.empty:
+                self._quality_series = insert_series
+            self.quality_series = self._quality_series.astype(int)
 
-            # Pandas doesn't like concatting possibly empty series anymore.
-            # Test before upgrading pandas for release.
-            with warnings.catch_warnings():
-                warnings.simplefilter(action="ignore", category=FutureWarning)
-                # Check for performance at some point
-                if data_type == "standard":
-                    self._standard_series = pd.concat(
-                        [
-                            curr_series,
-                            insert_series,
-                        ]
-                    ).sort_index()
-                    fmt = (
-                        self.raw_data_dict[data_type]
-                        .data_source.item_info[0]
-                        .item_format
+    @ClassLogger
+    def import_check(
+        self,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        overwrite: bool = False,
+    ):
+        """
+        Import Check data.
+
+        Parameters
+        ----------
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to earliest available data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available data.
+        overwrite : bool, optional
+            If True, overwrite existing data with newly acquired data for overlapping timestamps.
+            If False, keep existing data and only add new datapoints if they don't already exist.
+
+        Returns
+        -------
+        None
+
+        Raises
+        ------
+        TypeError
+            If the parsed Check data is not a pandas.DataFrame.
+
+        Warnings
+        --------
+        UserWarning
+            - If the existing Check Data is not a pandas.DataFrame, it is set to an empty DataFrame.
+            - If no Check data is available for the specified date range.
+            - If the Check data source is not found in the server response.
+
+        Notes
+        -----
+        This method imports Check data from the specified server based on the provided parameters.
+        It retrieves data using the `data_acquisition.get_data` function and updates the Check data in the instance.
+        The data is parsed and formatted according to the item_info in the data source.
+
+        Examples
+        --------
+        >>> processor = Processor(...)  # initialize processor instance
+        >>> processor.import_check(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
+        """
+        xml_tree, blob_list = data_acquisition.get_data(
+            self._base_url,
+            self._check_hts,
+            self._site,
+            self._check_measurement_name,
+            from_date,
+            to_date,
+            tstype="Check",
+        )
+        if isinstance(self._check_data, pd.DataFrame):
+            curr_data = self._check_data
+        else:
+            warnings.warn(
+                "Existing Check Data should be pandas.DataFrame, but found "
+                f"{type(self._check_data)}. Setting to empty pd.DataFrame",
+                stacklevel=1,
+            )
+            curr_data = pd.DataFrame({})
+        insert_data = pd.DataFrame({})
+        blob_found = False
+
+        date_format = "Calendar"
+        if blob_list is None or len(blob_list) == 0:
+            warnings.warn(
+                "No Check data available for the range specified.",
+                stacklevel=2,
+            )
+        else:
+            data_source_options = []
+            for blob in blob_list:
+                data_source_options += [blob.data_source.name]
+                if (blob.data_source.name == self.check_data_source_name) and (
+                    blob.data_source.ts_type == "CheckSeries"
+                ):
+                    # Found it. Now we extract it.
+                    blob_found = True
+
+                    date_format = blob.data.date_format
+
+                    # This could be a pd.Series
+                    insert_data = blob.data.timeseries
+                    if insert_data is not None:
+                        self.raw_data_dict["check"] = {
+                            "data_blob": blob,
+                            "raw_xml": xml_tree,
+                        }
+            if not blob_found:
+                warnings.warn(
+                    f"Check data {self.check_data_source_name} not found in server "
+                    f"response. Available options are {data_source_options}",
+                    stacklevel=2,
+                )
+
+            if not isinstance(insert_data, pd.DataFrame):
+                raise TypeError(
+                    f"Expecting pd.DataFrame for Check data, but got {type(insert_data)}"
+                    "from parser."
+                )
+            if not insert_data.empty:
+                if date_format == "mowsecs":
+                    insert_data.index = utils.mowsecs_to_datetime_index(
+                        insert_data.index
                     )
+                else:
+                    insert_data.index = pd.to_datetime(insert_data.index)
+
+            if not curr_data.empty:
+                if overwrite:
+                    # Combine, but overwrite overlapping timestamps with newly acquired
+                    # data
+                    self._check_data = insert_data.combine_first(curr_data).sort_index()
+                else:
+                    # Combine, keeping all existing values and only adding new datapoints
+                    # if they don't already exist.
+                    self._check_data = curr_data.combine_first(insert_data).sort_index()
+            elif not insert_data.empty:
+                self._check_data = insert_data
+            if not self._check_data.empty:
+                # TODO: Maybe this should happen in the parser?
+                for i, item in enumerate(
+                    self.raw_data_dict["check"]["data_blob"].data_source.item_info
+                ):
+                    fmt = item.item_format
+                    div = item.divisor
+                    col = self._check_data.iloc[:, i]
                     if fmt == "I":
-                        self.standard_series = self._standard_series.astype(int)
+                        self._check_data.iloc[:, i] = col.astype(int) / int(div)
                     elif fmt == "F":
-                        self.standard_series = self._standard_series.astype(np.float32)
-                    elif fmt == "D":
-                        self.standard_series = mowsecs_to_datetime_index(
-                            self._standard_series
+                        self._check_data.iloc[:, i] = col.astype(np.float32) / float(
+                            div
                         )
-                if data_type == "quality":
-                    self._quality_series = pd.concat(
-                        [
-                            curr_series,
-                            insert_series,
-                        ]
-                    ).sort_index()
-                    self.quality_series = self._quality_series.astype(int)
-                if data_type == "check":
-                    # Not going to assign the class attribute just yet.
-                    # Don't want to call the annalist until the types are sorted.
-                    check_series = pd.concat(
-                        [
-                            curr_series,
-                            insert_series,
-                        ]
-                    ).sort_index()
-                    for i, item in enumerate(
-                        self.raw_data_dict[data_type].data_source.item_info
-                    ):
-                        fmt = item.item_format
-                        col = check_series.iloc[:, i]
-                        if fmt == "I":
-                            check_series.iloc[:, i] = col.astype(int)
-                        elif fmt == "F":
-                            check_series.iloc[:, i] = col.astype(np.float32)
-                        elif fmt == "D":
-                            if check_series.iloc[:, i].dtype != pd.Timestamp:
-                                # Oh god this formatting. What the heck, black.
-                                check_series.iloc[:, i] = mowsecs_to_datetime_index(col)
-                        elif fmt == "S":
-                            check_series.iloc[:, i] = col.astype(str)
-                    self.check_series = check_series
+                    elif fmt == "D":
+                        if self._check_data.iloc[:, i].dtype != pd.Timestamp:
+                            if date_format == "mowsecs":
+                                self._check_data.iloc[
+                                    :, i
+                                ] = utils.mowsecs_to_datetime_index(col)
+                            else:
+                                self._check_data.iloc[:, i] = col.astype(pd.Timestamp)
+                    elif fmt == "S":
+                        self._check_data.iloc[:, i] = col.astype(str)
+
+            self.check_data = self._check_data
+            if not self._check_data.empty:
+                self.check_series = self.check_data[self.check_item_name]
+            else:
+                self.check_series = pd.Series({})
 
     def import_data(
         self,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        overwrite: bool = False,
         standard: bool = True,
         check: bool = True,
         quality: bool = True,
@@ -622,11 +805,12 @@ class Processor:
         >>> processor.stale
         False
         """
-        self._standard_series = pd.Series({})
-        self._quality_series = pd.Series({})
-        self._check_series = pd.DataFrame({})
-        self.import_range(self._from_date, self._to_date, standard, quality, check)
-        self._raw_series = self.standard_series
+        if standard:
+            self.import_standard(from_date, to_date, overwrite)
+        if quality:
+            self.import_quality(from_date, to_date, overwrite)
+        if check:
+            self.import_check(from_date, to_date, overwrite)
         self._stale = False
 
     # @stale_warning  # type: ignore
@@ -703,7 +887,7 @@ class Processor:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
         self.quality_series = evaluator.quality_encoder(
             self._standard_series,
-            pd.Series(self._check_series.loc[0]),
+            self._check_series,
             self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,
@@ -750,7 +934,7 @@ class Processor:
 
         self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
         self.check_series = filters.clip(
-            pd.Series(self._check_series["Check Guage Total"]),
+            pd.Series(self._check_series),
             low_clip,
             high_clip,
         )
@@ -960,11 +1144,9 @@ class Processor:
         self.standard_series = self._standard_series.asfreq(self._frequency)
 
     @ClassLogger
-    def data_exporter(self, file_location, trimmed=True):
+    def data_exporter(self, file_location, type="xml", trimmed=True):
         """
         Export data to CSV file.
-
-        [DEPRECATED]
 
         Parameters
         ----------
@@ -980,8 +1162,7 @@ class Processor:
 
         Notes
         -----
-        This method exports data to a CSV file. It is deprecated and may be
-        removed in future releases. Use with caution.
+        This method exports data to a CSV file.
 
         Examples
         --------
@@ -989,31 +1170,21 @@ class Processor:
         >>> processor.data_exporter("output.csv", trimmed=True)
         >>> # Check the generated CSV file at 'output.csv'
         """
-        if (
-            isinstance(self._standard_series, pd.Series)
-            and isinstance(self._check_series, pd.DataFrame)
-            and isinstance(self._quality_series, pd.Series)
-        ):
-            if trimmed:
-                std_series = filters.trim_series(
-                    self._standard_series,
-                    self._check_series,
-                )
-            else:
-                std_series = self._standard_series
-            data_sources.series_export_to_csv(
-                file_location,
-                self._site,
-                self._quality_code_evaluator.name,
-                std_series,
+        if trimmed:
+            std_series = filters.trim_series(
+                self._standard_series,
                 self._check_series,
-                self._quality_series,
             )
         else:
-            raise TypeError(
-                "Standard Series should be pd.Series, "
-                f"found {type(self._standard_series)}"
-            )
+            std_series = self._standard_series
+        data_sources.series_export_to_csv(
+            file_location,
+            self._site,
+            self._quality_code_evaluator.name,
+            std_series,
+            self._check_series,
+            self._quality_series,
+        )
         data_sources.hilltop_export(
             file_location,
             self._site,
@@ -1168,7 +1339,9 @@ class Processor:
         """
         data_blob_list = []
 
-        for dtype, raw_blob in self.raw_data_dict.items():
+        for dtype, raw in self.raw_data_dict.items():
+            print(dtype, raw)
+            raw_blob = raw["data_blob"]
             if hasattr(raw_blob, "item_info") and (raw_blob.item_info) is not None:
                 item_info_list = []
                 for i, info in enumerate(raw_blob.item_info):
@@ -1212,16 +1385,18 @@ class Processor:
                         f"found {type(self._quality_series)}"
                     )
             elif dtype == "check":
-                if isinstance(self._check_series, pd.DataFrame):
-                    timeseries = self._check_series
+                if isinstance(self._check_data, pd.DataFrame):
+                    timeseries = self._check_data
                 else:
                     raise TypeError(
-                        "Check Series should be pd.DataFrame, "
-                        f"found {type(self._check_series)}"
+                        "Check Data should be pd.DataFrame, "
+                        f"found {type(self._check_data)}"
                     )
             else:
                 raise ValueError("No data found for export.")
-            timeseries.index = datetime_index_to_mowsecs(timeseries.index)
+            # timeseries.index = utils.datetime_index_to_mowsecs(
+            #     timeseries.index
+            # )
             if (
                 hasattr(raw_blob.data_source, "item_info")
                 and raw_blob.data_source.item_info is not None
@@ -1257,67 +1432,3 @@ class Processor:
 
             data_blob_list += [data_blob]
         return data_blob_list
-
-
-def mowsecs_to_datetime_index(index):
-    """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
-
-    Parameters
-    ----------
-    index : pd.Index
-        The input index in MOWSECS format.
-
-    Returns
-    -------
-    pd.DatetimeIndex
-        The converted datetime index.
-
-    Notes
-    -----
-    This function takes an index representing time in Ministry of Works Seconds
-    (MOWSECS) format and converts it to a pandas DatetimeIndex.
-
-    Examples
-    --------
-    >>> mowsecs_index = pd.Index([0, 1440, 2880], name="Time")
-    >>> converted_index = mowsecs_to_datetime_index(mowsecs_index)
-    >>> isinstance(converted_index, pd.DatetimeIndex)
-    True
-    """
-    mowsec_time = index.astype(int)
-    unix_time = mowsec_time.map(lambda x: x - MOWSECS_OFFSET)
-    timestamps = unix_time.map(
-        lambda x: pd.Timestamp(x, unit="s") if x is not None else None
-    )
-    datetime_index = pd.to_datetime(timestamps)
-    return datetime_index
-
-
-def datetime_index_to_mowsecs(index):
-    """
-    Convert datetime index to MOWSECS (Ministry of Works Seconds).
-
-    Parameters
-    ----------
-    index : pd.DatetimeIndex
-        The input datetime index.
-
-    Returns
-    -------
-    pd.Index
-        The converted MOWSECS index.
-
-    Notes
-    -----
-    This function takes a pandas DatetimeIndex and converts it to an index
-    representing time in Ministry of Works Seconds (MOWSECS) format.
-
-    Examples
-    --------
-    >>> datetime_index = pd.date_range("2023-01-01", periods=3, freq="D")
-    >>> mowsecs_index = datetime_index_to_mowsecs(datetime_index)
-    >>> isinstance(mowsecs_index, pd.Index)
-    True
-    """
-    return (index.astype(int) // 10**9) + MOWSECS_OFFSET

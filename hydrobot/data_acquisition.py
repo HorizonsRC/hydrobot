@@ -1,5 +1,7 @@
 """Main module."""
 
+from xml.etree import ElementTree
+
 import pandas as pd
 from annalist.annalist import Annalist
 from hilltoppy.utils import build_url, get_hilltop_xml
@@ -60,7 +62,7 @@ def get_data(
 
     data_object = parse_xml(hilltop_xml)
 
-    return data_object
+    return hilltop_xml, data_object
 
 
 def get_series(
@@ -71,7 +73,7 @@ def get_series(
     from_date,
     to_date,
     tstype="Standard",
-) -> pd.Series | pd.DataFrame:
+) -> tuple[ElementTree.Element, pd.Series | pd.DataFrame]:
     """Pack data from det_data as a pd.Series.
 
     Parameters
@@ -99,7 +101,7 @@ def get_series(
     pandas.Series or pandas.DataFrame
         A pd.Series containing the acquired time series data.
     """
-    data_object = get_data(
+    xml, data_object = get_data(
         base_url,
         hts,
         site,
@@ -108,13 +110,17 @@ def get_series(
         to_date,
         tstype,
     )
-    data = data_object[0].data.timeseries
-    if not data.empty:
-        mowsecs_offset = 946771200
-        timestamps = data.index.map(
-            lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
-        )
-        data.index = pd.to_datetime(timestamps)
+    if data_object is not None:
+        data = data_object[0].data.timeseries
+        if not data.empty:
+            mowsecs_offset = 946771200
+            if data_object[0].data.date_format == "mowsecs":
+                timestamps = data.index.map(
+                    lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
+                )
+                data.index = pd.to_datetime(timestamps)
+            else:
+                data.index = pd.to_datetime(data.index)
     else:
         data = pd.Series({})
-    return data
+    return xml, data

@@ -7,9 +7,10 @@ import numpy as np
 import pandas as pd
 import pytest
 from annalist.annalist import Annalist
+from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy import Hilltop
 
-from hydrobot import data_sources, processor, xml_data_structure
+from hydrobot import data_sources, processor, utils, xml_data_structure
 from hydrobot.data_sources import QualityCodeEvaluator
 from hydrobot.xml_data_structure import parse_xml
 
@@ -24,6 +25,12 @@ SITES = [
 MEASUREMENTS = [
     "General Nastiness",
     "Number of Actual Whole Human Turds Floating By",
+    "Dead Cow Concentration",
+]
+
+CHECK_MEASUREMENTS = [
+    "General Nastiness",
+    "Turdidity Sensor Reading [Number of Actual Whole Human Turds Floating By]",
     "Dead Cow Concentration",
 ]
 
@@ -48,7 +55,7 @@ def mock_site_list():
 def mock_measurement_list():
     """Mock response from MeasurementList server call method."""
     data = {
-        "MeasurementName": MEASUREMENTS,
+        "MeasurementName": MEASUREMENTS + CHECK_MEASUREMENTS,
     }
 
     return pd.DataFrame(data)
@@ -109,6 +116,8 @@ def mock_get_data():
     with open("tests/xml_test_data_file.xml") as f:
         xml_string = f.read()
 
+    xml_root = ElementTree.Element(xml_string)
+
     def _extract_data(
         base_url,
         hts,
@@ -128,28 +137,30 @@ def mock_get_data():
             "Quality": "StdQualSeries",
             "Check": "CheckSeries",
         }
-
-        for blob in data_blobs:
-            if (
-                blob.data_source.name == measurement
-                and blob.data_source.ts_type == type_map[tstype]
-            ):
-                conv_timestamps = processor.mowsecs_to_datetime_index(
-                    blob.data.timeseries.index
-                )
-                if from_date is None:
-                    from_date = conv_timestamps[0]
-                if to_date is None:
-                    to_date = conv_timestamps[-1]
-                mask = (conv_timestamps >= pd.to_datetime(from_date)) & (
-                    conv_timestamps <= pd.to_datetime(to_date)
-                )
-                blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
-                keep_blobs += [blob]
+        if data_blobs is not None:
+            for blob in data_blobs:
+                if (
+                    blob.data_source.name == measurement
+                    and blob.data_source.ts_type == type_map[tstype]
+                ):
+                    conv_timestamps = utils.mowsecs_to_datetime_index(
+                        blob.data.timeseries.index
+                    )
+                    if from_date is None:
+                        from_date = conv_timestamps[0]
+                    if to_date is None:
+                        to_date = conv_timestamps[-1]
+                    mask = (conv_timestamps >= pd.to_datetime(from_date)) & (
+                        conv_timestamps <= pd.to_datetime(to_date)
+                    )
+                    blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
+                    keep_blobs += [blob]
+        else:
+            return None
 
         return keep_blobs
 
-    return _extract_data
+    return xml_root, _extract_data
 
 
 def test_processor_init(
@@ -228,11 +239,12 @@ def test_processor_init(
     monkeypatch.setattr("hydrobot.data_acquisition.get_hilltop_xml", get_mock_xml_data)
 
     pr = processor.Processor(
-        "https://greenwashed.and.pleasant/",
-        SITES[1],
-        "GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        MEASUREMENTS[1],
-        "5T",
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[1],
+        check_measurement_name=CHECK_MEASUREMENTS[1],
+        frequency="5T",
     )
 
     captured = capsys.readouterr()
@@ -240,9 +252,11 @@ def test_processor_init(
 
     correct = [
         "standard_series | Mid Stream at Cowtoilet Farm",
+        "import_standard | Mid Stream at Cowtoilet Farm",
         "quality_series | Mid Stream at Cowtoilet Farm",
+        "import_quality | Mid Stream at Cowtoilet Farm",
         "check_series | Mid Stream at Cowtoilet Farm",
-        "import_range | Mid Stream at Cowtoilet Farm",
+        "import_check | Mid Stream at Cowtoilet Farm",
         "__init__ | Mid Stream at Cowtoilet Farm",
     ]
 
@@ -250,9 +264,11 @@ def test_processor_init(
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
-    assert pr.standard_measurement_name == pr.raw_data_dict["standard"].data_source.name
+    assert (
+        pr.standard_measurement_name
+        == pr.raw_data_dict["standard"]["data_blob"].data_source.name
+    )
     assert float(pr.standard_series.loc["2023-01-01 00:10:00"]) == pytest.approx(1882.1)
-    print(pr.standard_series.index.dtype)
     assert pr.standard_series.index.dtype == np.dtype("datetime64[ns]")
 
 
@@ -262,6 +278,7 @@ def test_to_xml_data_structure(
     mock_measurement_list,
     mock_xml_data,
     mock_qc_evaluator_dict,
+    tmp_path,
     sample_data_source_xml_file,
 ):
     """
@@ -327,19 +344,20 @@ def test_to_xml_data_structure(
 
     data_source_blob_list = []
 
-    for meas in MEASUREMENTS:
+    for check, meas in zip(CHECK_MEASUREMENTS, MEASUREMENTS):
         pr = processor.Processor(
             base_url="https://greenwashed.and.pleasant/",
             site=SITES[1],
             standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
+            check_measurement_name=check,
             frequency="5T",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
 
     # output_path = tmp_path / "output.xml"
-    output_path = "tests/output.xml"
+    output_path = "tests/test_output.xml"
     xml_data_structure.write_hilltop_xml(data_source_blob_list, output_path)
 
     with open(output_path) as f:
@@ -348,13 +366,10 @@ def test_to_xml_data_structure(
     with open(sample_data_source_xml_file) as f:
         sample_data_source_xml = f.read()
 
-    assert ElementTree.canonicalize(
-        sample_data_source_xml,
-        strip_text=True,
-    ) == ElementTree.canonicalize(
-        output_xml,
-        strip_text=True,
-    )
+    input_tree = DefusedElementTree.fromstring(sample_data_source_xml)
+    output_tree = DefusedElementTree.fromstring(output_xml)
+
+    assert ElementTree.indent(input_tree) == ElementTree.indent(output_tree)
 
     for blob in data_source_blob_list:
         assert blob.site_name == SITES[1]
@@ -408,7 +423,8 @@ def test_import_range(
         return mock_measurement_list
 
     def get_mock_get_data(*args, **kwargs):
-        return mock_get_data(*args, **kwargs)
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
 
     def get_mock_qc_evaluator_dict(*args, **kwargs):
         _ = args, kwargs
@@ -457,10 +473,10 @@ def test_import_range(
     # Making changes to the existing series
     pr.standard_series.iloc[0] = 111
     pr.quality_series.iloc[0] = 222
-    pr.check_series.iloc[0, 0] = 333
+    pr.check_series.iloc[0] = 333
 
     # Updating processor object with more data to the existing series
-    pr.import_range(
+    pr.import_data(
         from_date=None,
         to_date=None,
         standard=True,
@@ -475,12 +491,18 @@ def test_import_range(
     assert pr.check_series.index[-1] == pd.to_datetime("2023-01-01 00:45")
 
     # Check that changed data is not overwritten
-    assert pr.standard_series.iloc[0] == 111
-    assert pr.quality_series.iloc[0] == 222
-    assert pr.check_series.iloc[0, 0] == 333
+    assert (
+        pr.standard_series.iloc[0] == 111
+    ), "The 'overwrite' flag in import_data seems to be broken"
+    assert (
+        pr.quality_series.iloc[0] == 222
+    ), "The 'overwrite' flag in import_data seems to be broken"
+    assert (
+        pr.check_series.iloc[0] == 333
+    ), "The 'overwrite' flag in import_data seems to be broken"
 
     # Updating processor object again, this time overwriting everything
-    pr.import_range(
+    pr.import_data(
         from_date=None,
         to_date=None,
         standard=True,
@@ -490,7 +512,7 @@ def test_import_range(
     )
     assert int(pr.standard_series.iloc[0]) == 10
     assert int(pr.quality_series.iloc[0]) == 500
-    assert float(pr.check_series.iloc[0, 0]) == 9.0
+    assert float(pr.check_series.iloc[0]) == 9.0
 
 
 def test_gap_closer(
@@ -546,7 +568,8 @@ def test_gap_closer(
         return mock_measurement_list
 
     def get_mock_get_data(*args, **kwargs):
-        return mock_get_data(*args, **kwargs)
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
 
     def get_mock_qc_evaluator_dict(*args, **kwargs):
         _ = args, kwargs
