@@ -1234,9 +1234,10 @@ class Processor:
 
     def plot_comparison_qc_series(self, show=True):
         """Implement comparison_qc_plotter()."""
+        raw_series = self.raw_data_dict["standard"]["data_blob"].data.timeseries
         plotter.comparison_qc_plotter(
             self._standard_series,
-            self._raw_series,
+            raw_series,
             self._check_series,
             self._quality_series,
             self._frequency,

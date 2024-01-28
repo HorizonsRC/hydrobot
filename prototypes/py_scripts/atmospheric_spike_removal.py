@@ -17,16 +17,19 @@ to_date = "2023-10-12 8:30"
 dtl_method = "trend"
 
 # %%
-data = data_acquisition.get_data(
+xml, blobs = data_acquisition.get_data(
     base_url, hts, site, measurement, from_date, to_date, dtl_method
 )
-print(data)
+print(blobs)
+
+data = blobs[0].data.timeseries
+
 # print(data)
 
 # %%
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
-plt.plot(data["Value"], label="Original Data")
+plt.plot(data, label="Original Data")
 plt.title("Data before spike removal")
 plt.legend()
 
@@ -42,12 +45,12 @@ delta = 20
 
 
 # %%
-clip_data = filters.clip(data["Value"], high_clip, low_clip)
+clip_data = filters.clip(data, high_clip, low_clip)
 
 # %%
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
-plt.plot(data["Value"], label="Original Data")
+plt.plot(data, label="Original Data")
 plt.plot(clip_data, label="Clipped Data")
 plt.legend()
 
@@ -63,12 +66,12 @@ plt.legend()
 
 
 # %%
-delta_clip_data = filters.remove_outliers(data["Value"], span, delta)
+delta_clip_data = filters.remove_outliers(data, span, delta)
 
 # %%
 plt.figure(figsize=(10, 6))
 plt.subplot(1, 1, 1)
-plt.plot(data["Value"], label="Original Data")
+plt.plot(data, label="Original Data")
 plt.plot(delta_clip_data, label="Cleaned Data")
 plt.legend()
 plt.show()
