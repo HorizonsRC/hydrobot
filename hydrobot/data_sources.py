@@ -169,7 +169,6 @@ def get_qc_evaluator_dict():
                 row[0],
             )
         csv_file.close()
-    print(qc_evaluator_dict.keys())
     return qc_evaluator_dict
 
 
