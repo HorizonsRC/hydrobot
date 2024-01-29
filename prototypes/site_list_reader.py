@@ -41,8 +41,6 @@ data = Processor(
 )
 
 
-data.import_data()
-
 data.clip()
 data.remove_spikes()
 data.gap_closer()

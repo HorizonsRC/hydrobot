@@ -8,10 +8,10 @@ import pandas as pd
 
 
 class QualityCodeEvaluator:
-    """Basic measurement only compares magnitude of differences."""
+    """Basic QualityCodeEvaluator only compares magnitude of differences."""
 
     def __init__(self, qc_500_limit, qc_600_limit, name=""):
-        """Initialize Measurement.
+        """Initialize QualityCodeEvaluator.
 
         Parameters
         ----------
@@ -27,8 +27,8 @@ class QualityCodeEvaluator:
         self.name = name
 
     def __repr__(self):
-        """Measurement representation."""
-        return repr(f"Measurement '{self.name}'")
+        """QualityCodeEvaluator representation."""
+        return repr(f"QualityCodeEvaluator '{self.name}'")
 
     def find_qc(self, base_datum, check_datum):
         """Find the base quality codes.
@@ -55,7 +55,7 @@ class QualityCodeEvaluator:
 
 
 class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
-    """Measurement for standards such as water level.
+    """QualityCodeEvaluator for standards such as water level.
 
     Fixed error up to given threshold, percentage error after that.
     """
@@ -69,7 +69,7 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         limit_percent_threshold,
         name="",
     ):
-        """Initialize TwoLevelMeasurement.
+        """Initialize TwoLevelQualityCodeEvaluator.
 
         Parameters
         ----------
@@ -82,7 +82,7 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         qc_600_percent : numerical
             Threshold between QC 500 and QC 600 for percentage portion
         limit_percent_threshold
-            Value at which the measurement transitions between linear and percentage
+            Value at which the evaluator transitions between linear and percentage
             QC comparison
         name : str
             Name of the data source
@@ -130,35 +130,37 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         return 400
 
 
-def get_measurement_dict():
-    """Return all measurements in a dictionary.
+def get_qc_evaluator_dict():
+    """Return all qc_evaluators in a dictionary.
 
     Returns
     -------
-    dict of string-measurement pairs
+    dict of string-qc_evaluator pairs
     """
-    measurement_dict = {}
+    qc_evaluator_dict = {}
     script_dir = Path(__file__).parent
     # script_dir = os.path.dirname(os.path.abspath(__file__))
 
-    # Plain Measurements
-    template_path = (script_dir / "config/measurement_QC_config.csv").resolve()
+    # Plain QualityCodeEvaluators
+    template_path = (script_dir / "config/QualityCodeEvaluator_QC_config.csv").resolve()
     with open(template_path) as csv_file:
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = QualityCodeEvaluator(
+            qc_evaluator_dict[row[0]] = QualityCodeEvaluator(
                 float(row[1]), float(row[2]), row[0]
             )
         csv_file.close()
 
-    # Two stage Measurements
-    template_path = (script_dir / "config/TwoLevelMeasurement_QC_config.csv").resolve()
+    # Two stage QualityCodeEvaluators
+    template_path = (
+        script_dir / "config/TwoLevelQualityCodeEvaluator_QC_config.csv"
+    ).resolve()
     with open(template_path) as csv_file:
         reader = csv.reader(csv_file)
 
         for row in reader:
-            measurement_dict[row[0]] = TwoLevelQualityCodeEvaluator(
+            qc_evaluator_dict[row[0]] = TwoLevelQualityCodeEvaluator(
                 float(row[1]),
                 float(row[2]),
                 float(row[3]),
@@ -167,31 +169,31 @@ def get_measurement_dict():
                 row[0],
             )
         csv_file.close()
+    print(qc_evaluator_dict.keys())
+    return qc_evaluator_dict
 
-    return measurement_dict
 
+def get_qc_evaluator(qc_evaluator_name):
+    """Return qc_evaluator that matches the given name.
 
-def get_measurement(measurement_name):
-    """Return measurement that matches the given name.
-
-    Raises exception if measurement is not in the config.
+    Raises exception if evaluator is not in the config.
 
     Parameters
     ----------
-    measurement_name : string
-        Name of the measurement as defined in the config
+    qc_evaluator_name : string
+        Name of the qc_evaluator as defined in the config
 
     Returns
     -------
     QualityCodeEvaluator
-        The Measurement class initiated with the standard config data
+        The QualityCodeEvaluator class initiated with the standard config data
     """
-    m_dict = get_measurement_dict()
-    if measurement_name in m_dict:
-        return m_dict[measurement_name]
+    qce_dict = get_qc_evaluator_dict()
+    if qc_evaluator_name in qce_dict:
+        return qce_dict[qc_evaluator_name]
     raise Exception(
-        f"Measurement {measurement_name} not found in the config file. "
-        f"Available measurements are {list(m_dict.keys())}."
+        f"qc_evaluator {qc_evaluator_name} not found in the config file. "
+        f"Available qc_evaluators are {list(qce_dict.keys())}."
     )
 
 
@@ -226,7 +228,7 @@ def series_export_to_csv(
     """
     if std_series is not None:
         std_series.to_csv(
-            file_location
+            str(file_location)
             + "std_"
             + site_name
             + "-"
@@ -235,7 +237,7 @@ def series_export_to_csv(
         )
     if check_series is not None:
         check_series.to_csv(
-            file_location
+            str(file_location)
             + "check_"
             + site_name
             + "-"
@@ -244,7 +246,7 @@ def series_export_to_csv(
         )
     if qc_series is not None:
         qc_series.to_csv(
-            file_location
+            str(file_location)
             + "QC_"
             + site_name
             + "-"
@@ -271,7 +273,7 @@ def hilltop_export(
     site_name : str
         Site name
     measurement_name : str
-        Measurement name
+        measurement name
     std_series : pd.Series
         Standard series
     check_series : pd.Series
@@ -288,7 +290,7 @@ def hilltop_export(
     qc_series.name = "qual"
     export_df = std_series.to_frame().join(qc_series)
     export_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_combined_std_QC_"
         + site_name
         + "-"
@@ -324,7 +326,7 @@ def hilltop_export(
         keys=keys,
     )
     export_check_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_check_import_"
         + site_name
         + "-"

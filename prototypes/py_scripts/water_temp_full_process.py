@@ -5,7 +5,7 @@ import pandas as pd
 from annalist.annalist import Annalist
 
 from hydrobot.data_acquisition import get_data
-from hydrobot.data_sources import get_measurement
+from hydrobot.data_sources import get_qc_evaluator
 from hydrobot.evaluator import (
     base_data_meets_qc,
     check_data_quality_code,
@@ -77,7 +77,7 @@ base_series = small_gap_closer(base_series, 12)
 
 # Find the QC values
 qc_series = check_data_quality_code(
-    base_series, check_series, get_measurement(measurement)
+    base_series, check_series, get_qc_evaluator(measurement)
 )
 qc_series = missing_data_quality_code(base_series, qc_series, 12)
 # qc_series[from_date] = np.NaN

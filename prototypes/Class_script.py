@@ -1,5 +1,5 @@
 """Script to run through a processing task with the processor class."""
-import matplotlib as plt
+import matplotlib.pyplot as plt
 from annalist.annalist import Annalist
 
 from hydrobot.processor import Processor
@@ -31,8 +31,8 @@ stream_format_str = (
 )
 ann.configure(
     logfile="output_dump/bot_annals.csv",
-    analyst_name="Annie the analyst!",
-    file_format_str=stream_format_str,
+    analyst_name="Slam Slurvine",
+    stream_format_str=stream_format_str,
 )
 
 data = Processor(
@@ -47,8 +47,6 @@ data = Processor(
     processing_parameters["check_measurement_name"],
     processing_parameters["defaults"],
 )
-
-data.import_data()
 
 data.clip()
 
@@ -66,6 +64,7 @@ data.data_exporter("output_dump/")
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
     data.plot_comparison_qc_series()
+    plt.show()
     # data.plot_qc_series()
     # data.plot_gaps(show=False)
     # data.plot_checks()

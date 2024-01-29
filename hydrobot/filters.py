@@ -8,7 +8,7 @@ from annalist.annalist import Annalist
 annalizer = Annalist()
 
 
-def clip(unclipped, low_clip: float, high_clip: float):
+def clip(unclipped: pd.Series, low_clip: float, high_clip: float):
     """Clip values in a pandas Series within a specified range.
 
     Parameters
@@ -68,7 +68,7 @@ def fbewma(input_data, span: int):
     return stacked_ewma.groupby(level=0).mean()
 
 
-def remove_outliers(input_data, span: int, delta: float):
+def remove_outliers(input_data: pd.Series, span: int, delta: float):
     """Remove outliers.
 
     Remove outliers from a time series by comparing it to the
@@ -103,7 +103,7 @@ def remove_outliers(input_data, span: int, delta: float):
 
 def remove_spikes(
     input_data: pd.Series, span: int, low_clip: float, high_clip: float, delta: float
-):
+) -> pd.Series:
     """Remove spikes.
 
     Remove spikes from a time series data using a combination of clipping and
@@ -200,7 +200,7 @@ def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     ----------
     std_series : pd.Series
         The series to be trimmed
-    check_series : pd.Series
+    check_series : pd.Series | pd.DataFrame
         Indicates the end of the usable data
 
     Returns
@@ -245,5 +245,5 @@ def flatline_value_remover(
     )
     working_step = consecutive_values.loc[~consecutive_values.between(2, span)]
     length_filter = working_step.reindex(consecutive_values.index).bfill()
-    filtered_data = series[length_filter < span]
+    filtered_data = pd.Series(series[length_filter < span])
     return filtered_data.reindex(series.index)
