@@ -287,9 +287,7 @@ def test_missing_data_quality_code(gap_data, qc_data):
     assert new_qc[pd.Timestamp("2021-01-01 00:00")] == 100, "Starting gap not added"
     assert new_qc[pd.Timestamp("2021-01-01 00:15")] == 500, "Starting gap not closed"
     assert new_qc[pd.Timestamp("2021-01-01 02:30")] == 100, "Ending gap not added"
-    with pytest.raises(KeyError):
-        # Mid-gap QC not replaced
-        new_qc[pd.Timestamp("2021-01-01 01:30")]
+    assert pd.Timestamp("2021-01-01 01:30") not in new_qc, "Mid-gap QC not replaced"
     assert new_qc[pd.Timestamp("2021-01-01 02:00")] == 500, "Gap in middle not closed"
 
 

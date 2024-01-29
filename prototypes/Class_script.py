@@ -63,8 +63,8 @@ data.data_exporter("output_dump/")
 
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
-    data.plot_comparison_qc_series()
-    plt.show()
-    # data.plot_qc_series()
+    data.plot_comparison_qc_series(show=False)
+    # data.plot_qc_series(show=False)
     # data.plot_gaps(show=False)
-    # data.plot_checks()
+    # data.plot_checks(show=False)
+    plt.show()
