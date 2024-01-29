@@ -169,7 +169,7 @@ def get_qc_evaluator_dict():
                 row[0],
             )
         csv_file.close()
-
+    print(qc_evaluator_dict.keys())
     return qc_evaluator_dict
 
 
@@ -188,12 +188,12 @@ def get_qc_evaluator(qc_evaluator_name):
     QualityCodeEvaluator
         The QualityCodeEvaluator class initiated with the standard config data
     """
-    m_dict = get_qc_evaluator_dict()
-    if qc_evaluator_name in m_dict:
-        return m_dict[qc_evaluator_name]
+    qce_dict = get_qc_evaluator_dict()
+    if qc_evaluator_name in qce_dict:
+        return qce_dict[qc_evaluator_name]
     raise Exception(
         f"qc_evaluator {qc_evaluator_name} not found in the config file. "
-        f"Available qc_evaluators are {list(m_dict.keys())}."
+        f"Available qc_evaluators are {list(qce_dict.keys())}."
     )
 
 
@@ -202,7 +202,7 @@ def series_export_to_csv(
     site_name: str,
     measurement_name: str,
     std_series: pd.Series | None,
-    check_series: pd.DataFrame | None,
+    check_series: pd.Series | None,
     qc_series: pd.Series | None,
 ) -> None:
     """Export the 3 main series to csv.
@@ -228,7 +228,7 @@ def series_export_to_csv(
     """
     if std_series is not None:
         std_series.to_csv(
-            file_location
+            str(file_location)
             + "std_"
             + site_name
             + "-"
@@ -237,7 +237,7 @@ def series_export_to_csv(
         )
     if check_series is not None:
         check_series.to_csv(
-            file_location
+            str(file_location)
             + "check_"
             + site_name
             + "-"
@@ -246,7 +246,7 @@ def series_export_to_csv(
         )
     if qc_series is not None:
         qc_series.to_csv(
-            file_location
+            str(file_location)
             + "QC_"
             + site_name
             + "-"
@@ -260,7 +260,7 @@ def hilltop_export(
     site_name: str,
     measurement_name: str,
     std_series: pd.Series,
-    check_series: pd.DataFrame,
+    check_series: pd.Series,
     qc_series: pd.Series,
 ):
     """
@@ -290,7 +290,7 @@ def hilltop_export(
     qc_series.name = "qual"
     export_df = std_series.to_frame().join(qc_series)
     export_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_combined_std_QC_"
         + site_name
         + "-"
@@ -326,7 +326,7 @@ def hilltop_export(
         keys=keys,
     )
     export_check_df.to_csv(
-        file_location
+        str(file_location)
         + "hilltop_check_import_"
         + site_name
         + "-"

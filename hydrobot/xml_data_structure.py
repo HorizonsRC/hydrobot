@@ -1,4 +1,5 @@
 """DataSourceBlob Object."""
+import re
 from xml.etree import ElementTree
 
 import pandas as pd
@@ -152,6 +153,19 @@ class ItemInfo:
 
         return item_info_root
 
+    def __repr__(self):
+        """Overwriting the __repr__ to mimic xml tree structure."""
+        repr = f"""
+        <ItemInfo ItemNumber="{self.item_number}">
+            <ItemName>{self.item_name}</ItemName>
+            <ItemFormat>{self.item_format}</ItemFormat>
+            <Divisor>{self.divisor}</Divisor>
+            <Units>{self.units}</Units>
+            <Format>{self.format}</Format>
+        </ItemInfo>
+        """
+        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+
 
 class DataSource:
     """Data Source class."""
@@ -164,7 +178,7 @@ class DataSource:
         data_type: str,
         interpolation: str,
         item_format: str,
-        item_info: list[ItemInfo] | None,
+        item_info: list[ItemInfo] | None = None,
     ):
         """
         Initialize a DataSource instance.
@@ -197,7 +211,10 @@ class DataSource:
         self.data_type = data_type
         self.interpolation = interpolation
         self.item_format = item_format
-        self.item_info = item_info
+        if item_info is not None:
+            self.item_info = item_info
+        else:
+            self.item_info = []
 
     @classmethod
     def from_xml(cls, source):
@@ -335,6 +352,24 @@ class DataSource:
             )
         return data_source_root
 
+    def __repr__(self):
+        """Overwriting the __repr__ to mimic xml tree structure."""
+        repr = f"""
+    <DataSource Name="{self.name}" NumItems="{self.num_items}">
+        <TSType>{self.ts_type}</TSType>
+        <DataType>{self.data_type}</DataType>
+        <Interpolation>{self.interpolation}</Interpolation>
+        <ItemFormat>{self.item_format}</ItemFormat>
+        """
+        for item in self.item_info:
+            repr += f"""
+{item}
+            """
+        repr += """
+    </DataSource>
+        """
+        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+
 
 class Data:
     """Data Class."""
@@ -425,16 +460,13 @@ class Data:
 
         data_list = []
         for child in root:
-            if num_items > 1:
-                if child.tag != "E":
-                    # Multivariate data seems to always be tagged with E
-                    raise ValueError("Malformed Hilltop XML.")
+            if child.tag == "E":
                 data_dict = {}
                 for element in child:
                     data_dict[element.tag] = element.text
 
                 data_list += [data_dict]
-            else:
+            elif child.tag == "V":
                 if child.text is not None:
                     timestamp, data_val = child.text.split(" ")
                     data_dict = {
@@ -442,15 +474,19 @@ class Data:
                         "V": data_val,
                     }
                     data_list += [data_dict]
+            else:
+                raise ValueError(
+                    "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
+                )
 
         if num_items > 1:
             timeseries = pd.DataFrame(data_list).set_index("T")
         else:
+            data_key = list(data_list[0].keys())[1]
             timeseries = pd.Series(
-                [dat["V"] for dat in data_list],
+                [dat[data_key] for dat in data_list],
                 index=[dat["T"] for dat in data_list],
             )
-
         return cls(date_format, num_items, timeseries)
 
     def to_xml_tree(self):
@@ -510,6 +546,63 @@ class Data:
                     f" Found {type(self.timeseries)}."
                 )
         return data_root
+
+    def __repr__(self):
+        """Overwriting the __repr__ to mimic xml tree structure."""
+        repr = f"""
+    <Data DateFormat="{self.date_format}" NumItems="{self.num_items}">
+        """
+        time = self.timeseries.index
+        if isinstance(self.timeseries, pd.Series):
+            repr += f"""
+        <E>
+            <T>{time[0]}</T>
+            <I1>{self.timeseries.iloc[0]}</I1>
+        </E>
+            """
+            if len(self.timeseries) > 2:
+                repr += f"""
+        ... [{len(self.timeseries) - 2} values omitted]
+                """
+            if len(self.timeseries) > 1:
+                repr += f"""
+        <E>
+            <T>{time[-1]}</T>
+            <I1>{self.timeseries.iloc[-1]}</I1>
+        </E>
+                """
+        elif isinstance(self.timeseries, pd.DataFrame):
+            repr += f"""
+        <E>
+            <T>{time[0]}</T>
+            """
+            for i in range(len(self.timeseries.columns)):
+                repr += f"""
+            <I{i+1}>{self.timeseries.iloc[0, i]}</I{i+1}>
+                """
+            repr += """
+        </E>
+            """
+            if len(self.timeseries) > 2:
+                repr += f"""
+            ... [{len(self.timeseries) - 2} values omitted]
+                """
+            if len(self.timeseries) > 1:
+                repr += f"""
+        <E>
+            <T>{time[-1]}</T>
+                """
+                for i in range(len(self.timeseries.columns)):
+                    repr += f"""
+            <I{i+1}>{self.timeseries.iloc[-1, i]}</I{i+1}>
+                    """
+            repr += """
+        </E>
+            """
+        repr += """
+    </Data>
+        """
+        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
 
 
 class DataSourceBlob:
@@ -646,8 +739,18 @@ class DataSourceBlob:
 
         return data_source_blob_root
 
+    def __repr__(self):
+        """Overwriting the __repr__ to mimic xml tree structure."""
+        repr = f"""
+<DataSourceBlob[Measurement] SiteName="{self.site_name}">
+{self.data_source}
+{self.data}
+</DataSourceBlob[Measurement]">
+        """
+        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
 
-def parse_xml(source) -> list[DataSourceBlob]:
+
+def parse_xml(source) -> list[DataSourceBlob] | None:
     """
     Parse Hilltop XML to get a list of DataSourceBlob objects.
 
@@ -685,8 +788,11 @@ def parse_xml(source) -> list[DataSourceBlob]:
         # If the source is a string, treat it as raw XML
         root = DefusedElementTree.fromstring(source)
     elif isinstance(source, ElementTree.Element):
-        # If the source is an ElementTree object, use it directly
+        # If the source is an Element object, use it directly as root
         root = source
+    elif isinstance(source, ElementTree.ElementTree):
+        # If the source is an ElementTree object, get the root
+        root = source.getroot()
     elif isinstance(source, (bytes, bytearray)):
         # If the source is a bytes or bytearray, assume it's
         # XML content and decode it.
@@ -698,7 +804,12 @@ def parse_xml(source) -> list[DataSourceBlob]:
     else:
         raise ValueError("Unsupported XML source type.")
 
-    if root.tag != "Hilltop":
+    if root.tag == "HilltopServer":
+        ElementTree.indent(root, space="\t")
+        print("Hilltop xml possibly returned no data. Check for yourself:")
+        ElementTree.dump(root)
+        return None
+    elif root.tag != "Hilltop":
         raise ValueError(
             f"Possibly malformed Hilltop xml. Root tag is '{root.tag}',"
             " should be 'Hilltop'."
@@ -707,27 +818,47 @@ def parse_xml(source) -> list[DataSourceBlob]:
     for child in root.iter():
         if child.tag == "Measurement":
             data_source_blob = DataSourceBlob.from_xml(child)
-            if data_source_blob.data_source.item_info is not None:
+            if (
+                data_source_blob.data_source.item_info is not None
+                and len(data_source_blob.data_source.item_info) > 0
+            ):
                 item_names = [
                     info.item_name for info in data_source_blob.data_source.item_info
                 ]
+                item_numbers = [
+                    int(info.item_number)
+                    for info in data_source_blob.data_source.item_info
+                ]
+
+                sorted_pairs = sorted(zip(item_numbers, item_names), key=lambda x: x[0])
+                sorted_items = sorted(
+                    zip(item_numbers, data_source_blob.data_source.item_info),
+                    key=lambda x: x[0],
+                )
+
+                _, sorted_item_names = zip(*sorted_pairs)
+                _, sorted_item_list = zip(*sorted_items)
+
+                sorted_item_names = list(sorted_item_names)
+                data_source_blob.data_source.item_info = list(sorted_item_list)
+
             else:
-                item_names = []
-            if len(item_names) > 1 and isinstance(
+                sorted_item_names = []
+            if len(sorted_item_names) > 1 and isinstance(
                 data_source_blob.data.timeseries, pd.DataFrame
             ):
                 cols = {
                     col: name
                     for col, name in zip(
                         data_source_blob.data.timeseries.columns,
-                        item_names,
+                        sorted_item_names,
                     )
                 }
                 data_source_blob.data.timeseries = (
                     data_source_blob.data.timeseries.rename(columns=cols)
                 )
-            elif len(item_names) > 0:
-                data_source_blob.data.timeseries.name = item_names[0]
+            elif len(sorted_item_names) > 0:
+                data_source_blob.data.timeseries.name = sorted_item_names[0]
             else:
                 # It seems that if iteminfo is missing it's always a QC
                 data_source_blob.data.timeseries.name = "QualityCode"
@@ -784,7 +915,7 @@ def write_hilltop_xml(data_source_blob_list, output_path):
         elem = blob.to_xml_tree()
         root.append(elem)
 
-    ElementTree.indent(root)
+    ElementTree.indent(root, space="    ")
     etree = ElementTree.ElementTree(element=root)
 
     # Write the XML file to the specified output path

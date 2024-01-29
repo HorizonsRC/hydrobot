@@ -107,7 +107,6 @@ def check_data_quality_code(
     """
     first_data_date = series.index[0]
     last_data_date = series.index[-1]
-    print(check_series.index)
     if check_series.empty and isinstance(first_data_date, pd.Timestamp):
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
@@ -123,7 +122,13 @@ def check_data_quality_code(
         qc_series = pd.Series({first_data_date: np.NaN})
         if first_check_date < first_data_date or last_check_date > last_data_date:
             # Can't check something that's not there
-            raise KeyError("Error: check data out of range")
+            raise KeyError(
+                "Error: check data out of range. "
+                f"First check date: {first_check_date}. "
+                f"First data date: {first_data_date}. "
+                f"Last check date: {last_check_date}. "
+                f"Last data date: {last_data_date}. "
+            )
         else:
             # Stuff actually working (hopefully)
             for check_time, check_value in check_series.items():
