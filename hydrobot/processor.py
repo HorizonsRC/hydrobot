@@ -1234,7 +1234,9 @@ class Processor:
 
     def plot_comparison_qc_series(self, show=True):
         """Implement comparison_qc_plotter()."""
-        raw_series = self.raw_data_dict["standard"]["data_blob"].data.timeseries
+        raw_series = self.raw_data_dict["standard"]["data_blob"].data.timeseries.astype(
+            float
+        )
         plotter.comparison_qc_plotter(
             self._standard_series,
             raw_series,
@@ -1341,7 +1343,6 @@ class Processor:
         data_blob_list = []
 
         for dtype, raw in self.raw_data_dict.items():
-            print(dtype, raw)
             raw_blob = raw["data_blob"]
             if hasattr(raw_blob, "item_info") and (raw_blob.item_info) is not None:
                 item_info_list = []
