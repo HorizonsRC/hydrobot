@@ -31,7 +31,7 @@ def gap_finder(data: pd.Series):
     idx0 = np.flatnonzero(np.r_[True, np.diff(np.isnan(data)) != 0, True])
     count = np.diff(idx0)
     idx = idx0[:-1]
-    valid_mask = np.isnan(data.iloc[idx])
+    valid_mask = pd.isna(data.iloc[idx])
     out_idx = idx[valid_mask]
     out_count = count[valid_mask]
     indices = data.iloc[out_idx].index

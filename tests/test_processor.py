@@ -264,10 +264,8 @@ def test_processor_init(
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
     assert isinstance(pr.standard_series, pd.Series)
-    assert (
-        pr.standard_measurement_name
-        == pr.raw_data_dict["standard"]["data_blob"].data_source.name
-    )
+    assert pr.raw_standard_blob is not None
+    assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
     assert float(pr.standard_series.loc["2023-01-01 00:10:00"]) == pytest.approx(1882.1)
     assert pr.standard_series.index.dtype == np.dtype("datetime64[ns]")
 

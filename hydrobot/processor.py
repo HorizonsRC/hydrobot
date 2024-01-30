@@ -156,8 +156,8 @@ class Processor:
             self._standard_measurement_name = standard_measurement_name
         else:
             raise ValueError(
-                f"Standard measurement name '{standard_measurement_name}' not found at "
-                f"site '{site}'. "
+                f"Standard measurement name '{standard_measurement_name}' not found at"
+                f" site '{site}'. "
                 "Available measurements are "
                 f"{list(available_standard_measurements.MeasurementName)}"
             )
@@ -196,11 +196,16 @@ class Processor:
         self._check_data = pd.DataFrame({})
         self._quality_series = pd.Series({})
 
-        self.raw_data_dict = {
-            "standard": {},
-            "quality": {},
-            "check": {},
-        }
+        self.raw_standard_series = None
+        self.raw_standard_blob = None
+        self.raw_standard_xml = None
+        self.raw_quality_series = None
+        self.raw_quality_blob = None
+        self.raw_quality_xml = None
+        self.raw_check_data = None
+        self.raw_check_series = None
+        self.raw_check_blob = None
+        self.raw_check_xml = None
 
         # Load data for the first time
         self.import_data(from_date=self.from_date, to_date=self.to_date)
@@ -352,12 +357,15 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available data.
+            The start date for data retrieval. If None, defaults to earliest available
+            data.
         to_date : str or None, optional
-            The end date for data retrieval. If None, defaults to latest available data.
+            The end date for data retrieval. If None, defaults to latest available
+            data.
         overwrite : bool, optional
-            If True, overwrite existing data with newly acquired data for overlapping timestamps.
-            If False, keep existing data and only add new datapoints if they don't already exist.
+            If True, overwrite existing data with newly acquired data for overlapping
+            timestamps. If False, keep existing data and only add new datapoints if
+            they don't already exist.
 
         Returns
         -------
@@ -375,18 +383,23 @@ class Processor:
         Warnings
         --------
         UserWarning
-            - If the existing Standard Series is not a pandas.Series, it is set to an empty Series.
+            - If the existing Standard Series is not a pandas.Series, it is set to an
+            empty Series.
 
         Notes
         -----
-        This method imports Standard data from the specified server based on the provided parameters.
-        It retrieves data using the `data_acquisition.get_data` function and updates the Standard Series in the instance.
+        This method imports Standard data from the specified server based on the
+        provided parameters.
+        It retrieves data using the `data_acquisition.get_data` function and updates
+        the Standard Series in the instance.
         The data is parsed and formatted according to the item_info in the data source.
 
         Examples
         --------
         >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_standard(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
+        >>> processor.import_standard(
+        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
+        ... )
         """
         xml_tree, blob_list = data_acquisition.get_data(
             self._base_url,
@@ -399,6 +412,13 @@ class Processor:
         )
 
         if isinstance(self._standard_series, pd.Series):
+            warnings.warn(
+                "Just letting you know that you're overwriting the raw data."
+                " I couldn't figure out how else to do this."
+                " I can probably do it but I have other things to do right now."
+                " TODO: Remove unprofessional warnings from code.",
+                stacklevel=1,
+            )
             curr_series = self._standard_series
         else:
             warnings.warn(
@@ -424,13 +444,13 @@ class Processor:
                 if insert_series is not None:
                     # Found it. Now we extract it.
                     blob_found = True
-                    self.raw_data_dict["standard"] = {
-                        "data_blob": blob,
-                        "raw_xml": xml_tree,
-                    }
+                    self.raw_standard_blob = blob
+                    self.raw_standard_xml = xml_tree
+                    self.raw_standard = insert_series
         if not blob_found:
             raise ValueError(
-                f"Standard Data Not Found under name {self._standard_measurement_name}. "
+                f"Standard Data Not Found under name "
+                f"{self._standard_measurement_name}. "
                 f"Available data sources are: {data_source_list}"
             )
 
@@ -462,15 +482,17 @@ class Processor:
                 ).sort_index()
         else:
             self._standard_series = insert_series
-
-        fmt = (
-            self.raw_data_dict["standard"]["data_blob"]
-            .data_source.item_info[0]
-            .item_format
-        )
-        div = (
-            self.raw_data_dict["standard"]["data_blob"].data_source.item_info[0].divisor
-        )
+        if self.raw_standard_blob is not None:
+            fmt = self.raw_standard_blob.data_source.item_info[0].item_format
+            div = self.raw_standard_blob.data_source.item_info[0].divisor
+        else:
+            warnings.warn(
+                "Could not extract standard data format from data source. "
+                "Defaulting to float format.",
+                stacklevel=1,
+            )
+            fmt = "F"
+            div = 1
         if div is None or div == "None":
             div = 1
         if fmt == "I":
@@ -497,12 +519,16 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available data.
+            The start date for data retrieval. If None, defaults to earliest available
+            data.
         to_date : str or None, optional
-            The end date for data retrieval. If None, defaults to latest available data.
+            The end date for data retrieval. If None, defaults to latest available
+            data.
         overwrite : bool, optional
-            If True, overwrite existing data with newly acquired data for overlapping timestamps.
-            If False, keep existing data and only add new datapoints if they don't already exist.
+            If True, overwrite existing data with newly acquired data for overlapping
+            timestamps.
+            If False, keep existing data and only add new datapoints if they don't
+            already exist.
 
         Returns
         -------
@@ -516,20 +542,24 @@ class Processor:
         Warnings
         --------
         UserWarning
-            - If the existing Quality Series is not a pandas.Series, it is set to an empty Series.
+            - If the existing Quality Series is not a pandas.Series, it is set to an
+                empty Series.
             - If no Quality data is available for the specified date range.
             - If Quality data is not found in the server response.
 
         Notes
         -----
-        This method imports Quality data from the specified server based on the provided parameters.
-        It retrieves data using the `data_acquisition.get_data` function and updates the Quality Series in the instance.
-        The data is parsed and formatted according to the item_info in the data source.
+        This method imports Quality data from the specified server based on the
+        provided parameters. It retrieves data using the `data_acquisition.get_data`
+        function and updates the Quality Series in the instance. The data is parsed and
+        formatted according to the item_info in the data source.
 
         Examples
         --------
         >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_quality(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
+        >>> processor.import_quality(
+        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
+        ... )
         """
         xml_tree, blob_list = data_acquisition.get_data(
             self._base_url,
@@ -570,10 +600,10 @@ class Processor:
                     insert_series = blob.data.timeseries
                     date_format = blob.data.date_format
                     if insert_series is not None:
-                        self.raw_data_dict["quality"] = {
-                            "data_blob": blob,
-                            "raw_xml": xml_tree,
-                        }
+                        # Found it. Now we extract it.
+                        blob_found = True
+                        self.raw_quality_blob = blob
+                        self.raw_quality_xml = xml_tree
             if not blob_found:
                 warnings.warn(
                     "No Quality data found in the server response.",
@@ -582,8 +612,8 @@ class Processor:
 
             if not isinstance(insert_series, pd.Series):
                 raise TypeError(
-                    f"Expecting pd.Series for Quality data, but got {type(insert_series)}"
-                    "from parser."
+                    f"Expecting pd.Series for Quality data, but got "
+                    f"{type(insert_series)} from parser."
                 )
             if not insert_series.empty:
                 if date_format == "mowsecs":
@@ -601,14 +631,15 @@ class Processor:
                         curr_series
                     ).sort_index()
                 else:
-                    # Combine, keeping all existing values and only adding new datapoints
-                    # if they don't already exist.
+                    # Combine, keeping all existing values and only adding new
+                    # datapoints if they don't already exist.
                     self._quality_series = curr_series.combine_first(
                         insert_series
                     ).sort_index()
             elif not insert_series.empty:
                 self._quality_series = insert_series
             self.quality_series = self._quality_series.astype(int)
+            self.raw_quality_series = self.quality_series.astype(int)
 
     @ClassLogger
     def import_check(
@@ -623,12 +654,15 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available data.
+            The start date for data retrieval. If None, defaults to earliest available
+            data.
         to_date : str or None, optional
-            The end date for data retrieval. If None, defaults to latest available data.
+            The end date for data retrieval. If None, defaults to latest available
+            data.
         overwrite : bool, optional
-            If True, overwrite existing data with newly acquired data for overlapping timestamps.
-            If False, keep existing data and only add new datapoints if they don't already exist.
+            If True, overwrite existing data with newly acquired data for overlapping
+            timestamps. If False, keep existing data and only add new datapoints if
+            they don't already exist.
 
         Returns
         -------
@@ -642,20 +676,24 @@ class Processor:
         Warnings
         --------
         UserWarning
-            - If the existing Check Data is not a pandas.DataFrame, it is set to an empty DataFrame.
+            - If the existing Check Data is not a pandas.DataFrame, it is set to an
+                empty DataFrame.
             - If no Check data is available for the specified date range.
             - If the Check data source is not found in the server response.
 
         Notes
         -----
-        This method imports Check data from the specified server based on the provided parameters.
-        It retrieves data using the `data_acquisition.get_data` function and updates the Check data in the instance.
-        The data is parsed and formatted according to the item_info in the data source.
+        This method imports Check data from the specified server based on the provided
+        parameters. It retrieves data using the `data_acquisition.get_data` function
+        and updates the Check data in the instance. The data is parsed and formatted
+        according to the item_info in the data source.
 
         Examples
         --------
         >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_check(from_date='2022-01-01', to_date='2022-01-10', overwrite=True)
+        >>> processor.import_check(
+        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
+        ... )
         """
         xml_tree, blob_list = data_acquisition.get_data(
             self._base_url,
@@ -699,10 +737,9 @@ class Processor:
                     # This could be a pd.Series
                     insert_data = blob.data.timeseries
                     if insert_data is not None:
-                        self.raw_data_dict["check"] = {
-                            "data_blob": blob,
-                            "raw_xml": xml_tree,
-                        }
+                        self.raw_check_blob = blob
+                        self.raw_check_xml = xml_tree
+                        self.raw_check_data = insert_data
             if not blob_found:
                 warnings.warn(
                     f"Check data {self.check_data_source_name} not found in server "
@@ -734,11 +771,9 @@ class Processor:
                     self._check_data = curr_data.combine_first(insert_data).sort_index()
             elif not insert_data.empty:
                 self._check_data = insert_data
-            if not self._check_data.empty:
+            if not self._check_data.empty and self.raw_check_blob is not None:
                 # TODO: Maybe this should happen in the parser?
-                for i, item in enumerate(
-                    self.raw_data_dict["check"]["data_blob"].data_source.item_info
-                ):
+                for i, item in enumerate(self.raw_check_blob.data_source.item_info):
                     fmt = item.item_format
                     div = item.divisor
                     col = self._check_data.iloc[:, i]
@@ -760,10 +795,13 @@ class Processor:
                         self._check_data.iloc[:, i] = col.astype(str)
 
             self.check_data = self._check_data
+            self.raw_check_data = self.check_data
             if not self._check_data.empty:
                 self.check_series = self.check_data[self.check_item_name]
+                self.raw_check_series = self.check_data[self.check_item_name]
             else:
                 self.check_series = pd.Series({})
+                self.raw_check_series = pd.Series({})
 
     def import_data(
         self,
@@ -805,6 +843,23 @@ class Processor:
         >>> processor.stale
         False
         """
+        if (
+            self._standard_series is not None
+            and not self._standard_series.empty
+            and self._quality_series is not None
+            and not self._quality_series.empty
+            and self._check_series is not None
+            and not self._check_series.empty
+            and self._check_data is not None
+            and not self._check_data.empty
+        ):
+            warnings.warn(
+                "Just letting you know that you're overwriting the raw data."
+                " I couldn't figure out how else to do this."
+                " I can probably do it but I have other things to do right now."
+                " TODO: Remove unprofessional warnings from code.",
+                stacklevel=1,
+            )
         if standard:
             self.import_standard(from_date, to_date, overwrite)
         if quality:
@@ -1144,14 +1199,24 @@ class Processor:
         self.standard_series = self._standard_series.asfreq(self._frequency)
 
     @ClassLogger
-    def data_exporter(self, file_location, type="xml", trimmed=True):
+    def data_exporter(
+        self,
+        file_location,
+        ftype="xml",
+        standard=True,
+        quality=True,
+        check=False,
+        trimmed=True,
+    ):
         """
         Export data to CSV file.
 
         Parameters
         ----------
         file_location : str
-            The file path where the CSV file will be saved.
+            The file path where the file will be saved.
+        ftype : str, optional
+            Avalable options are "xml", "csv".
         trimmed : bool, optional
             If True, export trimmed data; otherwise, export the full data.
             Default is True.
@@ -1167,8 +1232,8 @@ class Processor:
         Examples
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.data_exporter("output.csv", trimmed=True)
-        >>> # Check the generated CSV file at 'output.csv'
+        >>> processor.data_exporter("output.xml", trimmed=True)
+        >>> # Check the generated XML file at 'output.xml'
         """
         if trimmed:
             std_series = filters.trim_series(
@@ -1177,22 +1242,30 @@ class Processor:
             )
         else:
             std_series = self._standard_series
-        data_sources.series_export_to_csv(
-            file_location,
-            self._site,
-            self._quality_code_evaluator.name,
-            std_series,
-            self._check_series,
-            self._quality_series,
-        )
-        data_sources.hilltop_export(
-            file_location,
-            self._site,
-            self._quality_code_evaluator.name,
-            std_series,
-            self._check_series,
-            self._quality_series,
-        )
+
+        if ftype == "csv":
+            data_sources.series_export_to_csv(
+                file_location,
+                self._site,
+                self._quality_code_evaluator.name,
+                std_series,
+                self._check_series,
+                self._quality_series,
+            )
+        if ftype == "hilltop_csv":
+            data_sources.hilltop_export(
+                file_location,
+                self._site,
+                self._quality_code_evaluator.name,
+                std_series,
+                self._check_series,
+                self._quality_series,
+            )
+        if ftype == "xml":
+            blob_list = self.to_xml_data_structure(
+                standard=standard, quality=quality, check=check
+            )
+            xml_data_structure.write_hilltop_xml(blob_list, file_location)
 
     def diagnosis(self):
         """
@@ -1234,12 +1307,9 @@ class Processor:
 
     def plot_comparison_qc_series(self, show=True):
         """Implement comparison_qc_plotter()."""
-        raw_series = self.raw_data_dict["standard"]["data_blob"].data.timeseries.astype(
-            float
-        )
         plotter.comparison_qc_plotter(
             self._standard_series,
-            raw_series,
+            self.raw_standard_series,
             self._check_series,
             self._quality_series,
             self._frequency,
@@ -1316,7 +1386,7 @@ class Processor:
                 self._standard_series, self._check_series, span, show=show
             )
 
-    def to_xml_data_structure(self):
+    def to_xml_data_structure(self, standard=True, quality=True, check=True):
         """
         Convert Processor object data to a list of XML data structures.
 
@@ -1341,12 +1411,30 @@ class Processor:
         >>> # Convert Processor data to a list of XML data structures.
         """
         data_blob_list = []
+        selections = [standard, quality, check]
+        dtypes = ["standard", "quality", "check"]
+        blobs = [
+            self.raw_standard_blob,
+            self.raw_quality_blob,
+            self.raw_check_blob,
+        ]
+        selected_types = [dt for sel, dt in zip(selections, dtypes) if sel]
+        selected_blobs = [blob for sel, blob in zip(selections, blobs) if sel]
 
-        for dtype, raw in self.raw_data_dict.items():
-            raw_blob = raw["data_blob"]
-            if hasattr(raw_blob, "item_info") and (raw_blob.item_info) is not None:
+        for dtype, raw_blob in zip(selected_types, selected_blobs):
+            if raw_blob is None:
+                raise ValueError(
+                    "Can't reconstruct the data structure without having an xml import"
+                    " to mimic."
+                )
+            if (
+                hasattr(raw_blob, "data_source")
+                and raw_blob.data_source is not None
+                and hasattr(raw_blob.data_source, "item_info")
+                and (raw_blob.data_source.item_info) is not None
+            ):
                 item_info_list = []
-                for i, info in enumerate(raw_blob.item_info):
+                for i, info in enumerate(raw_blob.data_source.item_info):
                     item_info = xml_data_structure.ItemInfo(
                         item_number=i,
                         item_name=info.item_name,
