@@ -354,8 +354,7 @@ def test_to_xml_data_structure(
 
         data_source_blob_list += pr.to_xml_data_structure()
 
-    # output_path = tmp_path / "output.xml"
-    output_path = "tests/test_output.xml"
+    output_path = tmp_path / "output.xml"
     xml_data_structure.write_hilltop_xml(data_source_blob_list, output_path)
 
     with open(output_path) as f:

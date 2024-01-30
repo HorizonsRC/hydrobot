@@ -83,12 +83,11 @@ def test_xml_data_structure_integration(tmp_path):
 
     ElementTree.indent(standard_root, space="    ")
 
-    standard_output_path = "tests/standard_output.xml"
+    standard_output_path = tmp_path / "standard_output.xml"
+
     standard_root.write(standard_output_path)
 
     standard_blobs = parse_xml(standard_root)
-
-    standard_output_path = tmp_path / "standard_output.xml"
 
     write_hilltop_xml(standard_blobs, standard_output_path)
 
