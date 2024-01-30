@@ -1,6 +1,7 @@
 """Test actual integration tests."""
 from xml.etree import ElementTree
 
+import pandas as pd
 from annalist.annalist import Annalist
 from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy.utils import build_url, get_hilltop_xml
@@ -282,21 +283,62 @@ def test_processor_integration(tmp_path):
     )
 
     data.remove_flatlined_values()
+    # TODO: Write test for remove_flatlined_values
 
     data.remove_spikes()
+    # TODO: Write test for remove_spikes
 
-    data.delete_range("2021-01-07 11:00", "2021-01-14 11:25")
+    # Checking that the data points I want to delete actually exist:
+    start_idx = "2021-01-01 11:00"
+    end_idx = "2021-01-01 11:30"
+    assert pd.to_datetime(start_idx) in data.standard_series
+    assert pd.to_datetime(end_idx) in data.standard_series
 
+    # Make a small gap
+    data.delete_range(start_idx, end_idx)
+
+    # Check that gap was made
+    assert (
+        pd.to_datetime(start_idx) not in data.standard_series
+    ), "processor.delete_range appears to be broken."
+    assert (
+        pd.to_datetime(end_idx) not in data.standard_series
+    ), "processor.delete_range appears to be broken."
+
+    # Insert nans where values are missing
     data.insert_missing_nans()
 
+    # Check that NaNs are inserted
+    assert pd.isna(
+        data.standard_series[start_idx]
+    ), "processor.insert_missing_nans appears to be broken."
+    assert pd.isna(
+        data.standard_series[end_idx]
+    ), "processor.insert_missing_nans appears to be broken."
+
+    # "Close" gaps (i.e. remove nan rows)
     data.gap_closer()
+
+    # Check that gap was closed
+    assert (
+        pd.to_datetime(start_idx) not in data.standard_series
+    ), "processor.gap_closer appears to be broken."
+    assert (
+        pd.to_datetime(end_idx) not in data.standard_series
+    ), "processor.gap_closer appears to be broken."
 
     data.quality_encoder()
 
+    # TODO: Write test for quality_encoder
+
     data.to_xml_data_structure()
+
+    # TODO: Write test for to_xml_data_structure
 
     data.data_exporter(tmp_path / "xml_data.xml")
     data.data_exporter(tmp_path / "csv_data.csv", ftype="csv")
     data.data_exporter(tmp_path / "hilltop_csv_data.csv", ftype="hilltop_csv")
+
+    # TODO: Write tests for data_exporter
 
     data.diagnosis()
