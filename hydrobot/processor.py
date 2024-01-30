@@ -446,7 +446,7 @@ class Processor:
                     blob_found = True
                     self.raw_standard_blob = blob
                     self.raw_standard_xml = xml_tree
-                    self.raw_standard = insert_series
+                    self.raw_standard_series = insert_series
         if not blob_found:
             raise ValueError(
                 f"Standard Data Not Found under name "
@@ -505,6 +505,7 @@ class Processor:
             )
         else:
             raise ValueError(f"Unknown Format Spec: {fmt}")
+        self.raw_standard_series = self._standard_series
 
     @ClassLogger
     def import_quality(

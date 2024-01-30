@@ -1,5 +1,6 @@
 """General utilities."""
 
+import numpy as np
 import pandas as pd
 
 MOWSECS_OFFSET = 946771200
@@ -31,7 +32,7 @@ def mowsecs_to_datetime_index(index):
     >>> isinstance(converted_index, pd.DatetimeIndex)
     True
     """
-    mowsec_time = index.astype(int)
+    mowsec_time = index.astype(np.int64)
     unix_time = mowsec_time.map(lambda x: x - MOWSECS_OFFSET)
     timestamps = unix_time.map(
         lambda x: pd.Timestamp(x, unit="s") if x is not None else None
