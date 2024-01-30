@@ -52,3 +52,8 @@ History
 ------------------
 
 * Implementing the QC0 data removal tool promised in 0.3.1
+
+0.4.0 (2024-01-30)
+------------------
+
+* XML backend and exporting support added.
