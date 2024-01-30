@@ -295,6 +295,8 @@ def test_processor_integration(tmp_path):
 
     data.to_xml_data_structure()
 
-    data.data_exporter("csv_data_" / tmp_path)
+    data.data_exporter(tmp_path / "xml_data.xml")
+    data.data_exporter(tmp_path / "csv_data.csv", ftype="csv")
+    data.data_exporter(tmp_path / "hilltop_csv_data.csv", ftype="hilltop_csv")
 
     data.diagnosis()
