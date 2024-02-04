@@ -411,7 +411,10 @@ class Processor:
             tstype="Standard",
         )
 
-        if isinstance(self._standard_series, pd.Series):
+        if (
+            isinstance(self._standard_series, pd.Series)
+            and not self._standard_series.empty
+        ):
             warnings.warn(
                 "Just letting you know that you're overwriting the raw data."
                 " I couldn't figure out how else to do this."
@@ -466,7 +469,7 @@ class Processor:
                 )
             else:
                 insert_series.index = pd.to_datetime(insert_series.index)
-            insert_series = insert_series.asfreq(self._frequency, method="ffill")
+            insert_series = insert_series.asfreq(self._frequency, fill_value=np.NaN)
         if not curr_series.empty:
             if overwrite:
                 # Combine, but overwrite overlapping timestamps with newly acquired
