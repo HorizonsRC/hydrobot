@@ -394,6 +394,7 @@ def splitter(base_series, qc_series, frequency):
             return_dict[qc] = base_data_meets_qc(base_series, qc_series, qc).asfreq(
                 frequency
             )
+
     return return_dict
 
 

@@ -8,9 +8,9 @@ processing_parameters = {
     "base_url": "http://hilltopdev.horizons.govt.nz/",
     "standard_hts_filename": "RawLogger.hts",
     "check_hts_filename": "boo.hts",
-    "site": "Whanganui at Te Rewa",
-    "from_date": "2021-06-01 00:00",
-    "to_date": "2023-11-30 8:30",
+    "site": "Ohura at Nihoniho",
+    "from_date": "2021-03-01 00:00",
+    "to_date": "2023-06-15 8:30",
     "frequency": "5T",
     "standard_measurement_name": "Water level statistics: Point Sample",
     "check_measurement_name": "External S.G. [Water Level NRT]",
@@ -51,9 +51,9 @@ data = Processor(
 data.clip()
 
 
-data.remove_flatlined_values()
+# data.remove_flatlined_values()
 data.remove_spikes()
-data.delete_range("2021-06-29 11:00", "2021-06-30 11:25")
+# data.delete_range("2021-06-29 11:00", "2021-06-30 11:25")
 data.insert_missing_nans()
 
 data.gap_closer()
@@ -67,4 +67,5 @@ with plt.rc_context(rc={"figure.max_open_warning": 0}):
     # data.plot_qc_series(show=False)
     # data.plot_gaps(show=False)
     # data.plot_checks(show=False)
+    plt.get_current_fig_manager().window.showMaximized()
     plt.show()
