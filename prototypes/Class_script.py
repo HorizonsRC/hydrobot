@@ -59,7 +59,7 @@ data.insert_missing_nans()
 data.gap_closer()
 data.quality_encoder()
 
-data.data_exporter("output_dump/blah")
+data.data_exporter("output_dump/blah.xml")
 
 data.diagnosis()
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
