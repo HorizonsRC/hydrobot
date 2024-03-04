@@ -1,5 +1,6 @@
 """DataSourceBlob Object."""
 import re
+import warnings
 from xml.etree import ElementTree
 
 import pandas as pd
@@ -808,7 +809,12 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
         ElementTree.indent(root, space="\t")
         print("Hilltop xml possibly returned no data. Check for yourself:")
         ElementTree.dump(root)
-        return None
+        err_text = root.findtext("Error")
+        if "No data from " in str(err_text):
+            warnings.warn(str(err_text), stacklevel=1)
+            return None
+        else:
+            raise ValueError(err_text)
     elif root.tag != "Hilltop":
         raise ValueError(
             f"Possibly malformed Hilltop xml. Root tag is '{root.tag}',"

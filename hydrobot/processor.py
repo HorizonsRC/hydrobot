@@ -283,7 +283,7 @@ class Processor:
         """Measurement property."""
         return self._quality_code_evaluator
 
-    @ClassLogger  # type: ignore
+    @ClassLogger
     @quality_code_evaluator.setter
     def quality_code_evaluator(self, value):
         self._quality_code_evaluator = value
@@ -433,82 +433,88 @@ class Processor:
         insert_series = pd.Series({})
         blob_found = False
 
-        if blob_list is None or len(blob_list) == 0:
-            raise ValueError("No standard data found within specified date range.")
         date_format = "Calendar"
         data_source_list = []
-        for blob in blob_list:
-            data_source_list += [blob.data_source.name]
-            if (blob.data_source.name == self._standard_measurement_name) and (
-                blob.data_source.ts_type == "StdSeries"
-            ):
-                insert_series = blob.data.timeseries
-                date_format = blob.data.date_format
-                if insert_series is not None:
-                    # Found it. Now we extract it.
-                    blob_found = True
-                    self.raw_standard_blob = blob
-                    self.raw_standard_xml = xml_tree
-                    self.raw_standard_series = insert_series
-        if not blob_found:
-            raise ValueError(
-                f"Standard Data Not Found under name "
-                f"{self._standard_measurement_name}. "
-                f"Available data sources are: {data_source_list}"
-            )
-
-        if not isinstance(insert_series, pd.Series):
-            raise TypeError(
-                f"Expecting pd.Series for Standard data, but got {type(insert_series)}"
-                "from parser."
-            )
-        if not insert_series.empty:
-            if date_format == "mowsecs":
-                insert_series.index = utils.mowsecs_to_datetime_index(
-                    insert_series.index
-                )
-            else:
-                insert_series.index = pd.to_datetime(insert_series.index)
-            insert_series = insert_series.asfreq(self._frequency, fill_value=np.NaN)
-        if not curr_series.empty:
-            if overwrite:
-                # Combine, but overwrite overlapping timestamps with newly acquired
-                # data
-                self._standard_series = insert_series.combine_first(
-                    curr_series
-                ).sort_index()
-            else:
-                # Combine, keeping all existing values and only adding new datapoints
-                # if they don't already exist.
-                self._standard_series = curr_series.combine_first(
-                    insert_series
-                ).sort_index()
-        else:
-            self._standard_series = insert_series
-        if self.raw_standard_blob is not None:
-            fmt = self.raw_standard_blob.data_source.item_info[0].item_format
-            div = self.raw_standard_blob.data_source.item_info[0].divisor
-        else:
+        if blob_list is None or len(blob_list) == 0:
             warnings.warn(
-                "Could not extract standard data format from data source. "
-                "Defaulting to float format.",
+                "No standard data found within specified date range.",
                 stacklevel=1,
             )
-            fmt = "F"
-            div = 1
-        if div is None or div == "None":
-            div = 1
-        if fmt == "I":
-            self.standard_series = self._standard_series.astype(int) / int(div)
-        elif fmt == "F":
-            self.standard_series = self._standard_series.astype(np.float32) / float(div)
-        elif fmt == "D":  # Not sure if this would ever really happen, but...
-            self.standard_series = utils.mowsecs_to_datetime_index(
-                self._standard_series
-            )
         else:
-            raise ValueError(f"Unknown Format Spec: {fmt}")
-        self.raw_standard_series = self._standard_series
+            for blob in blob_list:
+                data_source_list += [blob.data_source.name]
+                if (blob.data_source.name == self._standard_measurement_name) and (
+                    blob.data_source.ts_type == "StdSeries"
+                ):
+                    insert_series = blob.data.timeseries
+                    date_format = blob.data.date_format
+                    if insert_series is not None:
+                        # Found it. Now we extract it.
+                        blob_found = True
+                        self.raw_standard_blob = blob
+                        self.raw_standard_xml = xml_tree
+                        self.raw_standard_series = insert_series
+            if not blob_found:
+                raise ValueError(
+                    f"Standard Data Not Found under name "
+                    f"{self._standard_measurement_name}. "
+                    f"Available data sources are: {data_source_list}"
+                )
+
+            if not isinstance(insert_series, pd.Series):
+                raise TypeError(
+                    f"Expecting pd.Series for Standard data, but got {type(insert_series)}"
+                    "from parser."
+                )
+            if not insert_series.empty:
+                if date_format == "mowsecs":
+                    insert_series.index = utils.mowsecs_to_datetime_index(
+                        insert_series.index
+                    )
+                else:
+                    insert_series.index = pd.to_datetime(insert_series.index)
+                insert_series = insert_series.asfreq(self._frequency, fill_value=np.NaN)
+            if not curr_series.empty:
+                if overwrite:
+                    # Combine, but overwrite overlapping timestamps with newly acquired
+                    # data
+                    self._standard_series = insert_series.combine_first(
+                        curr_series
+                    ).sort_index()
+                else:
+                    # Combine, keeping all existing values and only adding new datapoints
+                    # if they don't already exist.
+                    self._standard_series = curr_series.combine_first(
+                        insert_series
+                    ).sort_index()
+            else:
+                self._standard_series = insert_series
+            if self.raw_standard_blob is not None:
+                fmt = self.raw_standard_blob.data_source.item_info[0].item_format
+                div = self.raw_standard_blob.data_source.item_info[0].divisor
+            else:
+                warnings.warn(
+                    "Could not extract standard data format from data source. "
+                    "Defaulting to float format.",
+                    stacklevel=1,
+                )
+                fmt = "F"
+                div = 1
+            if div is None or div == "None":
+                div = 1
+            if fmt == "I":
+                self.standard_series = self._standard_series.astype(int) / int(div)
+            elif fmt == "F":
+                self.standard_series = self._standard_series.astype(np.float32) / float(
+                    div
+                )
+            elif fmt == "D":  # Not sure if this would ever really happen, but...
+                self.standard_series = utils.mowsecs_to_datetime_index(
+                    self._standard_series
+                )
+            else:
+                raise ValueError(f"Unknown Format Spec: {fmt}")
+            self.raw_standard_series = self._standard_series
 
     @ClassLogger
     def import_quality(
