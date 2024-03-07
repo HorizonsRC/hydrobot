@@ -475,6 +475,8 @@ class Data:
                         "V": data_val,
                     }
                     data_list += [data_dict]
+            elif child.tag == "Gap":
+                pass
             else:
                 raise ValueError(
                     "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
@@ -522,30 +524,44 @@ class Data:
             },
         )
 
-        if self.num_items == 1:
-            if isinstance(self.timeseries, pd.Series):
-                for idx, val in self.timeseries.items():
-                    element = ElementTree.SubElement(data_root, "V")
-                    element.text = f"{idx} {val}"
-            else:
-                raise TypeError(
-                    "pandas Series expected for data with single field."
-                    f" Found {type(self.timeseries)}."
-                )
-        else:
-            if isinstance(self.timeseries, pd.DataFrame):
-                for date, row in self.timeseries.iterrows():
+        if isinstance(self.timeseries, pd.Series):
+            for date, val in self.timeseries.items():
+                if pd.isna(val):
+                    element = ElementTree.SubElement(data_root, "Gap")
+                else:
+                    element = ElementTree.SubElement(data_root, "E")
+                    timestamp = ElementTree.SubElement(element, "T")
+                    timestamp.text = str(date)
+                    val_item = ElementTree.SubElement(element, "I1")
+                    val_item.text = str(val)
+        elif isinstance(self.timeseries, pd.DataFrame):
+            for date, row in self.timeseries.iterrows():
+                if pd.isna(row).all():
+                    # If all values in a row are NaNs, insert a Gap.
+                    element = ElementTree.SubElement(data_root, "Gap")
+                else:
                     element = ElementTree.SubElement(data_root, "E")
                     timestamp = ElementTree.SubElement(element, "T")
                     timestamp.text = str(date)
                     for i, val in enumerate(row):
+                        # If only one field in the element is a NaN, leave it blank?
                         val_item = ElementTree.SubElement(element, f"I{i+1}")
-                        val_item.text = str(val)
+                        if not pd.isna(val):
+                            val_item.text = str(val)
+
+        # Collapse all duplicate Gap tags into a single Gap marker:
+        current_gap_count = 0
+        gaps_to_remove = []
+        for elem in data_root:
+            if elem.tag == "Gap":
+                current_gap_count += 1
+                if current_gap_count > 1:
+                    gaps_to_remove.append(elem)
             else:
-                raise TypeError(
-                    "pandas DataFrame expected for data with multiple fields."
-                    f" Found {type(self.timeseries)}."
-                )
+                current_gap_count = 0
+        for gap in gaps_to_remove:
+            data_root.remove(gap)
+
         return data_root
 
     def __repr__(self):

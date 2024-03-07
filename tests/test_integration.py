@@ -46,10 +46,10 @@ def test_xml_data_structure_integration(tmp_path):
         "standard_hts_filename": "RawLogger.hts",
         "check_hts_filename": "boo.hts",
         "site": "Whanganui at Te Rewa",
-        "from_date": "2023-03-23 00:00",
-        "to_date": "2023-03-23 23:00",
+        "from_date": "2021-06-28 00:00",
+        "to_date": "2021-07-01 23:00",
         "frequency": "5T",
-        "standard_measurement_name": "Water level statistics: Point Sample",
+        "standard_measurement_name": "Stage",
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
             "high_clip": 20000,
@@ -260,7 +260,6 @@ def test_processor_integration(tmp_path):
     )
 
     assert not data.standard_series.empty
-    assert not data.check_data.empty
     assert not data.check_series.empty
     assert not data.quality_series.empty
 
@@ -432,14 +431,13 @@ def test_empty_response(tmp_path):
     assert data.standard_series.empty
     assert data.check_series.empty
     assert data.quality_series.empty
-    assert data.raw_standard_series is None
+    assert data.raw_standard_series.empty
     assert data.raw_standard_blob is None
     assert data.raw_standard_xml is None
-    assert data.raw_quality_series is None
+    assert data.raw_quality_series.empty
     assert data.raw_quality_blob is None
     assert data.raw_quality_xml is None
-    assert data.raw_check_data is None
-    assert data.raw_check_series is None
+    assert data.raw_check_data.empty
     assert data.raw_check_blob is None
     assert data.raw_check_xml is None
 

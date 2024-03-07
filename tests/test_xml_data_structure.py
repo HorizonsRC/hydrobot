@@ -249,7 +249,7 @@ def test_data_source_to_xml_tree(tmp_path, sample_data_source_xml_file):
 
     blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
 
-    output_path = tmp_path / "output.xml"
+    output_path = "output.xml"
     xml_data_structure.write_hilltop_xml(blob_list, output_path)
 
     with open(output_path) as f:

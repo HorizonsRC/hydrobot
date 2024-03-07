@@ -32,7 +32,10 @@ def mowsecs_to_datetime_index(index):
     >>> isinstance(converted_index, pd.DatetimeIndex)
     True
     """
-    mowsec_time = index.astype(np.int64)
+    try:
+        mowsec_time = index.astype(np.int64)
+    except ValueError as e:
+        raise TypeError("These don't look like mowsecs. Expecting an integer.") from e
     unix_time = mowsec_time.map(lambda x: x - MOWSECS_OFFSET)
     timestamps = unix_time.map(
         lambda x: pd.Timestamp(x, unit="s") if x is not None else None
