@@ -1,4 +1,4 @@
-<?xml version="1.0" ?>
+<?xml version='1.0' encoding='utf-8'?>
 <Hilltop>
     <Agency>Horizons</Agency>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -16,16 +16,46 @@
             </ItemInfo>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 10</V>
-            <V>2619302700 9</V>
-            <V>2619303000 8</V>
-            <V>2619303300 10</V>
-            <V>2619303600 10</V>
-            <V>2619303900 9</V>
-            <V>2619304200 10</V>
-            <V>2619304500 6</V>
-            <V>2619304800 10</V>
-            <V>2619305100 10</V>
+            <E>
+                <T>2619302400</T>
+                <I1>10</I1>
+            </E>
+            <E>
+                <T>2619302700</T>
+                <I1>9</I1>
+            </E>
+            <E>
+                <T>2619303000</T>
+                <I1>8</I1>
+            </E>
+            <E>
+                <T>2619303300</T>
+                <I1>10</I1>
+            </E>
+            <E>
+                <T>2619303600</T>
+                <I1>10</I1>
+            </E>
+            <E>
+                <T>2619303900</T>
+                <I1>9</I1>
+            </E>
+            <E>
+                <T>2619304200</T>
+                <I1>10</I1>
+            </E>
+            <E>
+                <T>2619304500</T>
+                <I1>6</I1>
+            </E>
+            <E>
+                <T>2619304800</T>
+                <I1>10</I1>
+            </E>
+            <E>
+                <T>2619305100</T>
+                <I1>10</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -36,7 +66,10 @@
             <ItemFormat>0</ItemFormat>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 500</V>
+            <E>
+                <T>2619302400</T>
+                <I1>500</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -56,14 +89,14 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>
@@ -115,16 +148,46 @@
             </ItemInfo>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 174.3</V>
-            <V>2619302700 7.4</V>
-            <V>2619303000 1882.1</V>
-            <V>2619303300 12.4</V>
-            <V>2619303600 104.0</V>
-            <V>2619303900 1145.0</V>
-            <V>2619304200 6234.6</V>
-            <V>2619304500 6.1</V>
-            <V>2619304800 9991.0</V>
-            <V>2619305100 4.0</V>
+            <E>
+                <T>2619302400</T>
+                <I1>174.3</I1>
+            </E>
+            <E>
+                <T>2619302700</T>
+                <I1>7.4</I1>
+            </E>
+            <E>
+                <T>2619303000</T>
+                <I1>1882.1</I1>
+            </E>
+            <E>
+                <T>2619303300</T>
+                <I1>12.4</I1>
+            </E>
+            <E>
+                <T>2619303600</T>
+                <I1>104.0</I1>
+            </E>
+            <E>
+                <T>2619303900</T>
+                <I1>1145.0</I1>
+            </E>
+            <E>
+                <T>2619304200</T>
+                <I1>6234.6</I1>
+            </E>
+            <E>
+                <T>2619304500</T>
+                <I1>6.1</I1>
+            </E>
+            <E>
+                <T>2619304800</T>
+                <I1>9991.0</I1>
+            </E>
+            <E>
+                <T>2619305100</T>
+                <I1>4.0</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -135,7 +198,10 @@
             <ItemFormat>0</ItemFormat>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 200</V>
+            <E>
+                <T>2619302400</T>
+                <I1>200</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -155,21 +221,21 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>0</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Handheld Turdidity Sensor Reading</ItemName>
                 <ItemFormat>F</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###.#</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="4">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>
@@ -223,16 +289,46 @@
             </ItemInfo>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 1</V>
-            <V>2619302700 7</V>
-            <V>2619303000 1</V>
-            <V>2619303300 1</V>
-            <V>2619303600 1</V>
-            <V>2619303900 1</V>
-            <V>2619304200 6</V>
-            <V>2619304500 6</V>
-            <V>2619304800 9</V>
-            <V>2619305100 4</V>
+            <E>
+                <T>2619302400</T>
+                <I1>1</I1>
+            </E>
+            <E>
+                <T>2619302700</T>
+                <I1>7</I1>
+            </E>
+            <E>
+                <T>2619303000</T>
+                <I1>1</I1>
+            </E>
+            <E>
+                <T>2619303300</T>
+                <I1>1</I1>
+            </E>
+            <E>
+                <T>2619303600</T>
+                <I1>1</I1>
+            </E>
+            <E>
+                <T>2619303900</T>
+                <I1>1</I1>
+            </E>
+            <E>
+                <T>2619304200</T>
+                <I1>6</I1>
+            </E>
+            <E>
+                <T>2619304500</T>
+                <I1>6</I1>
+            </E>
+            <E>
+                <T>2619304800</T>
+                <I1>9</I1>
+            </E>
+            <E>
+                <T>2619305100</T>
+                <I1>4</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -243,7 +339,10 @@
             <ItemFormat>0</ItemFormat>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">
-            <V>2619302400 600</V>
+            <E>
+                <T>2619302399</T>
+                <I1>600</I1>
+            </E>
         </Data>
     </Measurement>
     <Measurement SiteName="Mid Stream at Cowtoilet Farm">
@@ -263,14 +362,14 @@
                 <ItemName>Recorder Time</ItemName>
                 <ItemFormat>D</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
             <ItemInfo ItemNumber="3">
                 <ItemName>Comment</ItemName>
                 <ItemFormat>S</ItemFormat>
                 <Divisor>1</Divisor>
-                <Units></Units>
+                <Units />
                 <Format>###</Format>
             </ItemInfo>
         </DataSource>

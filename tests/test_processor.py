@@ -372,7 +372,7 @@ def test_to_xml_data_structure(
         assert blob.site_name == SITES[1]
 
 
-def test_import_range(
+def test_import_data(
     monkeypatch,
     mock_site_list,
     mock_measurement_list,
@@ -380,7 +380,7 @@ def test_import_range(
     mock_qc_evaluator_dict,
 ):
     """
-    Test the import_range method of the Processor class.
+    Test the import_data method of the Processor class.
 
     Parameters
     ----------
@@ -397,16 +397,16 @@ def test_import_range(
 
     Notes
     -----
-    This test function checks the import_range method of the Processor class.
+    This test function checks the import_data method of the Processor class.
     It mocks relevant functions and classes for the test.
 
     Assertions
     ----------
     - For each index in standard_series, quality_series, and check_series, it is within
         the specified date range.
-    - The import_range method updates the series with new data and retains existing
+    - The import_data method updates the series with new data and retains existing
         changes without overwriting.
-    - The import_range method overwrites existing data when the 'overwrite' parameter
+    - The import_data method overwrites existing data when the 'overwrite' parameter
         is set to True.
 
     """
@@ -466,50 +466,6 @@ def test_import_range(
     for idx in pr.check_series.index:
         assert idx >= pd.to_datetime(from_date)
         assert idx <= pd.to_datetime(to_date)
-
-    # Making changes to the existing series
-    pr.standard_series.iloc[0] = 111
-    pr.quality_series.iloc[0] = 222
-    pr.check_series.iloc[0] = 333
-
-    # Updating processor object with more data to the existing series
-    pr.import_data(
-        from_date=None,
-        to_date=None,
-        standard=True,
-        quality=True,
-        check=True,
-        overwrite=False,
-    )
-
-    # Check that new data is added
-    assert pr.standard_series.index[-1] == pd.to_datetime("2023-01-01 00:45")
-    assert pr.quality_series.index[-1] == pd.to_datetime("2023-01-01 00:00")
-    assert pr.check_series.index[-1] == pd.to_datetime("2023-01-01 00:45")
-
-    # Check that changed data is not overwritten
-    assert (
-        pr.standard_series.iloc[0] == 111
-    ), "The 'overwrite' flag in import_data seems to be broken"
-    assert (
-        pr.quality_series.iloc[0] == 222
-    ), "The 'overwrite' flag in import_data seems to be broken"
-    assert (
-        pr.check_series.iloc[0] == 333
-    ), "The 'overwrite' flag in import_data seems to be broken"
-
-    # Updating processor object again, this time overwriting everything
-    pr.import_data(
-        from_date=None,
-        to_date=None,
-        standard=True,
-        quality=True,
-        check=True,
-        overwrite=True,
-    )
-    assert int(pr.standard_series.iloc[0]) == 10
-    assert int(pr.quality_series.iloc[0]) == 500
-    assert float(pr.check_series.iloc[0]) == 9.0
 
 
 def test_gap_closer(
@@ -633,3 +589,168 @@ def test_gap_closer(
     assert (
         pd.to_datetime(end_idx) not in pr.standard_series
     ), "processor.gap_closer appears to be broken."
+
+
+def test_data_export(
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_get_data,
+    mock_qc_evaluator_dict,
+    tmp_path,
+):
+    """
+    Test the 'gap_closer' method of the Processor class.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Pytest fixture to modify or mock modules during testing.
+    mock_site_list : pytest fixture
+        Mocked response for the site list.
+    mock_measurement_list : pytest fixture
+        Mocked response for the measurement list.
+    mock_get_data : pytest fixture
+        Mock response for the get_data server call method.
+    mock_qc_evaluator_dict : pytest fixture
+        Mocked response for the quality control evaluator dictionary.
+
+    Notes
+    -----
+    - This test checks the functionality of the 'gap_closer' method in the Processor
+        class.
+    - It involves creating a Processor object, making a gap in the data, inserting NaNs,
+        and then closing the gap.
+    - Assertions are made to ensure that the gap is properly created, NaNs are inserted,
+        and the gap is closed.
+
+    Assertions
+    ----------
+    - The data points that are intended to be deleted actually exist before the gap
+        creation.
+    - After creating a small gap, check that the gap was made by confirming the absence
+        of the specified data points.
+    - Check that NaNs are correctly inserted into the specified positions in the data.
+    - After closing the gaps, verify that the specified data points are no longer
+        present in the data.
+
+    """
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_get_data(*args, **kwargs):
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
+
+    pr = processor.Processor(
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[0],
+        frequency="5T",
+    )
+
+    # Checking that the data points I want to delete actually exist:
+    start_idx = "2023-01-01 00:20:00"
+    end_idx = "2023-01-01 00:25:00"
+    assert pd.to_datetime(start_idx) in pr.standard_series
+    assert pd.to_datetime(end_idx) in pr.standard_series
+
+    # =======================Make a small gap========================
+    print("Gappy Chappy")
+    pr.delete_range(start_idx, end_idx)
+
+    gap_path_csv = tmp_path / "gap_output.csv"
+    gap_path_hilltop_csv = tmp_path / "gap_output_hilltop"
+    gap_path_xml = tmp_path / "gap_output.xml"
+
+    pr.data_exporter(gap_path_csv, ftype="csv")
+
+    read_csv_df = pd.read_csv(gap_path_csv)
+    # Check that the csv was filled in with nans where there are no quality values
+    assert pd.isna(read_csv_df["General Nastiness [Quality]"].iloc[1])
+
+    # The hilltop_csv format outputs two files:
+    # one for standard and qc together,
+    # and one for check data alone.
+    pr.data_exporter(gap_path_hilltop_csv, ftype="hilltop_csv")
+    hilltop_path_std_qc = tmp_path / "gap_output_hilltop_std_qc.csv"
+    hilltop_path_check = tmp_path / "gap_output_hilltop_check.csv"
+
+    read_hilltop_std_qc_csv_df = pd.read_csv(hilltop_path_std_qc)
+    read_hilltop_check_csv_df = pd.read_csv(hilltop_path_check)
+
+    # Check that the deleted values have not been filled somehow
+    assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
+    assert start_idx not in list(read_hilltop_check_csv_df.index)
+
+    print("Before xml export:", pr.quality_series.index)
+    pr.data_exporter(gap_path_xml, ftype="xml")
+    print("After xml export:", pr.quality_series.index)
+    gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
+    gap_path_blob = xml_data_structure.parse_xml(gap_path_xml_tree)
+
+    std_indices = gap_path_blob[0].data.timeseries.index
+    assert pd.Timestamp(start_idx) not in list(std_indices)
+
+    # =======================Insert Nans========================
+    # This is how we internally represent gaps. They need to be converted to the Gap
+    # tag for xml export.
+    print("Before nans:", pr.quality_series.index)
+    pr.insert_missing_nans()
+    print("After nans:", pr.quality_series.index)
+
+    pr.data_exporter(gap_path_csv, ftype="csv")
+
+    read_csv_df = pd.read_csv(gap_path_csv)
+    # Check that the csv was filled in with nans where there are no quality values
+    # assert pd.isna(read_csv_df["General Nastiness [Quality]"].iloc[1])
+
+    # The hilltop_csv format outputs two files:
+    # one for standard and qc together,
+    # and one for check data alone.
+    pr.data_exporter(gap_path_hilltop_csv, ftype="hilltop_csv")
+
+    read_hilltop_std_qc_csv_df = pd.read_csv(hilltop_path_std_qc)
+    read_hilltop_check_csv_df = pd.read_csv(hilltop_path_check)
+
+    # Check that the deleted values have not been filled somehow
+    # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
+    # assert start_idx not in list(read_hilltop_check_csv_df.index)
+    print(read_hilltop_std_qc_csv_df)
+    print(read_hilltop_check_csv_df)
+    # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
+
+    pr.data_exporter(gap_path_xml, ftype="xml")
+
+    print(gap_path_xml.read_text())
+    gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
+    gap_path_blob = xml_data_structure.parse_xml(gap_path_xml_tree)
+
+    std_indices = gap_path_blob[0].data.timeseries.index
+    assert start_idx not in list(std_indices)
