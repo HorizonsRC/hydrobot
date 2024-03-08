@@ -11,6 +11,8 @@ from hydrobot.processor import Processor
 from hydrobot.xml_data_structure import parse_xml, write_hilltop_xml
 
 
+@pytest.mark.slow()
+@pytest.mark.remote()
 def test_xml_data_structure_integration(tmp_path):
     """
     Test connection to the actual server.
@@ -183,6 +185,8 @@ def test_xml_data_structure_integration(tmp_path):
     assert ElementTree.indent(check_input_tree) == ElementTree.indent(check_output_tree)
 
 
+@pytest.mark.slow()
+@pytest.mark.remote()
 def test_processor_integration(tmp_path):
     """
     Test connection to the actual server.
@@ -351,6 +355,8 @@ def test_processor_integration(tmp_path):
     data.diagnosis()
 
 
+@pytest.mark.slow()
+@pytest.mark.remote()
 def test_empty_response(tmp_path):
     """
     Test the handling of an empty server response.
@@ -442,6 +448,8 @@ def test_empty_response(tmp_path):
     assert data.raw_check_xml is None
 
 
+@pytest.mark.slow()
+@pytest.mark.remote()
 def test_failed_requests(tmp_path):
     """
     Test the handling of an empty server response.
