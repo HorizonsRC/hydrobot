@@ -47,10 +47,12 @@ class QualityCodeEvaluator:
         """
         diff = np.abs(base_datum - check_datum)
         if diff < self.qc_600_limit:
-            return 600
-        if diff < self.qc_500_limit:
-            return 500
-        return 400
+            qc = 600
+        elif diff < self.qc_500_limit:
+            qc = 500
+        else:
+            qc = 400
+        return qc
 
 
 class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
@@ -86,13 +88,10 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         name : str
             Name of the data source
         """
-        QualityCodeEvaluator.__init__(self, qc_500_limit, qc_600_limit)
-        # self.qc_500_limit = qc_500_limit
-        # self.qc_600_limit = qc_600_limit
+        QualityCodeEvaluator.__init__(self, qc_500_limit, qc_600_limit, name)
         self.qc_500_percent = qc_500_percent
         self.qc_600_percent = qc_600_percent
         self.limit_percent_threshold = limit_percent_threshold
-        self.name = name
 
     def find_qc(self, base_datum, check_datum):
         """Find the base quality codes with two stages.
@@ -116,17 +115,21 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
             # flat qc check
             diff = np.abs(base_datum - check_datum)
             if diff < self.qc_600_limit:
-                return 600
-            if diff < self.qc_500_limit:
-                return 500
-            return 400
-        # percent qc check
-        diff = np.abs(base_datum / check_datum - 1) * 100
-        if diff < self.qc_600_percent:
-            return 600
-        if diff < self.qc_500_percent:
-            return 500
-        return 400
+                qc = 600
+            elif diff < self.qc_500_limit:
+                qc = 500
+            else:
+                qc = 400
+        else:
+            # percent qc check
+            diff = np.abs(base_datum / check_datum - 1) * 100
+            if diff < self.qc_600_percent:
+                qc = 600
+            elif diff < self.qc_500_percent:
+                qc = 500
+            else:
+                qc = 400
+        return qc
 
 
 def get_qc_evaluator_dict():
