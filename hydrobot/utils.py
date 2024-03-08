@@ -140,7 +140,7 @@ def datetime_index_to_mowsecs(index):
     >>> isinstance(mowsecs_index, pd.Index)
     True
     """
-    return (index.astype(int) // 10**9) + MOWSECS_OFFSET
+    return (index.astype(np.int64) // 10**9) + MOWSECS_OFFSET
 
 
 def merge_series(series_a, series_b, tolerance=1e-09):
