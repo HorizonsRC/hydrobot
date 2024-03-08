@@ -1,6 +1,5 @@
 """Handling for different types of data sources."""
 import csv
-import re
 from pathlib import Path
 
 import numpy as np
@@ -201,11 +200,7 @@ def get_qc_evaluator(qc_evaluator_name):
 
 def series_export_to_csv(
     file_location: str,
-    site_name: str,
-    measurement_name: str,
-    std_series: pd.Series | None,
-    check_series: pd.Series | None,
-    qc_series: pd.Series | None,
+    series: list[pd.Series],
 ) -> None:
     """Export the 3 main series to csv.
 
@@ -213,48 +208,15 @@ def series_export_to_csv(
     ----------
     file_location : str
         Where the files are exported to
-    site_name : str
-        Site name
-    measurement_name : str
-        Measurement name
-    std_series : pd.Series
-        Standard series
-    check_series : pd.Series
-        Check series
-    qc_series : pd.Series
-        Quality code series
+    series : pd.Series
+        Pandas series to be exported
 
     Returns
     -------
     None, but makes files
     """
-    if std_series is not None:
-        std_series.to_csv(
-            str(file_location)
-            + "std_"
-            + site_name
-            + "-"
-            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
-            + ".csv"
-        )
-    if check_series is not None:
-        check_series.to_csv(
-            str(file_location)
-            + "check_"
-            + site_name
-            + "-"
-            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
-            + ".csv"
-        )
-    if qc_series is not None:
-        qc_series.to_csv(
-            str(file_location)
-            + "QC_"
-            + site_name
-            + "-"
-            + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
-            + ".csv"
-        )
+    export_df = pd.DataFrame(series).T
+    export_df.to_csv(str(file_location))
 
 
 def hilltop_export(
@@ -287,18 +249,14 @@ def hilltop_export(
     -------
     None, but makes files
     """
+    print("On our way out (std):", std_series.index)
+    print("On our way out (qual):", qc_series.index)
     qc_series = qc_series.reindex(std_series.index, method="ffill")
+    print("Why would this not work?", qc_series.index)
     std_series.name = "std"
     qc_series.name = "qual"
     export_df = std_series.to_frame().join(qc_series)
-    export_df.to_csv(
-        str(file_location)
-        + "hilltop_combined_std_QC_"
-        + site_name
-        + "-"
-        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
-        + ".csv"
-    )
+    export_df.to_csv(str(file_location) + "_std_qc.csv")
 
     keys = [
         "Sitename",
@@ -327,11 +285,5 @@ def hilltop_export(
         axis=1,
         keys=keys,
     )
-    export_check_df.to_csv(
-        str(file_location)
-        + "hilltop_check_import_"
-        + site_name
-        + "-"
-        + re.sub("[^A-Za-z0-9]+", "_", measurement_name)
-        + ".csv"
-    )
+
+    export_check_df.to_csv(str(file_location) + "_check.csv")
