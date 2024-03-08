@@ -6,6 +6,76 @@ import pandas as pd
 MOWSECS_OFFSET = 946771200
 
 
+def mowsecs_to_timestamp(mowsecs):
+    """
+    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+
+    Parameters
+    ----------
+    index : pd.Index
+        The input index in MOWSECS format.
+
+    Returns
+    -------
+    pd.DatetimeIndex
+        The converted datetime index.
+
+    Notes
+    -----
+    This function takes an index representing time in Ministry of Works Seconds
+    (MOWSECS) format and converts it to a pandas DatetimeIndex.
+
+    Examples
+    --------
+    >>> mowsecs_index = pd.Index([0, 1440, 2880], name="Time")
+    >>> converted_index = mowsecs_to_datetime_index(mowsecs_index)
+    >>> isinstance(converted_index, pd.DatetimeIndex)
+    True
+    """
+    try:
+        mowsec_time = int(mowsecs)
+    except ValueError as e:
+        raise TypeError("Expected something that is parseable as an integer") from e
+
+    unix_time = mowsec_time - MOWSECS_OFFSET
+    timestamp = pd.Timestamp(unix_time, unit="s")
+    return timestamp
+
+
+def timestamp_to_mowsecs(timestamp):
+    """
+    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+
+    Parameters
+    ----------
+    index : pd.Index
+        The input index in MOWSECS format.
+
+    Returns
+    -------
+    pd.DatetimeIndex
+        The converted datetime index.
+
+    Notes
+    -----
+    This function takes an index representing time in Ministry of Works Seconds
+    (MOWSECS) format and converts it to a pandas DatetimeIndex.
+
+    Examples
+    --------
+    >>> mowsecs_index = pd.Index([0, 1440, 2880], name="Time")
+    >>> converted_index = mowsecs_to_datetime_index(mowsecs_index)
+    >>> isinstance(converted_index, pd.DatetimeIndex)
+    True
+    """
+    try:
+        timestamp = pd.Timestamp(timestamp)
+    except ValueError as e:
+        raise TypeError("Expected something that is parseable as an integer") from e
+
+    return int((timestamp.timestamp()) + MOWSECS_OFFSET)
+
+
 def mowsecs_to_datetime_index(index):
     """
     Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
