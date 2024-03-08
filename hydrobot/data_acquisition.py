@@ -74,7 +74,7 @@ def get_series(
     to_date,
     tstype="Standard",
 ) -> tuple[ElementTree.Element, pd.Series | pd.DataFrame]:
-    """Pack data from det_data as a pd.Series.
+    """Pack data from get_data as a pd.Series.
 
     Parameters
     ----------

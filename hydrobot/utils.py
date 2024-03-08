@@ -140,4 +140,36 @@ def datetime_index_to_mowsecs(index):
     >>> isinstance(mowsecs_index, pd.Index)
     True
     """
-    return (index.astype(int) // 10**9) + MOWSECS_OFFSET
+    return (index.astype(np.int64) // 10**9) + MOWSECS_OFFSET
+
+
+def merge_series(series_a, series_b, tolerance=1e-09):
+    """
+    Combine two series which contain partial elements of the same dataset.
+
+    For series 1:a, 2:b and series 1:a, 3:c, will give 1:a, 2:b, 3:c
+
+    Will give an error if series contains contradicting data
+
+    If difference in data is smaller than tolerance, the values of the first series are used
+
+    Parameters
+    ----------
+    series_a : pd.Series
+        One series to combine (preferred when differences are below tolerance)
+    series_b : pd.Series
+        Second series to combine (overwritten when differences are below tolerance)
+    tolerance : numeric
+        Maximum allowed difference between the two series for the same timestamp
+
+    Returns
+    -------
+    pd.Series
+        Combined series
+    """
+    combined = series_a.combine_first(series_b)
+    diff = abs(series_b.combine_first(series_a) - combined)
+    if max(diff) > tolerance:
+        raise ValueError
+    else:
+        return combined

@@ -1,5 +1,6 @@
 """Test the filters module."""
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -86,4 +87,4 @@ def test_datetime_index_to_mowsecs(mowsecs_data, datetime_data):
     """Test mowsecs_to_datetime_index utility."""
     dt_to_ms = utils.datetime_index_to_mowsecs(datetime_data.index)
 
-    assert dt_to_ms.equals(mowsecs_data.index.astype(int))
+    assert dt_to_ms.equals(mowsecs_data.index.astype(np.int64))

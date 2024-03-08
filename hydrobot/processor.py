@@ -771,6 +771,57 @@ class Processor:
             self.import_check(from_date, to_date)
         self._stale = False
 
+    @ClassLogger
+    def add_standard(self, extra_standard):
+        """
+        Incorporate extra standard data into the standard series using utils.merge_series.
+
+        Parameters
+        ----------
+        extra_standard
+            extra standard data
+
+        Returns
+        -------
+        None, but adds data to self.standard_series
+        """
+        combined = utils.merge_series(self.standard_series, extra_standard)
+        self.standard_series = combined
+
+    @ClassLogger
+    def add_check(self, extra_check):
+        """
+        Incorporate extra check data into the check series using utils.merge_series.
+
+        Parameters
+        ----------
+        extra_check
+            extra check data
+
+        Returns
+        -------
+        None, but adds data to self.check_series
+        """
+        combined = utils.merge_series(self.check_series, extra_check)
+        self.check_series = combined
+
+    @ClassLogger
+    def add_quality(self, extra_quality):
+        """
+        Incorporate extra quality data into the quality series using utils.merge_series.
+
+        Parameters
+        ----------
+        extra_quality
+            extra quality data
+
+        Returns
+        -------
+        None, but adds data to self.quality_series
+        """
+        combined = utils.merge_series(self.quality_series, extra_quality)
+        self.quality_series = combined
+
     # @stale_warning  # type: ignore
     @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
