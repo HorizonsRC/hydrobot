@@ -6,7 +6,7 @@ import pandas as pd
 from annalist.annalist import Annalist
 from hilltoppy.utils import build_url, get_hilltop_xml
 
-from hydrobot.xml_data_structure import parse_xml
+from hydrobot.data_structure import parse_xml
 
 annalizer = Annalist()
 

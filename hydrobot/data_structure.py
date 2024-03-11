@@ -281,14 +281,15 @@ class DataSource:
 
         item_infos_raw = root.findall("ItemInfo")
         if (len(item_infos_raw) != num_items) and (num_items > 1):
-            raise ValueError(
+            warnings.warn(
                 f"Malformed Hilltop XML. DataSource {name} expects {num_items} "
-                f"ItemInfo(s), but found {len(item_infos_raw)}"
+                f"ItemInfo(s), but found {len(item_infos_raw)}",
+                stacklevel=1,
             )
 
         item_info_list = []
-        for info in item_infos_raw:
-            item_info_list += [ItemInfo.from_xml(info)]
+        for i in range(num_items):
+            item_info_list += [ItemInfo.from_xml(item_infos_raw[i])]
 
         return cls(
             name,

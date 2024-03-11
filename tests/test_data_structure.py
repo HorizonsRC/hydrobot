@@ -6,7 +6,7 @@ import pandas as pd
 import pytest
 from defusedxml import ElementTree as DefusedElementTree
 
-from hydrobot import xml_data_structure
+from hydrobot import data_structure
 
 
 @pytest.fixture()
@@ -96,7 +96,7 @@ def test_parse_xml_file_object(sample_data_source_xml_file, correct_blobs):
     with open(sample_data_source_xml_file) as f:
         sample_data_source_xml = f
 
-        blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
+        blob_list = data_structure.parse_xml(sample_data_source_xml)
 
         for i, blob in enumerate(blob_list):
             assert blob.site_name == correct_blobs[i]["site_name"]
@@ -134,7 +134,7 @@ def test_parse_xml_string(sample_data_source_xml_file, correct_blobs):
     with open(sample_data_source_xml_file) as f:
         sample_data_source_xml = f.read()
 
-    blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
+    blob_list = data_structure.parse_xml(sample_data_source_xml)
 
     for i, blob in enumerate(blob_list):
         assert blob.site_name == correct_blobs[i]["site_name"]
@@ -172,7 +172,7 @@ def test_parse_xml_bytes(sample_data_source_xml_file, correct_blobs):
     with open(sample_data_source_xml_file, "rb") as f:
         sample_data_source_xml = f.read()
 
-    blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
+    blob_list = data_structure.parse_xml(sample_data_source_xml)
 
     for i, blob in enumerate(blob_list):
         assert blob.site_name == correct_blobs[i]["site_name"]
@@ -211,7 +211,7 @@ def test_parse_xml_etree(sample_data_source_xml_file, correct_blobs):
         xml_string = f.read()
         sample_data_source_xml = DefusedElementTree.fromstring(xml_string)
 
-    blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
+    blob_list = data_structure.parse_xml(sample_data_source_xml)
 
     for i, blob in enumerate(blob_list):
         assert blob.site_name == correct_blobs[i]["site_name"]
@@ -247,10 +247,10 @@ def test_data_source_to_xml_tree(tmp_path, sample_data_source_xml_file):
     with open(sample_data_source_xml_file) as f:
         sample_data_source_xml = f.read()
 
-    blob_list = xml_data_structure.parse_xml(sample_data_source_xml)
+    blob_list = data_structure.parse_xml(sample_data_source_xml)
 
     output_path = tmp_path / "output.xml"
-    xml_data_structure.write_hilltop_xml(blob_list, output_path)
+    data_structure.write_hilltop_xml(blob_list, output_path)
 
     with open(output_path) as f:
         output_xml = f.read()

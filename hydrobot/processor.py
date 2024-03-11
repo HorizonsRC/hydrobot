@@ -13,11 +13,11 @@ from hilltoppy import Hilltop
 from hydrobot import (
     data_acquisition,
     data_sources,
+    data_structure,
     evaluator,
     filters,
     plotter,
     utils,
-    xml_data_structure,
 )
 
 annalizer = Annalist()
@@ -149,18 +149,27 @@ class Processor:
                 f"{[s for s in check_hilltop.available_sites]}"
             )
 
+        # standard
         available_standard_measurements = standard_hilltop.get_measurement_list(site)
-        if standard_measurement_name in list(
+        self._standard_measurement_name = standard_measurement_name
+        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", standard_measurement_name)
+
+        if matches is not None:
+            self.standard_item_name = matches.groups()[0].strip(" ")
+            self.standard_data_source_name = matches.groups()[2]
+            if self.standard_data_source_name is None:
+                self.standard_data_source_name = self.standard_item_name
+        if standard_measurement_name not in list(
             available_standard_measurements.MeasurementName
         ):
-            self._standard_measurement_name = standard_measurement_name
-        else:
             raise ValueError(
                 f"Standard measurement name '{standard_measurement_name}' not found at"
                 f" site '{site}'. "
                 "Available measurements are "
                 f"{list(available_standard_measurements.MeasurementName)}"
             )
+
+        # check
         available_check_measurements = check_hilltop.get_measurement_list(site)
         self._check_measurement_name = check_measurement_name
         matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
@@ -405,7 +414,7 @@ class Processor:
         else:
             for blob in blob_list:
                 data_source_list += [blob.data_source.name]
-                if (blob.data_source.name == self._standard_measurement_name) and (
+                if (blob.data_source.name == self.standard_data_source_name) and (
                     blob.data_source.ts_type == "StdSeries"
                 ):
                     self.raw_standard_series = blob.data.timeseries
@@ -1224,7 +1233,7 @@ class Processor:
             blob_list = self.to_xml_data_structure(
                 standard=standard, quality=quality, check=check
             )
-            xml_data_structure.write_hilltop_xml(blob_list, file_location)
+            data_structure.write_hilltop_xml(blob_list, file_location)
 
     def diagnosis(self):
         """
@@ -1351,7 +1360,7 @@ class Processor:
 
         Returns
         -------
-        list of xml_data_structure.DataSourceBlob
+        list of data_structure.DataSourceBlob
             List of DataSourceBlob instances representing the data in the Processor
             object.
 
@@ -1394,7 +1403,7 @@ class Processor:
             ):
                 item_info_list = []
                 for i, info in enumerate(raw_blob.data_source.item_info):
-                    item_info = xml_data_structure.ItemInfo(
+                    item_info = data_structure.ItemInfo(
                         item_number=i,
                         item_name=info.item_name,
                         item_format=info.item_format,
@@ -1406,7 +1415,7 @@ class Processor:
             else:
                 item_info_list = []
 
-            data_source = xml_data_structure.DataSource(
+            data_source = data_structure.DataSource(
                 name=self._standard_measurement_name,
                 num_items=raw_blob.data_source.num_items,
                 ts_type=raw_blob.data_source.ts_type,
@@ -1465,13 +1474,13 @@ class Processor:
                             timeseries = timeseries.map(
                                 lambda x, f=float_format: f.format(x)
                             )
-            data = xml_data_structure.Data(
+            data = data_structure.Data(
                 date_format=raw_blob.data.date_format,
                 num_items=raw_blob.data.num_items,
                 timeseries=timeseries,
             )
 
-            data_blob = xml_data_structure.DataSourceBlob(
+            data_blob = data_structure.DataSourceBlob(
                 site_name=raw_blob.site_name,
                 data_source=data_source,
                 data=data,

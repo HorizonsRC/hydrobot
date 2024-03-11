@@ -10,9 +10,9 @@ from annalist.annalist import Annalist
 from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy import Hilltop
 
-from hydrobot import data_sources, processor, utils, xml_data_structure
+from hydrobot import data_sources, data_structure, processor, utils
 from hydrobot.data_sources import QualityCodeEvaluator
-from hydrobot.xml_data_structure import parse_xml
+from hydrobot.data_structure import parse_xml
 
 ann = Annalist()
 
@@ -355,7 +355,7 @@ def test_to_xml_data_structure(
         data_source_blob_list += pr.to_xml_data_structure()
 
     output_path = tmp_path / "output.xml"
-    xml_data_structure.write_hilltop_xml(data_source_blob_list, output_path)
+    data_structure.write_hilltop_xml(data_source_blob_list, output_path)
 
     with open(output_path) as f:
         output_xml = f.read()
@@ -713,7 +713,7 @@ def test_data_export(
     pr.data_exporter(gap_path_xml, ftype="xml")
     print("After xml export:", pr.quality_series.index)
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
-    gap_path_blob = xml_data_structure.parse_xml(gap_path_xml_tree)
+    gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
     std_indices = gap_path_blob[0].data.timeseries.index
     assert pd.Timestamp(start_idx) not in list(std_indices)
@@ -750,7 +750,7 @@ def test_data_export(
 
     print(gap_path_xml.read_text())
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
-    gap_path_blob = xml_data_structure.parse_xml(gap_path_xml_tree)
+    gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
     std_indices = gap_path_blob[0].data.timeseries.index
     assert start_idx not in list(std_indices)

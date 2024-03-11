@@ -7,13 +7,13 @@ from annalist.annalist import Annalist
 from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy.utils import build_url, get_hilltop_xml
 
+from hydrobot.data_structure import parse_xml, write_hilltop_xml
 from hydrobot.processor import Processor
-from hydrobot.xml_data_structure import parse_xml, write_hilltop_xml
 
 
 @pytest.mark.slow()
 @pytest.mark.remote()
-def test_xml_data_structure_integration(tmp_path):
+def test_data_structure_integration(tmp_path):
     """
     Test connection to the actual server.
 
