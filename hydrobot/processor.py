@@ -3,6 +3,7 @@
 import re
 import warnings
 from functools import wraps
+from xml.etree import ElementTree
 
 import numpy as np
 import pandas as pd
@@ -536,17 +537,19 @@ class Processor:
             tstype="Quality",
         )
 
+        ElementTree.dump(xml_tree)
+
         blob_found = False
 
         if blob_list is None or len(blob_list) == 0:
             warnings.warn(
                 "No Quality data available for the range specified.",
-                stacklevel=2,
+                stacklevel=1,
             )
         else:
             date_format = "Calendar"
             for blob in blob_list:
-                if (blob.data_source.name == self._standard_measurement_name) and (
+                if (blob.data_source.name == self.standard_data_source_name) and (
                     blob.data_source.ts_type == "StdQualSeries"
                 ):
                     # Found it. Now we extract it.
@@ -1392,7 +1395,7 @@ class Processor:
         for dtype, raw_blob in zip(selected_types, selected_blobs):
             if raw_blob is None:
                 raise ValueError(
-                    "Can't reconstruct the data structure without having an xml import"
+                    f"Can't reconstruct the {dtype} data structure without having an xml import"
                     " to mimic."
                 )
             if (

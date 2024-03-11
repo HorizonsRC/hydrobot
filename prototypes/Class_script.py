@@ -9,7 +9,7 @@ processing_parameters = {
     "standard_hts_filename": "RawLogger.hts",
     "check_hts_filename": "boo.hts",
     "site": "Akitio at Cadmus Bridge",
-    "from_date": "2022-03-01 00:00",
+    "from_date": "2023-09-01 00:00",
     "to_date": "2025-06-15 8:30",
     "frequency": "15T",
     "standard_measurement_name": "Water Temperature [Dissolved Oxygen sensor]",

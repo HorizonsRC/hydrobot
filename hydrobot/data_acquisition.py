@@ -65,6 +65,57 @@ def get_data(
     return hilltop_xml, data_object
 
 
+def get_time_range(
+    base_url,
+    hts,
+    site,
+    measurement,
+    tstype="Standard",
+):
+    """Acquire time series data from a web service and return it as a DataFrame.
+
+    Parameters
+    ----------
+    base_url : str
+        The base URL of the web service.
+    hts : str
+        The Hilltop Time Series (HTS) identifier.
+    site : str
+        The site name or location.
+    measurement : str
+        The type of measurement to retrieve.
+    from_date : str
+        The start date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
+    to_date : str
+        The end date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
+    tstype : str
+        Type of data that is sought
+        (default is Standard, can be Standard, Check, or Quality)
+
+    Returns
+    -------
+    pandas.DataFrame
+        A DataFrame containing the acquired time series data.
+    """
+    url = build_url(
+        base_url,
+        hts,
+        "TimeRange",
+        site=site,
+        measurement=measurement,
+        tstype=tstype,
+    )
+
+    hilltop_xml = get_hilltop_xml(url)
+    print(url)
+
+    data_object = parse_xml(hilltop_xml)
+
+    return hilltop_xml, data_object
+
+
 def get_series(
     base_url,
     hts,

@@ -287,9 +287,23 @@ class DataSource:
                 stacklevel=1,
             )
 
+        # Hilltop sometimes sends more item infos than it actually has items.
+        # To account for this we need to sort the item infos by item number,
+        # then only select the first num_items item infos.
+
         item_info_list = []
+        for info in item_infos_raw:
+            item_info_list += [ItemInfo.from_xml(info)]
+
+        info_dict = {}
+        for item_info in item_info_list:
+            info_dict[item_info.item_number] = item_info
+
+        sorted_item_nums = sorted(list(info_dict.keys()))
+
+        final_info_list = []
         for i in range(num_items):
-            item_info_list += [ItemInfo.from_xml(item_infos_raw[i])]
+            final_info_list += [info_dict[sorted_item_nums[i]]]
 
         return cls(
             name,
@@ -298,7 +312,7 @@ class DataSource:
             str(data_type),
             str(interpolation),
             str(item_format),
-            item_info_list,
+            final_info_list,
         )
 
     def to_xml_tree(self):
