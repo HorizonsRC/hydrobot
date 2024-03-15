@@ -1268,17 +1268,18 @@ class Processor:
 
     def plot_qc_series(self, show=True):
         """Implement qc_plotter()."""
-        plotter.qc_plotter(
+        fig = plotter.qc_plotter_plotly(
             self._standard_series,
             self._check_series,
             self._quality_series,
             self._frequency,
             show=show,
         )
+        return fig
 
     def plot_comparison_qc_series(self, show=True):
         """Implement comparison_qc_plotter()."""
-        plotter.comparison_qc_plotter(
+        fig = plotter.comparison_qc_plotter_plotly(
             self._standard_series,
             self.raw_standard_series,
             self._check_series,
@@ -1286,6 +1287,7 @@ class Processor:
             self._frequency,
             show=show,
         )
+        return fig
 
     def plot_gaps(self, span=None, show=True):
         """

@@ -10,7 +10,7 @@ authors = [
     { name = "Nic Mostert", email = "nicolas.mostert@horizons.govt.nz" },
     { name = "Sam Irvine", email = "sam.irvine@horizons.govt.nz" }
 ]
-requires-python = "==3.11.6"
+requires-python = ">=3.11.6"
 dependencies = [
     "hilltop-py>=2.3.1",
     "data-annalist>=0.4.1",

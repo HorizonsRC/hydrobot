@@ -2,6 +2,7 @@
 import warnings
 
 import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 from hydrobot.evaluator import find_nearest_time, gap_finder, splitter
 
@@ -169,6 +170,58 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         plt.show()
 
 
+
+def qc_plotter_plotly(base_series, check_series, qc_series, frequency, show=True,
+                      **kwargs):
+    """Plot data with correct qc colour.
+
+    Parameters
+    ----------
+    base_series : pd.Series
+        Data to be sorted by colour
+    check_series : pd.Series
+        Check data to plot
+    qc_series : pd.Series
+        QC ranges for colour coding
+    frequency : DateOffset or str
+        Frequency to which the data gets set to
+    show : bool
+        Whether to show the plot directly when called
+
+    Returns
+    -------
+    None
+        Displays a plot
+    """
+    split_data = splitter(base_series, qc_series, frequency)
+    fig = go.Figure()
+    for qc in split_data:
+        fig.add_trace(go.Scatter(
+            x=split_data[qc].index,
+            y=split_data[qc],
+            mode='lines',
+            name=f"QC{qc}",
+            line=dict(color=qc_colour(qc)),
+        ))
+    fig.add_trace(go.Scatter(
+        x=check_series.index,
+        y=check_series,
+        mode='markers',
+        name="Check data",
+        marker=dict(color='black', size=8),
+    ))
+    fig.update_layout(
+        title="Quality Control Plot",
+        xaxis=dict(title="Date"),
+        yaxis=dict(title="Value"),
+        legend=dict(yanchor="top", y=0.99, xanchor="left", x=0.01),
+        xaxis_tickangle=-45,
+        **kwargs,
+    )
+    if show:
+        fig.show()
+    return fig
+
 def comparison_qc_plotter(
     base_series, raw_series, check_series, qc_series, frequency, show=True
 ):
@@ -206,3 +259,43 @@ def comparison_qc_plotter(
     plt.legend()
     if show:
         plt.show()
+
+
+def comparison_qc_plotter_plotly(
+    base_series, raw_series, check_series, qc_series, frequency, show=True, **kwargs,
+):
+    """Plot data with correct qc colour a la qc_plotter(), and the raw data overlaid.
+
+    Parameters
+    ----------
+    base_series : pd.Series
+        Data to be sorted by colour
+    raw_series : pd.Series
+        Data that has not been processed
+    check_series : pd.Series
+        Check data to plot
+    qc_series : pd.Series
+        QC ranges for colour coding
+    frequency : DateOffset or str
+        Frequency to which the data gets set to
+    show : bool
+        Whether to show the plot directly when called
+
+    Returns
+    -------
+    None
+        Displays a plot
+    """
+    fig = qc_plotter_plotly(base_series, check_series, qc_series, frequency,
+                            show=False, **kwargs)
+
+    fig.add_trace(go.Scattergl(
+        x=raw_series.index,
+        y=raw_series,
+        mode="lines",
+        name="Raw data",
+        line=dict(color="black", dash="dash"),
+    ))
+    if show:
+        fig.show()
+    return fig
