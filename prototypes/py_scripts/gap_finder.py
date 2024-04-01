@@ -39,7 +39,7 @@ idx = idx0[:-1]
 valid_mask = np.isnan(base_data["Value"][idx])
 out_idx = idx[valid_mask]
 out_count = count[valid_mask]
-out = zip(base_data.index[out_idx], out_count)
+out = zip(base_data.index[out_idx], out_count, strict=True)
 print([o for o in out])
 
 

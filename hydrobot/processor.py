@@ -954,11 +954,6 @@ class Processor:
             high_clip = float(self._defaults["high_clip"])
 
         self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
-        self.check_series = filters.clip(
-            pd.Series(self._check_series),
-            low_clip,
-            high_clip,
-        )
 
     # @stale_warning  # type: ignore
     @ClassLogger
@@ -1220,7 +1215,9 @@ class Processor:
                 self._quality_series,
                 self._check_series,
             ]
-            export_list = [i for (i, v) in zip(all_series, export_selections) if v]
+            export_list = [
+                i for (i, v) in zip(all_series, export_selections, strict=True) if v
+            ]
             data_sources.series_export_to_csv(file_location, series=export_list)
         if ftype == "hilltop_csv":
             print("At the exporter:", self.quality_series.index.dtype)
@@ -1266,11 +1263,11 @@ class Processor:
             self._frequency,
         )
 
-    def plot_qc_series(self, show=True):
+    def plot_qc_series(self, check=False, show=True):
         """Implement qc_plotter()."""
         fig = plotter.qc_plotter_plotly(
             self._standard_series,
-            self._check_series,
+            (self._check_series if check else None),
             self._quality_series,
             self._frequency,
             show=show,
@@ -1391,10 +1388,12 @@ class Processor:
             self.raw_quality_blob,
             self.raw_check_blob,
         ]
-        selected_types = [dt for sel, dt in zip(selections, dtypes) if sel]
-        selected_blobs = [blob for sel, blob in zip(selections, blobs) if sel]
+        selected_types = [dt for sel, dt in zip(selections, dtypes, strict=True) if sel]
+        selected_blobs = [
+            blob for sel, blob in zip(selections, blobs, strict=True) if sel
+        ]
 
-        for dtype, raw_blob in zip(selected_types, selected_blobs):
+        for dtype, raw_blob in zip(selected_types, selected_blobs, strict=True):
             if raw_blob is None:
                 raise ValueError(
                     f"Can't reconstruct the {dtype} data structure without having an xml import"

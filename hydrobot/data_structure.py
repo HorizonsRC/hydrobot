@@ -86,7 +86,7 @@ class ItemInfo:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -255,7 +255,7 @@ class DataSource:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -455,7 +455,7 @@ class Data:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -708,7 +708,7 @@ class DataSourceBlob:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -825,7 +825,7 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
     elif isinstance(source, ElementTree.ElementTree):
         # If the source is an ElementTree object, get the root
         root = source.getroot()
-    elif isinstance(source, (bytes, bytearray)):
+    elif isinstance(source, bytes | bytearray):
         # If the source is a bytes or bytearray, assume it's
         # XML content and decode it.
         root = DefusedElementTree.fromstring(source.decode())
@@ -867,14 +867,20 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
                     for info in data_source_blob.data_source.item_info
                 ]
 
-                sorted_pairs = sorted(zip(item_numbers, item_names), key=lambda x: x[0])
+                sorted_pairs = sorted(
+                    zip(item_numbers, item_names, strict=True), key=lambda x: x[0]
+                )
                 sorted_items = sorted(
-                    zip(item_numbers, data_source_blob.data_source.item_info),
+                    zip(
+                        item_numbers,
+                        data_source_blob.data_source.item_info,
+                        strict=True,
+                    ),
                     key=lambda x: x[0],
                 )
 
-                _, sorted_item_names = zip(*sorted_pairs)
-                _, sorted_item_list = zip(*sorted_items)
+                _, sorted_item_names = zip(*sorted_pairs, strict=True)
+                _, sorted_item_list = zip(*sorted_items, strict=True)
 
                 sorted_item_names = list(sorted_item_names)
                 data_source_blob.data_source.item_info = list(sorted_item_list)
@@ -889,6 +895,7 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
                     for col, name in zip(
                         data_source_blob.data.timeseries.columns,
                         sorted_item_names,
+                        strict=True,
                     )
                 }
                 data_source_blob.data.timeseries = (

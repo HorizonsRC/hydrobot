@@ -2,13 +2,17 @@
 import warnings
 
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from hydrobot.evaluator import find_nearest_time, gap_finder, splitter
+from hydrobot.utils import change_blocks, merge_all_comments
 
 
 def gap_plotter(base_series, span=20, show=True):
-    """Plot the areas around NaN values to visually check for dodgy spike removal.
+    """Plot the areas around NaN.to_numpy() to visually check for dodgy spike removal.
 
     Parameters
     ----------
@@ -49,7 +53,7 @@ def gap_plotter(base_series, span=20, show=True):
 
 
 def check_plotter(base_series, check_series, span=20, show=True):
-    """Plot the areas around check values to visually check for dodgy data from inspections.
+    """Plot the areas around check.to_numpy() to visually check for dodgy data from inspections.
 
     Parameters
     ----------
@@ -92,7 +96,7 @@ def check_plotter(base_series, check_series, span=20, show=True):
             check_series[check],
             label="Check data",
             marker="o",
-            color="black",
+            color="darkturquoise",
         )
         plt.title(f"Check at {check}")
     if show:
@@ -113,6 +117,8 @@ def qc_colour(qc):
         Hex code for the colour of the QC
     """
     qc_dict = {
+        None: "darkslategrey",
+        "nan": "darkslategrey",
         0: "#9900ff",
         100: "#ff0000",
         200: "#8B5A00",
@@ -160,7 +166,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         check_series,
         label="Check data",
         marker="o",
-        color="black",
+        color="gray",
         linestyle="None",
     )
     plt.xticks(rotation=45, ha="right")
@@ -170,9 +176,9 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         plt.show()
 
 
-
-def qc_plotter_plotly(base_series, check_series, qc_series, frequency, show=True,
-                      **kwargs):
+def qc_plotter_plotly(
+    base_series, check_series, qc_series, frequency, show=True, **kwargs
+):
     """Plot data with correct qc colour.
 
     Parameters
@@ -196,20 +202,25 @@ def qc_plotter_plotly(base_series, check_series, qc_series, frequency, show=True
     split_data = splitter(base_series, qc_series, frequency)
     fig = go.Figure()
     for qc in split_data:
-        fig.add_trace(go.Scatter(
-            x=split_data[qc].index,
-            y=split_data[qc],
-            mode='lines',
-            name=f"QC{qc}",
-            line=dict(color=qc_colour(qc)),
-        ))
-    fig.add_trace(go.Scatter(
-        x=check_series.index,
-        y=check_series,
-        mode='markers',
-        name="Check data",
-        marker=dict(color='black', size=8),
-    ))
+        fig.add_trace(
+            go.Scatter(
+                x=split_data[qc].index,
+                y=split_data[qc],
+                mode="lines",
+                name=f"QC{qc}",
+                line=dict(color=qc_colour(qc)),
+            )
+        )
+    if check_series is not None:
+        fig.add_trace(
+            go.Scatter(
+                x=check_series.index,
+                y=check_series,
+                mode="markers",
+                name="Check data",
+                marker=dict(color="darkturquoise", size=10),
+            )
+        )
     fig.update_layout(
         title="Quality Control Plot",
         xaxis=dict(title="Date"),
@@ -221,6 +232,7 @@ def qc_plotter_plotly(base_series, check_series, qc_series, frequency, show=True
     if show:
         fig.show()
     return fig
+
 
 def comparison_qc_plotter(
     base_series, raw_series, check_series, qc_series, frequency, show=True
@@ -262,7 +274,13 @@ def comparison_qc_plotter(
 
 
 def comparison_qc_plotter_plotly(
-    base_series, raw_series, check_series, qc_series, frequency, show=True, **kwargs,
+    base_series,
+    raw_series,
+    check_series,
+    qc_series,
+    frequency,
+    show=True,
+    **kwargs,
 ):
     """Plot data with correct qc colour a la qc_plotter(), and the raw data overlaid.
 
@@ -286,16 +304,428 @@ def comparison_qc_plotter_plotly(
     None
         Displays a plot
     """
-    fig = qc_plotter_plotly(base_series, check_series, qc_series, frequency,
-                            show=False, **kwargs)
+    fig = qc_plotter_plotly(
+        base_series, check_series, qc_series, frequency, show=False, **kwargs
+    )
 
-    fig.add_trace(go.Scattergl(
-        x=raw_series.index,
-        y=raw_series,
-        mode="lines",
-        name="Raw data",
-        line=dict(color="black", dash="dash"),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=raw_series.index,
+            y=raw_series,
+            mode="lines",
+            name="Raw data",
+            line=dict(color="black", dash="dash"),
+        )
+    )
     if show:
         fig.show()
     return fig
+
+
+def make_processing_dash(
+    fig,
+    title,
+    raw_standard_series,
+    hilltop_standard_series,
+    raw_check_series,
+    prov_wq,
+    inspections,
+    ncrs,
+):
+    """Make the processing dash.
+
+    Sorry about these docs I'm in a rush.
+    """
+    fig.add_trace(
+        go.Scatter(
+            x=raw_standard_series.index,
+            y=raw_standard_series.to_numpy(),
+            mode="lines",
+            name="Raw data",
+            line=dict(color="darkslategray", width=0.5),
+            opacity=0.5,
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=raw_check_series.index,
+            y=raw_check_series["Water Temperature Check"],
+            mode="markers",
+            name="Check data",
+            marker=dict(color="darkturquoise", size=10),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=prov_wq.index,
+            y=prov_wq["Temp Check"],
+            mode="markers",
+            name="ProvWQ Check",
+            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=inspections["Temp Check"],
+            mode="markers",
+            name="S123 Check",
+            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=inspections["Temp Logger"],
+            mode="markers",
+            name="S123 Logger",
+            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+        )
+    )
+    fig_subplots = make_subplots(
+        rows=3,
+        cols=1,
+        shared_xaxes=True,
+        vertical_spacing=0.02,
+        specs=[
+            [{"type": "scatter"}],
+            [{"type": "scatter"}],
+            [{"type": "table"}],
+        ],
+        row_heights=[0.4, 0.2, 0.4],
+    )
+
+    for trace in fig.data:
+        fig_subplots.add_trace(trace, row=1, col=1)
+
+    fig_subplots.update_layout(title=title)
+
+    def find_nearest_periodic_indices(periodic_series, check_series):
+        nearest_periodic_indices = []
+        for check_index in check_series.index:
+            # Calculate the difference between the check_index and every periodic index
+            time_diff = np.abs(periodic_series.index - check_index)
+
+            # Find the index in standard_series with the minimum time difference
+            nearest_index = np.argmin(time_diff)
+
+            nearest_periodic_indices.append(nearest_index)
+
+        return nearest_periodic_indices
+
+    nearest_check_indices = find_nearest_periodic_indices(
+        hilltop_standard_series, raw_check_series["Water Temperature Check"]
+    )
+
+    nearest_prov_indices = find_nearest_periodic_indices(
+        hilltop_standard_series, prov_wq
+    )
+
+    nearest_inspection_indices = find_nearest_periodic_indices(
+        hilltop_standard_series, inspections
+    )
+
+    edited_blocks = change_blocks(raw_standard_series, hilltop_standard_series)
+
+    first_change = True
+    for change_start, change_end in edited_blocks:
+        fig_subplots.add_vrect(
+            x0=change_start,
+            x1=change_end,
+            showlegend=first_change,
+            fillcolor="blue",
+            opacity=0.25,
+            line_width=0,
+            name="Changes",
+            row=1,
+            col=1,
+        )
+        first_change = False
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=raw_check_series["Water Temperature Check"].index,
+            y=hilltop_standard_series.iloc[nearest_check_indices].to_numpy()
+            - raw_check_series["Water Temperature Check"].to_numpy(),
+            mode="markers",
+            name="Check data",
+            marker=dict(color="darkturquoise", size=10, symbol="circle"),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=hilltop_standard_series.iloc[nearest_check_indices].index,
+            y=hilltop_standard_series.iloc[nearest_check_indices].to_numpy()
+            - raw_check_series["Water Temperature Check"].to_numpy(),
+            mode="markers",
+            name="Check Align",
+            marker=dict(color="darkturquoise", size=10, symbol="circle"),
+            showlegend=False,
+            opacity=0.5,
+            hoverinfo="skip",
+        ),
+        row=2,
+        col=1,
+    )
+    arrow_annotations = []
+    for stand, check in zip(
+        hilltop_standard_series.iloc[nearest_check_indices].items(),
+        raw_check_series["Water Temperature Check"].items(),
+        strict=True,
+    ):
+        # If the timestamps are not the same
+        if stand[0] != check[0]:
+            arrow_annotations.append(
+                dict(
+                    ax=check[0],
+                    ay=stand[1] - check[1],
+                    x=stand[0],
+                    y=stand[1] - check[1],
+                    axref="x2",
+                    ayref="y2",
+                    xref="x2",
+                    yref="y2",
+                    arrowhead=2,
+                    arrowcolor="darkturquoise",
+                    showarrow=True,
+                    opacity=0.5,
+                    standoff=6,
+                )
+            )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=prov_wq.index,
+            y=hilltop_standard_series.iloc[nearest_prov_indices].to_numpy()
+            - prov_wq["Temp Check"].to_numpy(),
+            mode="markers",
+            name="ProvWQ Check",
+            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=hilltop_standard_series.iloc[nearest_prov_indices].index,
+            y=hilltop_standard_series.iloc[nearest_prov_indices].to_numpy()
+            - prov_wq["Temp Check"].to_numpy(),
+            mode="markers",
+            name="ProvWQ Align",
+            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+            showlegend=False,
+            opacity=0.5,
+            hoverinfo="skip",
+        ),
+        row=2,
+        col=1,
+    )
+    for stand, prov in zip(
+        hilltop_standard_series.iloc[nearest_prov_indices].items(),
+        prov_wq.iterrows(),
+        strict=True,
+    ):
+        # If the timestamps are not the same
+        if stand[0] != prov[0]:
+            arrow_annotations.append(
+                dict(
+                    ax=prov[0],
+                    ay=stand[1] - prov[1]["Temp Check"],
+                    x=stand[0],
+                    y=stand[1] - prov[1]["Temp Check"],
+                    axref="x2",
+                    ayref="y2",
+                    xref="x2",
+                    yref="y2",
+                    arrowhead=2,
+                    arrowcolor="darkslategray",
+                    showarrow=True,
+                    opacity=0.5,
+                    standoff=6,
+                )
+            )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
+            - inspections["Temp Check"].to_numpy(),
+            mode="markers",
+            name="S123 Check",
+            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
+            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
+            - inspections["Temp Check"].to_numpy(),
+            mode="markers",
+            name="S123 Check Aligned",
+            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+            showlegend=False,
+            opacity=0.5,
+            hoverinfo="skip",
+        ),
+        row=2,
+        col=1,
+    )
+
+    for stand, insp in zip(
+        hilltop_standard_series.iloc[nearest_inspection_indices].items(),
+        inspections.iterrows(),
+        strict=True,
+    ):
+        # If the timestamps are not the same
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+            arrow_annotations.append(
+                dict(
+                    ax=insp[0],
+                    ay=stand[1] - insp[1]["Temp Check"],
+                    x=stand[0],
+                    y=stand[1] - insp[1]["Temp Check"],
+                    axref="x2",
+                    ayref="y2",
+                    xref="x2",
+                    yref="y2",
+                    arrowhead=2,
+                    arrowcolor="darkslategray",
+                    showarrow=True,
+                    opacity=0.5,
+                    standoff=6,
+                )
+            )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
+            - inspections["Temp Logger"].to_numpy(),
+            mode="markers",
+            name="S123 Logger",
+            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+            showlegend=False,
+        ),
+        row=2,
+        col=1,
+    )
+
+    fig_subplots.add_trace(
+        go.Scatter(
+            x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
+            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
+            - inspections["Temp Logger"].to_numpy(),
+            mode="markers",
+            name="S123 Logger Aligned",
+            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+            showlegend=False,
+            opacity=0.5,
+            hoverinfo="skip",
+        ),
+        row=2,
+        col=1,
+    )
+
+    for stand, insp in zip(
+        hilltop_standard_series.iloc[nearest_inspection_indices].items(),
+        inspections.iterrows(),
+        strict=True,
+    ):
+        # If the timestamps are not the same
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+            arrow_annotations.append(
+                dict(
+                    ax=insp[0],
+                    ay=stand[1] - insp[1]["Temp Logger"],
+                    x=stand[0],
+                    y=stand[1] - insp[1]["Temp Logger"],
+                    axref="x2",
+                    ayref="y2",
+                    xref="x2",
+                    yref="y2",
+                    arrowhead=2,
+                    arrowcolor="darkslategray",
+                    showarrow=True,
+                    opacity=0.5,
+                    standoff=6,
+                )
+            )
+
+    fig_subplots.update_layout(annotations=arrow_annotations)
+
+    qc400 = 1.2
+    qc500 = 0.8
+
+    fig_subplots.add_hline(
+        y=qc400,
+        line=dict(color="#ffa500", width=1, dash="dash"),
+        name="QC400",
+        row=2,
+        col=1,
+        showlegend=True,
+        legendgroup="QC400",
+    )
+
+    fig_subplots.add_hline(
+        y=-qc400,
+        line=dict(color="#ffa500", width=1, dash="dash"),
+        name="QC400",
+        row=2,
+        col=1,
+        showlegend=False,
+        legendgroup="QC400",
+        visible=True,
+    )
+    fig_subplots.add_hline(
+        y=qc500,
+        line=dict(color="#00bfff", width=1, dash="dash"),
+        name="QC500",
+        row=2,
+        col=1,
+        showlegend=True,
+        legendgroup="QC500",
+        visible=True,
+    )
+    fig_subplots.add_hline(
+        y=-qc500,
+        line=dict(color="#00bfff", width=1, dash="dash"),
+        name="QC500",
+        row=2,
+        col=1,
+        showlegend=False,
+        legendgroup="QC500",
+        visible=True,
+    )
+
+    all_comments = merge_all_comments(raw_check_series, prov_wq, inspections, ncrs)
+
+    fig_subplots.add_trace(
+        go.Table(
+            columnwidth=[1, 3, 1],
+            header=dict(
+                values=list(all_comments.columns),
+                align="left",
+            ),
+            cells=dict(
+                values=[all_comments[cn] for cn in all_comments.columns],
+                align="left",
+            ),
+        ),
+        row=3,
+        col=1,
+    )
+
+    fig_subplots.update_layout(
+        hovermode="x unified",
+    )
+
+    return fig_subplots

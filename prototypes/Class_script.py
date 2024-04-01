@@ -2,8 +2,8 @@
 
 import matplotlib.pyplot as plt
 import pandas as pd
-from annalist.annalist import Annalist
 import plotly.graph_objects as go
+from annalist.annalist import Annalist
 
 from hydrobot.processor import Processor
 
@@ -65,29 +65,38 @@ data.quality_encoder()
 
 data.data_exporter("processed.xml")
 
+
 def import_check_data():
-    df = pd.read_csv("WaterTemp_check_data.csv")
-    if not df.empty:
-        df["Datetime"] = pd.to_datetime(df['Date'] + " " + df["Time"])
-        df.set_index('Datetime', inplace=True)
-        df.drop(columns=["Date", "Time"], inplace=True)
-    return df
+    """Import check data csv output from R script."""
+    check_df = pd.read_csv("WaterTemp_check_data.csv")
+    if not check_df.empty:
+        check_df["Datetime"] = pd.to_datetime(check_df["Date"] + " " + check_df["Time"])
+        check_df = check_df.set_index("Datetime")
+        check_df = check_df.drop(columns=["Date", "Time"])
+    return check_df
+
 
 def import_inspections():
-    df = pd.read_csv("WaterTemp_Inspections.csv")
-    if not df.empty:
-        df["Datetime"] = pd.to_datetime(df['Date'] + " " + df["Time"])
-        df.set_index('Datetime', inplace=True)
-        df.drop(columns=["Date", "Time"], inplace=True)
-    return df
+    """Import inspection data csv output from R script."""
+    inspection_df = pd.read_csv("WaterTemp_Inspections.csv")
+    if not inspection_df.empty:
+        inspection_df["Datetime"] = pd.to_datetime(
+            inspection_df["Date"] + " " + inspection_df["Time"]
+        )
+        inspection_df = inspection_df.set_index("Datetime")
+        inspection_df = inspection_df.drop(columns=["Date", "Time"])
+    return inspection_df
+
 
 def import_ncr():
-    df = pd.read_csv("WaterTemp_non-conformance_reports.csv")
-    if not df.empty:
-        df["Datetime"] = pd.to_datetime(df['Date'] + " " + df["Time"])
-        df.set_index('Datetime', inplace=True)
-        df.drop(columns=["Date", "Time"], inplace=True)
-    return df
+    """Import non-conformance data csv output from R script."""
+    ncr_df = pd.read_csv("WaterTemp_non-conformance_reports.csv")
+    if not ncr_df.empty:
+        ncr_df["Datetime"] = pd.to_datetime(ncr_df["Date"] + " " + ncr_df["Time"])
+        ncr_df = ncr_df.set_index("Datetime")
+        ncr_df = ncr_df.drop(columns=["Date", "Time"])
+    return ncr_df
+
 
 checks = import_check_data()
 inspections = import_inspections()
@@ -99,27 +108,33 @@ print(ncrs)
 
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
     fig = data.plot_qc_series(show=False)
-    fig.add_trace(go.Scatter(
-        x=checks.index,
-        y=checks["Water Temperature check"],
-        mode='markers',
-        name="Spot Checks",
-        marker=dict(color='blue', size=8, symbol='cross-dot'),
-    ))
-    fig.add_trace(go.Scatter(
-        x=inspections.index,
-        y=inspections["Temp Check"],
-        mode='markers',
-        name="Inspections check",
-        marker=dict(color='red', size=8, symbol='square-open'),
-    ))
-    fig.add_trace(go.Scatter(
-        x=inspections.index,
-        y=inspections["Temp Logger"],
-        mode='markers',
-        name="Inspections Logger",
-        marker=dict(color='magenta', size=8, symbol='diamond-open'),
-    ))
+    fig.add_trace(
+        go.Scatter(
+            x=checks.index,
+            y=checks["Water Temperature check"],
+            mode="markers",
+            name="Spot Checks",
+            marker=dict(color="blue", size=8, symbol="cross-dot"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=inspections["Temp Check"],
+            mode="markers",
+            name="Inspections check",
+            marker=dict(color="red", size=8, symbol="square-open"),
+        )
+    )
+    fig.add_trace(
+        go.Scatter(
+            x=inspections.index,
+            y=inspections["Temp Logger"],
+            mode="markers",
+            name="Inspections Logger",
+            marker=dict(color="magenta", size=8, symbol="diamond-open"),
+        )
+    )
     # data.plot_qc_series(show=false)race(go.scatter())
     # data.plot_gaps(show=False)
     # data.plot_checks(show=False)

@@ -342,7 +342,7 @@ def test_to_xml_data_structure(
 
     data_source_blob_list = []
 
-    for check, meas in zip(CHECK_MEASUREMENTS, MEASUREMENTS):
+    for check, meas in zip(CHECK_MEASUREMENTS, MEASUREMENTS, strict=True):
         pr = processor.Processor(
             base_url="https://greenwashed.and.pleasant/",
             site=SITES[1],

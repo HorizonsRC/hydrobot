@@ -55,7 +55,7 @@ def correct_blobs():
 
     blob_list = []
     for ds in datasources:
-        for ts, dt in zip(tstypes, data_types):
+        for ts, dt in zip(tstypes, data_types, strict=True):
             blob = {
                 "site_name": sitename,
                 "data_source_name": ds,
