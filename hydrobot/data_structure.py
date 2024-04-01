@@ -300,10 +300,15 @@ class DataSource:
             info_dict[item_info.item_number] = item_info
 
         sorted_item_nums = sorted(list(info_dict.keys()))
-
         final_info_list = []
-        for i in range(num_items):
-            final_info_list += [info_dict[sorted_item_nums[i]]]
+        print(info_dict)
+        print(num_items)
+        print(len(info_dict))
+        if len(info_dict) < 0:
+            for i in range(num_items):
+                final_info_list += [info_dict[sorted_item_nums[i]]]
+        else:
+            final_info_list = []
 
         return cls(
             name,
