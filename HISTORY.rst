@@ -57,3 +57,10 @@ History
 ------------------
 
 * XML backend and exporting support added.
+
+0.5.0 (2024-04-03) - Alpha Release
+----------------------------------
+
+* Plotly diagnostics added.
+* Support for external (to Hilltop) check data added.
+* Hybrid workflow supported and documented.
