@@ -3,7 +3,6 @@
 import re
 import warnings
 from functools import wraps
-from xml.etree import ElementTree
 
 import numpy as np
 import pandas as pd
@@ -536,8 +535,6 @@ class Processor:
             to_date,
             tstype="Quality",
         )
-
-        ElementTree.dump(xml_tree)
 
         blob_found = False
 
