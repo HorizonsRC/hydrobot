@@ -102,10 +102,6 @@ checks = import_check_data()
 inspections = import_inspections()
 ncrs = import_ncr()
 
-print(checks)
-print(inspections)
-print(ncrs)
-
 with plt.rc_context(rc={"figure.max_open_warning": 0}):
     fig = data.plot_qc_series(show=False)
     fig.add_trace(
