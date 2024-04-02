@@ -244,7 +244,7 @@ def test_processor_init(
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[1],
         check_measurement_name=CHECK_MEASUREMENTS[1],
-        frequency="5T",
+        frequency="5min",
     )
 
     captured = capsys.readouterr()
@@ -349,7 +349,7 @@ def test_to_xml_data_structure(
             standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
             check_measurement_name=check,
-            frequency="5T",
+            frequency="5min",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -450,7 +450,7 @@ def test_import_data(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5T",
+        frequency="5min",
         from_date=from_date,
         to_date=to_date,
     )
@@ -548,7 +548,7 @@ def test_gap_closer(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5T",
+        frequency="5min",
     )
 
     # Checking that the data points I want to delete actually exist:
@@ -672,7 +672,7 @@ def test_data_export(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5T",
+        frequency="5min",
     )
 
     # Checking that the data points I want to delete actually exist:

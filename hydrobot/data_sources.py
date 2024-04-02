@@ -249,10 +249,7 @@ def hilltop_export(
     -------
     None, but makes files
     """
-    print("On our way out (std):", std_series.index)
-    print("On our way out (qual):", qc_series.index)
     qc_series = qc_series.reindex(std_series.index, method="ffill")
-    print("Why would this not work?", qc_series.index)
     std_series.name = "std"
     qc_series.name = "qual"
     export_df = std_series.to_frame().join(qc_series)
