@@ -86,7 +86,7 @@ class ItemInfo:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -255,7 +255,7 @@ class DataSource:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -281,14 +281,31 @@ class DataSource:
 
         item_infos_raw = root.findall("ItemInfo")
         if (len(item_infos_raw) != num_items) and (num_items > 1):
-            raise ValueError(
+            warnings.warn(
                 f"Malformed Hilltop XML. DataSource {name} expects {num_items} "
-                f"ItemInfo(s), but found {len(item_infos_raw)}"
+                f"ItemInfo(s), but found {len(item_infos_raw)}",
+                stacklevel=1,
             )
+
+        # Hilltop sometimes sends more item infos than it actually has items.
+        # To account for this we need to sort the item infos by item number,
+        # then only select the first num_items item infos.
 
         item_info_list = []
         for info in item_infos_raw:
             item_info_list += [ItemInfo.from_xml(info)]
+
+        info_dict = {}
+        for item_info in item_info_list:
+            info_dict[item_info.item_number] = item_info
+
+        sorted_item_nums = sorted(list(info_dict.keys()))
+        final_info_list = []
+        if len(info_dict) > 0:
+            for i in range(num_items):
+                final_info_list += [info_dict[sorted_item_nums[i]]]
+        else:
+            final_info_list = []
 
         return cls(
             name,
@@ -297,7 +314,7 @@ class DataSource:
             str(data_type),
             str(interpolation),
             str(item_format),
-            item_info_list,
+            final_info_list,
         )
 
     def to_xml_tree(self):
@@ -440,7 +457,7 @@ class Data:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -693,7 +710,7 @@ class DataSourceBlob:
         elif isinstance(source, ElementTree.Element):
             # If the source is an ElementTree object, use it directly
             root = source
-        elif isinstance(source, (bytes, bytearray)):
+        elif isinstance(source, bytes | bytearray):
             # If the source is a bytes or bytearray, assume it's
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
@@ -810,7 +827,7 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
     elif isinstance(source, ElementTree.ElementTree):
         # If the source is an ElementTree object, get the root
         root = source.getroot()
-    elif isinstance(source, (bytes, bytearray)):
+    elif isinstance(source, bytes | bytearray):
         # If the source is a bytes or bytearray, assume it's
         # XML content and decode it.
         root = DefusedElementTree.fromstring(source.decode())
@@ -852,14 +869,20 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
                     for info in data_source_blob.data_source.item_info
                 ]
 
-                sorted_pairs = sorted(zip(item_numbers, item_names), key=lambda x: x[0])
+                sorted_pairs = sorted(
+                    zip(item_numbers, item_names, strict=True), key=lambda x: x[0]
+                )
                 sorted_items = sorted(
-                    zip(item_numbers, data_source_blob.data_source.item_info),
+                    zip(
+                        item_numbers,
+                        data_source_blob.data_source.item_info,
+                        strict=True,
+                    ),
                     key=lambda x: x[0],
                 )
 
-                _, sorted_item_names = zip(*sorted_pairs)
-                _, sorted_item_list = zip(*sorted_items)
+                _, sorted_item_names = zip(*sorted_pairs, strict=True)
+                _, sorted_item_list = zip(*sorted_items, strict=True)
 
                 sorted_item_names = list(sorted_item_names)
                 data_source_blob.data_source.item_info = list(sorted_item_list)
@@ -874,6 +897,7 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
                     for col, name in zip(
                         data_source_blob.data.timeseries.columns,
                         sorted_item_names,
+                        strict=True,
                     )
                 }
                 data_source_blob.data.timeseries = (

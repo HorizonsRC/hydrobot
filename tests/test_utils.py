@@ -57,7 +57,9 @@ def datetime_data():
 
 def test_mowsecs_to_timestamp(mowsecs_data, datetime_data):
     """Test mowsecs_to_datetime_index utility."""
-    for mowsec, timestamp in zip(mowsecs_data.index.values, datetime_data.index.values):
+    for mowsec, timestamp in zip(
+        mowsecs_data.index.values, datetime_data.index.values, strict=True
+    ):
         ms_to_dt = utils.mowsecs_to_timestamp(mowsec)
         assert ms_to_dt == timestamp
 
@@ -70,7 +72,9 @@ def test_mowsecs_to_timestamp(mowsecs_data, datetime_data):
 
 def test_timestamp_to_mowsecs(mowsecs_data, datetime_data):
     """Test mowsecs_to_datetime_index utility."""
-    for timestamp, mowsec in zip(datetime_data.index.values, mowsecs_data.index.values):
+    for timestamp, mowsec in zip(
+        datetime_data.index.values, mowsecs_data.index.values, strict=True
+    ):
         dt_to_ms = utils.timestamp_to_mowsecs(timestamp)
 
         assert dt_to_ms == int(mowsec)

@@ -7,13 +7,13 @@ from annalist.annalist import Annalist
 from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy.utils import build_url, get_hilltop_xml
 
+from hydrobot.data_structure import parse_xml, write_hilltop_xml
 from hydrobot.processor import Processor
-from hydrobot.xml_data_structure import parse_xml, write_hilltop_xml
 
 
 @pytest.mark.slow()
 @pytest.mark.remote()
-def test_xml_data_structure_integration(tmp_path):
+def test_data_structure_integration(tmp_path):
     """
     Test connection to the actual server.
 
@@ -50,7 +50,7 @@ def test_xml_data_structure_integration(tmp_path):
         "site": "Whanganui at Te Rewa",
         "from_date": "2021-06-28 00:00",
         "to_date": "2021-07-01 23:00",
-        "frequency": "5T",
+        "frequency": "5min",
         "standard_measurement_name": "Stage",
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
@@ -226,7 +226,7 @@ def test_processor_integration(tmp_path):
         "site": "Whanganui at Te Rewa",
         "from_date": "2021-01-01 00:00",
         "to_date": "2021-02-02 23:00",
-        "frequency": "5T",
+        "frequency": "5min",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
@@ -397,7 +397,7 @@ def test_empty_response(tmp_path):
         "site": "Whanganui at Te Rewa",
         "from_date": "2003-01-01 00:00",
         "to_date": "2003-02-02 23:00",
-        "frequency": "5T",
+        "frequency": "5min",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
@@ -410,42 +410,43 @@ def test_empty_response(tmp_path):
         },
     }
 
-    ann = Annalist()
-    format_str = format_str = (
-        "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, "
-        "%(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
-    )
-    ann.configure(
-        logfile=tmp_path / "bot_annals.csv",
-        analyst_name="Annie the analyst!",
-        stream_format_str=format_str,
-    )
+    with pytest.warns(UserWarning):
+        ann = Annalist()
+        format_str = format_str = (
+            "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, "
+            "%(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+        )
+        ann.configure(
+            logfile=tmp_path / "bot_annals.csv",
+            analyst_name="Annie the analyst!",
+            stream_format_str=format_str,
+        )
 
-    data = Processor(
-        processing_parameters["base_url"],
-        processing_parameters["site"],
-        processing_parameters["standard_hts_filename"],
-        processing_parameters["standard_measurement_name"],
-        processing_parameters["frequency"],
-        processing_parameters["from_date"],
-        processing_parameters["to_date"],
-        processing_parameters["check_hts_filename"],
-        processing_parameters["check_measurement_name"],
-        processing_parameters["defaults"],
-    )
+        data = Processor(
+            processing_parameters["base_url"],
+            processing_parameters["site"],
+            processing_parameters["standard_hts_filename"],
+            processing_parameters["standard_measurement_name"],
+            processing_parameters["frequency"],
+            processing_parameters["from_date"],
+            processing_parameters["to_date"],
+            processing_parameters["check_hts_filename"],
+            processing_parameters["check_measurement_name"],
+            processing_parameters["defaults"],
+        )
 
-    assert data.standard_series.empty
-    assert data.check_series.empty
-    assert data.quality_series.empty
-    assert data.raw_standard_series.empty
-    assert data.raw_standard_blob is None
-    assert data.raw_standard_xml is None
-    assert data.raw_quality_series.empty
-    assert data.raw_quality_blob is None
-    assert data.raw_quality_xml is None
-    assert data.raw_check_data.empty
-    assert data.raw_check_blob is None
-    assert data.raw_check_xml is None
+        assert data.standard_series.empty
+        assert data.check_series.empty
+        assert data.quality_series.empty
+        assert data.raw_standard_series.empty
+        assert data.raw_standard_blob is None
+        assert data.raw_standard_xml is None
+        assert data.raw_quality_series.empty
+        assert data.raw_quality_blob is None
+        assert data.raw_quality_xml is None
+        assert data.raw_check_data.empty
+        assert data.raw_check_blob is None
+        assert data.raw_check_xml is None
 
 
 @pytest.mark.slow()
@@ -490,7 +491,7 @@ def test_failed_requests(tmp_path):
         "site": "Whanganui at Te Rewa",
         "from_date": "2003-01-01 00:00",
         "to_date": "2003-02-02 23:00",
-        "frequency": "5T",
+        "frequency": "4min",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
@@ -503,165 +504,167 @@ def test_failed_requests(tmp_path):
         },
     }
 
-    ann = Annalist()
-    format_str = format_str = (
-        "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, "
-        "%(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
-    )
-    ann.configure(
-        logfile=tmp_path / "bot_annals.csv",
-        analyst_name="Annie the analyst!",
-        stream_format_str=format_str,
-    )
+    with pytest.warns(UserWarning):
+        ann = Annalist()
+        format_str = format_str = (
+            "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, "
+            "%(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+        )
+        ann.configure(
+            logfile=tmp_path / "bot_annals.csv",
+            analyst_name="Annie the analyst!",
+            stream_format_str=format_str,
+        )
 
-    # with pytest.raises(
-    #     ValueError
-    # ) as excinfo:
-    #     _ = Processor(
-    #         processing_parameters["base_url"],
-    #         processing_parameters["site"],
-    #         processing_parameters["standard_hts_filename"],
-    #         processing_parameters["standard_measurement_name"],
-    #         processing_parameters["frequency"],
-    #         processing_parameters["from_date"],
-    #         processing_parameters["to_date"],
-    #         processing_parameters["check_hts_filename"],
-    #         processing_parameters["check_measurement_name"],
-    #         processing_parameters["defaults"],
-    #     )
-    # print(excinfo.value)
+        # with pytest.raises(
+        #     ValueError
+        # ) as excinfo:
+        #     _ = Processor(
+        #         processing_parameters["base_url"],
+        #         processing_parameters["site"],
+        #         processing_parameters["standard_hts_filename"],
+        #         processing_parameters["standard_measurement_name"],
+        #         processing_parameters["frequency"],
+        #         processing_parameters["from_date"],
+        #         processing_parameters["to_date"],
+        #         processing_parameters["check_hts_filename"],
+        #         processing_parameters["check_measurement_name"],
+        #         processing_parameters["defaults"],
+        #     )
+        # print(excinfo.value)
 
-    with pytest.raises(
-        ValueError, match=r"No sites found for the base_url and hts combo."
-    ) as excinfo:
+        with pytest.raises(
+            ValueError, match=r"No sites found for the base_url and hts combo."
+        ) as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                "Notarealhstfile",
+                # processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters["frequency"],
+                processing_parameters["from_date"],
+                processing_parameters["to_date"],
+                processing_parameters["check_hts_filename"],
+                processing_parameters["check_measurement_name"],
+                processing_parameters["defaults"],
+            )
+        assert "No sites found for the base_url and hts combo." in str(excinfo.value)
+
+        with pytest.raises(
+            ValueError, match=r"Site 'Notarealsite' not found .*"
+        ) as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                "Notarealsite",
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters["frequency"],
+                processing_parameters["from_date"],
+                processing_parameters["to_date"],
+                processing_parameters["check_hts_filename"],
+                processing_parameters["check_measurement_name"],
+                processing_parameters["defaults"],
+            )
+        assert "Site 'Notarealsite' not found for both base_url and hts combos." in str(
+            excinfo.value
+        )
+
+        with pytest.raises(ValueError, match=r"Standard measurement name.*") as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                # processing_parameters["standard_measurement_name"],
+                "Notarealmeasurement",
+                processing_parameters["frequency"],
+                processing_parameters["from_date"],
+                processing_parameters["to_date"],
+                processing_parameters["check_hts_filename"],
+                processing_parameters["check_measurement_name"],
+                processing_parameters["defaults"],
+            )
+        assert (
+            "Standard measurement name 'Notarealmeasurement' not found at site"
+            in str(excinfo.value)
+        )
+
+        with pytest.raises(
+            ValueError,
+            match=r"Unrecognised start time",
+        ) as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters["frequency"],
+                # processing_parameters["from_date"],
+                "Notarealdate",
+                processing_parameters["to_date"],
+                processing_parameters["check_hts_filename"],
+                processing_parameters["check_measurement_name"],
+                processing_parameters["defaults"],
+            )
+        assert "Unrecognised start time" in str(excinfo.value)
+
+        # with pytest.raises(
+        #     ValueError  #, match=r"Unrecognised start time",
+        # ) as excinfo:
         _ = Processor(
             processing_parameters["base_url"],
             processing_parameters["site"],
-            "Notarealhstfile",
-            # processing_parameters["standard_hts_filename"],
+            processing_parameters["standard_hts_filename"],
             processing_parameters["standard_measurement_name"],
-            processing_parameters["frequency"],
+            # processing_parameters["frequency"],
+            "Notarealfrequency",
             processing_parameters["from_date"],
             processing_parameters["to_date"],
             processing_parameters["check_hts_filename"],
             processing_parameters["check_measurement_name"],
             processing_parameters["defaults"],
         )
-    assert "No sites found for the base_url and hts combo." in str(excinfo.value)
+        print(excinfo)
+        # assert (
+        #     "Unrecognised start time"
+        #     in str(excinfo.value)
+        # )
 
-    with pytest.raises(
-        ValueError, match=r"Site 'Notarealsite' not found .*"
-    ) as excinfo:
-        _ = Processor(
-            processing_parameters["base_url"],
-            "Notarealsite",
-            processing_parameters["standard_hts_filename"],
-            processing_parameters["standard_measurement_name"],
-            processing_parameters["frequency"],
-            processing_parameters["from_date"],
-            processing_parameters["to_date"],
-            processing_parameters["check_hts_filename"],
-            processing_parameters["check_measurement_name"],
-            processing_parameters["defaults"],
+        with pytest.raises(
+            ValueError, match=r"No sites found for the base_url and hts combo."
+        ) as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters["frequency"],
+                processing_parameters["from_date"],
+                processing_parameters["to_date"],
+                # processing_parameters["check_hts_filename"],
+                "Notarealhtsfilename",
+                processing_parameters["check_measurement_name"],
+                processing_parameters["defaults"],
+            )
+        assert "No sites found for the base_url and hts combo." in str(excinfo.value)
+
+        with pytest.raises(
+            ValueError, match=r"Check measurement name 'Notarealmeasurement' not found "
+        ) as excinfo:
+            _ = Processor(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters["frequency"],
+                processing_parameters["from_date"],
+                processing_parameters["to_date"],
+                processing_parameters["check_hts_filename"],
+                # processing_parameters["check_measurement_name"],
+                "Notarealmeasurement",
+                processing_parameters["defaults"],
+            )
+        print(excinfo)
+        assert "Check measurement name 'Notarealmeasurement' not found at site " in str(
+            excinfo.value
         )
-    assert "Site 'Notarealsite' not found for both base_url and hts combos." in str(
-        excinfo.value
-    )
-
-    with pytest.raises(ValueError, match=r"Standard measurement name.*") as excinfo:
-        _ = Processor(
-            processing_parameters["base_url"],
-            processing_parameters["site"],
-            processing_parameters["standard_hts_filename"],
-            # processing_parameters["standard_measurement_name"],
-            "Notarealmeasurement",
-            processing_parameters["frequency"],
-            processing_parameters["from_date"],
-            processing_parameters["to_date"],
-            processing_parameters["check_hts_filename"],
-            processing_parameters["check_measurement_name"],
-            processing_parameters["defaults"],
-        )
-    assert "Standard measurement name 'Notarealmeasurement' not found at site" in str(
-        excinfo.value
-    )
-
-    with pytest.raises(
-        ValueError,
-        match=r"Unrecognised start time",
-    ) as excinfo:
-        _ = Processor(
-            processing_parameters["base_url"],
-            processing_parameters["site"],
-            processing_parameters["standard_hts_filename"],
-            processing_parameters["standard_measurement_name"],
-            processing_parameters["frequency"],
-            # processing_parameters["from_date"],
-            "Notarealdate",
-            processing_parameters["to_date"],
-            processing_parameters["check_hts_filename"],
-            processing_parameters["check_measurement_name"],
-            processing_parameters["defaults"],
-        )
-    assert "Unrecognised start time" in str(excinfo.value)
-
-    # with pytest.raises(
-    #     ValueError  #, match=r"Unrecognised start time",
-    # ) as excinfo:
-    _ = Processor(
-        processing_parameters["base_url"],
-        processing_parameters["site"],
-        processing_parameters["standard_hts_filename"],
-        processing_parameters["standard_measurement_name"],
-        # processing_parameters["frequency"],
-        "Notarealfrequency",
-        processing_parameters["from_date"],
-        processing_parameters["to_date"],
-        processing_parameters["check_hts_filename"],
-        processing_parameters["check_measurement_name"],
-        processing_parameters["defaults"],
-    )
-    print(excinfo)
-    # assert (
-    #     "Unrecognised start time"
-    #     in str(excinfo.value)
-    # )
-
-    with pytest.raises(
-        ValueError, match=r"No sites found for the base_url and hts combo."
-    ) as excinfo:
-        _ = Processor(
-            processing_parameters["base_url"],
-            processing_parameters["site"],
-            processing_parameters["standard_hts_filename"],
-            processing_parameters["standard_measurement_name"],
-            processing_parameters["frequency"],
-            processing_parameters["from_date"],
-            processing_parameters["to_date"],
-            # processing_parameters["check_hts_filename"],
-            "Notarealhtsfilename",
-            processing_parameters["check_measurement_name"],
-            processing_parameters["defaults"],
-        )
-    assert "No sites found for the base_url and hts combo." in str(excinfo.value)
-
-    with pytest.raises(
-        ValueError, match=r"Check measurement name 'Notarealmeasurement' not found "
-    ) as excinfo:
-        _ = Processor(
-            processing_parameters["base_url"],
-            processing_parameters["site"],
-            processing_parameters["standard_hts_filename"],
-            processing_parameters["standard_measurement_name"],
-            processing_parameters["frequency"],
-            processing_parameters["from_date"],
-            processing_parameters["to_date"],
-            processing_parameters["check_hts_filename"],
-            # processing_parameters["check_measurement_name"],
-            "Notarealmeasurement",
-            processing_parameters["defaults"],
-        )
-    print(excinfo)
-    assert "Check measurement name 'Notarealmeasurement' not found at site " in str(
-        excinfo.value
-    )

@@ -173,3 +173,84 @@ def merge_series(series_a, series_b, tolerance=1e-09):
         raise ValueError
     else:
         return combined
+
+
+def change_blocks(raw_series, changed_series):
+    """Find all changes between two series."""
+    changed_block_list = []
+    start_index = None
+
+    raw_iter = iter(raw_series.items())
+    changed_iter = iter(changed_series.items())
+    raw_next = next(raw_iter, None)
+    changed_next = next(changed_iter, None)
+
+    while raw_next is not None or changed_next is not None:
+        raw_date, raw_val = raw_next if raw_next else (None, None)
+        changed_date, changed_val = changed_next if changed_next else (None, None)
+
+        if raw_date != changed_date:
+            # If one series has a timestamp that the other doesn't, treat it as a change
+            # Change block goes from the raw timestamp that is missing in the edit to the
+            # next value in the edit, i.e the entire gap.
+            if start_index is None:
+                start_index = raw_date
+        elif raw_val != changed_val:
+            # If the values at the same timestamp are different, treat it as a change
+            if start_index is None:
+                # Start of a changed block
+                start_index = raw_date
+        else:
+            if start_index is not None:
+                # End of a changed block
+                changed_block_list.append((start_index, raw_date))
+                start_index = None
+
+        # Move to the next timestamp in each series
+        if raw_date == changed_date:
+            raw_next = next(raw_iter, None)
+            changed_next = next(changed_iter, None)
+        elif (raw_date is None) or raw_date < changed_date:
+            raw_next = next(raw_iter, None)
+        else:
+            changed_next = next(changed_iter, None)
+
+    if start_index is not None:
+        changed_block_list.append((start_index, raw_series.index[-1]))
+
+    return changed_block_list
+
+
+def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
+    """Merge all comments coming in from various sources.
+
+    Sorry, not sure where to put this.
+    """
+    hill_checks = hill_checks.rename(columns={"Water Temperature Check": "Temp Check"})
+    hill_checks = hill_checks.reset_index()
+    pwq_checks = pwq_checks.reset_index()
+    s123_checks = s123_checks.reset_index()
+    ncrs = ncrs.reset_index()
+
+    hill_checks["Source"] = "Hilltop Check Data"
+    pwq_checks["Source"] = "Provisional Water Quality"
+    s123_checks["Source"] = "Survey123 Inspections"
+    ncrs["Source"] = "Non-conformance Reports"
+
+    all_comments = pd.concat(
+        [
+            hill_checks[["Time", "Comment", "Source"]],
+            pwq_checks[["Time", "Comment", "Source"]],
+            s123_checks[["Time", "Comment", "Source"]],
+            ncrs[["Time", "Comment", "Source"]],
+        ],
+        ignore_index=True,
+        sort=False,
+    )
+    all_comments = all_comments.dropna(axis=1, how="all")
+
+    all_comments["Time"] = all_comments["Time"].dt.strftime("%Y-%m-%d %H:%M:%S")
+
+    all_comments = all_comments.sort_values(by="Time")
+
+    return all_comments

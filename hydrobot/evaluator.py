@@ -35,7 +35,7 @@ def gap_finder(data: pd.Series):
     out_idx = idx[valid_mask]
     out_count = count[valid_mask]
     indices = data.iloc[out_idx].index
-    out = zip(indices, out_count)
+    out = zip(indices, out_count, strict=True)
 
     return list(out)
 
