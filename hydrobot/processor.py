@@ -133,8 +133,6 @@ class Processor:
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
 
-        print(frequency)
-
         standard_hilltop = Hilltop(base_url, standard_hts, **kwargs)
         check_hilltop = Hilltop(base_url, check_hts, **kwargs)
         if (
