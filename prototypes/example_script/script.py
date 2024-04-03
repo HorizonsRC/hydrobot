@@ -70,25 +70,6 @@ data.check_series = pd.concat(
     ]
 ).sort_index()
 
-print("add")
-print(
-    prov_wq["Temp Check"]
-    .drop(data.check_series.index, errors="ignore")
-    .dropna()
-    .to_string()
-)
-
-print("also")
-print(
-    inspections["Temp Check"]
-    .drop(data.check_series.index, errors="ignore")
-    .dropna()
-    .to_string()
-)
-
-print("total")
-print(data.check_series.to_string())
-
 data.check_series = data.check_series.loc[
     (data.check_series.index >= processing_parameters["from_date"])
     & (data.check_series.index <= processing_parameters["to_date"])
@@ -132,12 +113,12 @@ ann.logger.info(
     "the temperature sensor reading."
 )
 data.quality_series["2023-09-04T11:26:40"] = 500
-print(data.quality_series.to_string())
 
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
 data.data_exporter("processed.xml")
+data.data_exporter("processed.xml", ftype="hilltop_csv")
 
 #######################################################################################
 # Launch Hydrobot Processing Visualiser (HPV)
