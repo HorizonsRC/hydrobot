@@ -61,6 +61,11 @@ Initial Setup (Repeat for each release)
 
     pip install hydrobot
 
+#. Record which version of dependencies you have installed. The following pip freeze records which dependencies are
+installed by the hydrobot install process for if auditing/reprocessing is required later::
+
+    pip freeze > dependencies.txt
+
 #. Navigate to the processing folder that you create as part of the Processing Steps below::
 
     cd //ares/hydro/processing/whatever/watertemp/site/30X/
@@ -91,12 +96,19 @@ Processing Steps
 
 #. Use your python skills to solve some issues, like removing erroneous check data points or deleting chunks of data. More extensive documentation on actually using hydrobot will follow in future releases.
 
+#. Open the resulting processed.xml in manager, and copy it over to a hts file.
+
+#. Open the WaterTemp_check_data.csv outputed from the R file in a spreadsheet (sorry) and copy into hts file.
+
 #. Happy processing!
 
 Credits
 -------
 
-This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template. Furthermore, Sam is a real champ with the coding and whatnot. Thanks Sam.
+This package was created with Cookiecutter_ and the `audreyr/cookiecutter-pypackage`_ project template. Furthermore,
+Sam is a real champ with the coding and whatnot. Thanks Sam.
+
+Aww thanks Nic. You also da man <3
 
 .. _Cookiecutter: https://github.com/audreyr/cookiecutter
 .. _`audreyr/cookiecutter-pypackage`: https://github.com/audreyr/cookiecutter-pypackage

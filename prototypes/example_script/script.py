@@ -57,9 +57,6 @@ inspections = import_inspections("WaterTemp_Inspections.csv")
 prov_wq = import_prov_wq("WaterTemp_ProvWQ.csv")
 ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 
-print("orig")
-print(data.check_series.to_string())
-
 data.check_series = pd.concat(
     [
         data.check_series.rename("Temp Check"),
@@ -108,17 +105,18 @@ data.gap_closer()
 #######################################################################################
 data.quality_encoder()
 
-ann.logger.info(
-    "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
-    "the temperature sensor reading."
-)
-data.quality_series["2023-09-04T11:26:40"] = 500
+# ann.logger.info(
+#     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
+#     "the temperature sensor reading."
+# )
+# data.quality_series["2023-09-04T11:26:40"] = 500
 
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
 data.data_exporter("processed.xml")
-data.data_exporter("processed.xml", ftype="hilltop_csv")
+# data.data_exporter("hilltop_csv", ftype="hilltop_csv")
+# data.data_exporter("processed.csv", ftype="csv")
 
 #######################################################################################
 # Launch Hydrobot Processing Visualiser (HPV)

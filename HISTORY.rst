@@ -64,3 +64,9 @@ History
 * Plotly diagnostics added.
 * Support for external (to Hilltop) check data added.
 * Hybrid workflow supported and documented.
+
+0.5.1 (2024-04-03)
+----------------------------------
+
+* Updated documentation for workflow
+* Added a supplementary R script to repo

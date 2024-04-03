@@ -157,28 +157,36 @@ A reminder for the maintainers on how to deploy.
 
 1. Make sure all your changes are committed (including an entry in HISTORY.rst, documentation, etc.).
 
-2. Then run `bump-my-version` to increment the release tags in the appropriate places. Consider using the `--dry-run` flag to make sure there are no errors first::
+2. Confirm the repo is an a good state::
+
+    $ pre-commit run --all-files
+    $ pytest
+
+3. Then run `bump-my-version` to increment the release tags in the appropriate places. Consider using the `--dry-run`
+flag to make sure there are no errors first::
 
     $ bump-my-version bump -v --dry-run patch # Optional, just to test if it runs without errors
     $ bump-my-version bump patch # For real this time. Possible values: major / minor / patch
 
-3. Install the local development version of the package (make sure you're in the package root directory where setup.py is). You should see the package install with the correct version number.::
+4. Install the local development version of the package (make sure you're in the package root directory where setup
+.py is). You should see the package install with the correct version number.::
 
     $ pip install -e .[all]
 
-4. Run the tests to see that they still work with this local install::
+5. Run the tests to see that they still work with this local install::
 
     $ pytest
 
-5. Push the commit::
+6. Push the commit::
 
     $ git push
 
-6. Push the tags to GitHub. (Note that we don't actually release on GitHub though. We want to keep the releases to PyPI so there's less ambiguity about how to install it.)::
+7. Push the tags to GitHub. (Note that we don't actually release on GitHub though. We want to keep the releases to
+PyPI so there's less ambiguity about how to install it.)::
 
     $ git push --tags
 
-7. Do the release.
+8. Do the release.
 
     * If using the Makefile (i.e. you have `make` installed and can run `make help` without errors) you can simply run::
 
