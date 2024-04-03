@@ -163,8 +163,10 @@ A reminder for the maintainers on how to deploy.
     $ pytest
 
 3. Then run `bump-my-version` to increment the release tags in the appropriate places. Consider using the `--dry-run`
-flag to make sure there are no errors first::
+flag to make sure there are no errors first. bump-my-version has a dependency on a modern version of pydantic (and
+hilltop-py requires an older version) so bump-my-version needs to be installed fresh (don't pip freeze after)::
 
+    $ pip install bump-my-version
     $ bump-my-version bump -v --dry-run patch # Optional, just to test if it runs without errors
     $ bump-my-version bump patch # For real this time. Possible values: major / minor / patch
 
