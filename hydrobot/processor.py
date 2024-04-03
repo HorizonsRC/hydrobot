@@ -1178,7 +1178,7 @@ class Processor:
             a prefix that will be appended with "_std_qc.csv" for the file containing
             the standard and quality data, and "_check.csv" for the check data file.
         ftype : str, optional
-            Avalable options are "xml", "hilltop_csv", "csv".
+            Avalable options are "xml", "hilltop_csv", "csv", "check".
         trimmed : bool, optional
             If True, export trimmed data; otherwise, export the full data.
             Default is True.
@@ -1186,6 +1186,11 @@ class Processor:
         Returns
         -------
         None
+
+        Raises
+        ------
+        ValueError
+            - If ftype is not a recognised string
 
         Notes
         -----
@@ -1216,8 +1221,7 @@ class Processor:
                 i for (i, v) in zip(all_series, export_selections, strict=True) if v
             ]
             data_sources.series_export_to_csv(file_location, series=export_list)
-        if ftype == "hilltop_csv":
-            print("At the exporter:", self.quality_series.index.dtype)
+        elif ftype == "hilltop_csv":
             data_sources.hilltop_export(
                 file_location,
                 self._site,
@@ -1226,11 +1230,13 @@ class Processor:
                 self._check_series,
                 self._quality_series,
             )
-        if ftype == "xml":
+        elif ftype == "xml":
             blob_list = self.to_xml_data_structure(
                 standard=standard, quality=quality, check=check
             )
             data_structure.write_hilltop_xml(blob_list, file_location)
+        else:
+            raise ValueError("Invalid ftype (filetype)")
 
     def diagnosis(self):
         """
