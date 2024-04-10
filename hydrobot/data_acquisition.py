@@ -191,7 +191,7 @@ def import_inspections(filename):
         else:
             insp_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     except FileNotFoundError:
-        insp_df = pd.Series({"Time": [], "Temp Check": [], "Comment": []})
+        insp_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     return insp_df
 
 
@@ -209,7 +209,7 @@ def import_prov_wq(filename):
         else:
             prov_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     except FileNotFoundError:
-        prov_df = pd.Series({"Time": [], "Temp Check": [], "Comment": []})
+        prov_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     return prov_df
 
 
@@ -227,5 +227,5 @@ def import_ncr(filename):
         else:
             ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     except FileNotFoundError:
-        ncr_df = pd.Series({"Time": [], "Temp Check": [], "Comment": []})
+        ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     return ncr_df

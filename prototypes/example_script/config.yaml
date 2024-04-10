@@ -4,7 +4,7 @@ standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "boo.hts"
 
 # Data Source Configuration
-site: "Kumeti at Te Rehunga"
+site: "Makino at Boness Road"
 standard_measurement_name: "Water Temperature"
 check_measurement_name: "Water Temperature Check [Water Temperature]"
 frequency: "15min"

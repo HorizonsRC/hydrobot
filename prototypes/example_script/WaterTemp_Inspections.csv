@@ -1,0 +1,73 @@
+"ID","Site Name","Date","Time","Weather","Arrival Time","Inspection Time","Departure Time","InspectionStaff","Notes","Water level notes","MeterID","DO Notes","Temp Check","Temp Logger"
+11171,"Mangatainoka at Pahiatua Town Bridge",2022-01-17,"11:26:00","Fine","2022-01-17 11:26:00",NA,"2022-01-17 11:55:00","jconnolly_HorizonsRC","Gauged 500m u/s of site. No ESG. Cleaned Turb and DO. Sprayed. Purged.",NA,NA,NA,NA,NA
+11238,"Mangatainoka at Pahiatua Town Bridge",2022-01-26,"13:15:00","Overcast","2022-01-26 13:03:00","2022-01-26 13:15:00","2022-01-26 13:31:07","jconnolly_HorizonsRC","Cleaned Turb ",NA,"AquaTroll5",NA,21.24,21.99
+11341,"Mangatainoka at Pahiatua Town Bridge",2022-02-15,"12:05:00","Fine","2022-02-15 12:01:00","2022-02-15 12:05:00","2022-02-15 12:21:44","jconnolly_HorizonsRC","No ESG at this level.",NA,"TP24",NA,16.9,16.6
+11680,"Mangatainoka at Pahiatua Town Bridge",2022-03-10,"11:15:00","Fine","2022-03-10 11:15:00",NA,"2022-03-10 13:48:20","jconnolly_HorizonsRC","Replaced DO sensor cap, validated.",NA,NA,NA,NA,NA
+11683,"Mangatainoka at Pahiatua Town Bridge",2022-03-15,"13:02:00","Overcast","2022-03-15 13:00:00","2022-03-15 13:02:00","2022-03-15 13:20:06","jconnolly_HorizonsRC",NA,NA,"AquaTroll3",NA,17.18,17.2
+11786,"Mangatainoka at Pahiatua Town Bridge",2022-04-11,"15:15:00","Overcast","2022-04-11 15:06:00","2022-04-11 15:15:00","2022-04-11 15:19:34","jconnolly_HorizonsRC","Gauged 400m u/s",NA,"TP24",NA,15.88,15.7
+11856,"Mangatainoka at Pahiatua Town Bridge",2022-04-27,"13:45:00","Overcast","2022-04-27 13:34:00","2022-04-27 13:45:00","2022-04-27 13:57:20","jconnolly_HorizonsRC",NA,NA,"SmarTroll6",NA,15.8,15.6
+11976,"Mangatainoka at Pahiatua Town Bridge",2022-05-10,"13:37:00","Overcast","2022-05-10 13:37:00",NA,"2022-05-10 13:49:00","THumphrey_HorizonsRC","No staff gauge",NA,NA,NA,NA,NA
+12075,"Mangatainoka at Pahiatua Town Bridge",2022-06-14,"12:53:57","Overcast","2022-06-14 12:45:00","2022-06-14 12:53:57","2022-06-14 12:54:32","jconnolly_HorizonsRC","Ivy around ESG needs trimming",NA,"AquaTroll4",NA,10.08,10.1
+12185,"Mangatainoka at Pahiatua Town Bridge",2022-07-12,"12:25:00","Rain","2022-07-12 12:00:00","2022-07-12 12:25:00","2022-07-12 12:39:00","DAHill_HorizonsRC0",NA,NA,"AquaTroll5",NA,9.64,9.5
+12284,"Mangatainoka at Pahiatua Town Bridge",2022-07-29,"10:15:00","Drizzle","2022-07-29 10:05:00","2022-07-29 10:15:00","2022-07-29 11:10:00","GMills_HorizonsRC","Calibrated AirForce bubbler, pass. Rechecked stage all ok.",NA,"TP24",NA,9.8,9.9
+12341,"Mangatainoka at Pahiatua Town Bridge",2022-08-09,"12:30:00","Drizzle","2022-08-09 12:22:00","2022-08-09 12:30:00","2022-08-09 12:50:25","jconnolly_HorizonsRC","SOE",NA,"AquaTroll6",NA,10.22,10.1
+13371,"Mangatainoka at Pahiatua Town Bridge",2022-08-15,"12:30:00","Overcast","2022-08-15 12:23:00","2022-08-15 12:30:00","2022-08-15 12:52:55","jconnolly_HorizonsRC","Gauged 500m u/s. Sprayed
+",NA,"TP24",NA,9.85,9.9
+13490,"Mangatainoka at Pahiatua Town Bridge",2022-09-13,"12:35:00","Rain","2022-09-13 12:27:00","2022-09-13 12:35:00","2022-09-13 12:49:00","jconnolly_HorizonsRC",NA,NA,"TP24",NA,11.15,11.3
+14099,"Mangatainoka at Pahiatua Town Bridge",2022-10-11,"12:30:00","Drizzle","2022-10-11 12:24:00","2022-10-11 12:30:00","2022-10-11 13:01:51","jconnolly_HorizonsRC","Cleaned Turb and DO sensors, both covered in grime. Scrubbed housing, both sensors dropped after cleaning.",NA,"TP24",NA,13.61,13.3
+14139,"Mangatainoka at Pahiatua Town Bridge",2022-10-20,"10:38:00","Drizzle","2022-10-20 10:38:00",NA,"2022-10-20 11:04:15","jconnolly_HorizonsRC","Gauged 200m u/s. Sprayed.
+
+
+",NA,NA,NA,NA,NA
+14272,"Mangatainoka at Pahiatua Town Bridge",2022-11-15,"13:05:00","Fine","2022-11-15 12:46:00","2022-11-15 13:05:00","2022-11-15 13:12:29","jconnolly_HorizonsRC",NA,NA,"TP24",NA,20.54,20
+14424,"Mangatainoka at Pahiatua Town Bridge",2022-12-13,"12:30:00","Overcast","2022-12-13 12:30:00",NA,"2022-12-13 13:08:39","jconnolly_HorizonsRC","Sprayed.",NA,NA,NA,NA,NA
+14449,"Mangatainoka at Pahiatua Town Bridge",2022-12-14,"12:52:00","Overcast","2022-12-14 12:52:00",NA,"2022-12-14 13:05:36","jconnolly_HorizonsRC","Gauged 250m u/ s ",NA,NA,NA,NA,NA
+14520,"Mangatainoka at Pahiatua Town Bridge",2023-01-12,"12:45:00","Overcast","2023-01-12 12:42:00","2023-01-12 12:45:00","2023-01-12 13:00:00","GMills_HorizonsRC","Gauged 300m upstream of ESG. Cleaned turb. ",NA,"TP24",NA,16.23,16.5
+14554,"Mangatainoka at Pahiatua Town Bridge",2023-01-17,"12:45:00","Fine","2023-01-17 12:33:00","2023-01-17 12:45:00","2023-01-17 13:07:18","jconnolly_HorizonsRC","No ESG at this height.",NA,"TP24",NA,21.26,20.7
+14652,"Mangatainoka at Pahiatua Town Bridge",2023-02-08,"12:56:00","Fine","2023-02-08 12:56:00",NA,"2023-02-08 13:18:00","jconnolly_HorizonsRC","Cleaned Turb
+",NA,NA,NA,NA,NA
+14674,"Mangatainoka at Pahiatua Town Bridge",2023-02-14,"12:01:00","Rain","2023-02-14 11:59:00","2023-02-14 12:01:00","2023-02-14 12:22:00","DAHill_HorizonsRC0","No lower ESG",NA,"AquaTroll5",NA,16.64,17.1
+14798,"Mangatainoka at Pahiatua Town Bridge",2023-03-09,"10:30:00","Overcast","2023-03-09 10:05:00","2023-03-09 10:30:00","2023-03-09 13:40:00","GMills_HorizonsRC",NA,NA,"AquaTroll5",NA,17.64,17.5
+14798,"Mangatainoka at Pahiatua Town Bridge",2023-03-09,"13:30:00","Overcast","2023-03-09 10:05:00","2023-03-09 13:30:00","2023-03-09 13:40:00","GMills_HorizonsRC",NA,NA,"AquaTroll5",NA,18.4,18.4
+14814,"Mangatainoka at Pahiatua Town Bridge",2023-03-14,"13:00:51","Fine","2023-03-14 12:55:00","2023-03-14 13:00:51","2023-03-14 13:21:57","DAHill_HorizonsRC0",NA,NA,"AquaTroll3",NA,15.67,15.6
+14969,"Mangatainoka at Pahiatua Town Bridge",2023-04-18,"15:05:00","Overcast","2023-04-18 14:55:00","2023-04-18 15:05:00","2023-04-18 15:33:00","TBayley_HorizonsRC",NA,NA,"AquaTroll4",NA,15.57,15.5
+15082,"Mangatainoka at Pahiatua Town Bridge",2023-05-09,"14:27:00","Rain","2023-05-09 14:27:00",NA,"2023-05-09 14:36:49","TBayley_HorizonsRC","BD 2.9m",NA,NA,NA,NA,NA
+15204,"Mangatainoka at Pahiatua Town Bridge",2023-06-08,"10:15:00","Overcast","2023-06-08 10:15:00","2023-06-08 10:15:00","2023-06-08 11:00:00","GMills_HorizonsRC","Gauged 250m upstream of site. Last transect failed to record, unsure of reason, battery tests ok, replaced for next site. Will process with 3 good transects.",NA,"TP24",NA,10.68,10.9
+15231,"Mangatainoka at Pahiatua Town Bridge",2023-06-13,"14:31:00","Fine","2023-06-13 14:16:00","2023-06-13 14:31:00","2023-06-13 14:48:00","TBayley_HorizonsRC","Temp is off the DO_DegC
+These turb readings are from the 15 minute punch otherwise they were at 0 on public. After readings are the same on both now.
+Turb high is 2.2 before cleaning and after 1.1
+Turb low is 2.16 before cleaning and after 0.65",NA,"TP37",NA,10.55,10.6
+15399,"Mangatainoka at Pahiatua Town Bridge",2023-07-18,"13:33:00","Overcast","2023-07-18 13:26:00","2023-07-18 13:33:00","2023-07-18 13:42:01","TBayley_HorizonsRC",NA,NA,"AquaTroll2",NA,11.51,11.3
+15460,"Mangatainoka at Pahiatua Town Bridge",2023-08-02,"11:41:00","Overcast","2023-08-02 11:41:00",NA,"2023-08-02 11:46:00","TBayley_HorizonsRC","Turb high value is 256.6
+Turb low value is 256.37",NA,NA,NA,NA,8.7
+15482,"Mangatainoka at Pahiatua Town Bridge",2023-08-03,"11:25:00","Drizzle","2023-08-03 11:25:00",NA,"2023-08-03 11:35:00","GMills_HorizonsRC","On-site to clean DO sensor as data looks too scratchy in office. ",NA,NA,NA,NA,NA
+15488,"Mangatainoka at Pahiatua Town Bridge",2023-07-31,"11:15:00","Overcast","2023-07-31 10:34:00","2023-07-31 11:15:00","2023-07-31 11:17:00","GMills_HorizonsRC","DO after cleaning 103.6
+Calibrated AirForce - Pass.",NA,"TP24",NA,8.66,8.9
+15539,"Mangatainoka at Pahiatua Town Bridge",2023-08-15,"13:28:00","Overcast","2023-08-15 13:26:00","2023-08-15 13:28:00","2023-08-15 13:47:52","TBayley_HorizonsRC","Turb High 5.3. (Before)
+Turb Low 4.43. (Before)
+
+Turb High 4.3. (After)
+Turb Low 4.54. (After)",NA,NA,NA,NA,9.9
+15539,"Mangatainoka at Pahiatua Town Bridge",2023-08-15,"13:46:00","Overcast","2023-08-15 13:26:00","2023-08-15 13:46:00","2023-08-15 13:47:52","TBayley_HorizonsRC","Turb High 5.3. (Before)
+Turb Low 4.43. (Before)
+
+Turb High 4.3. (After)
+Turb Low 4.54. (After)",NA,NA,NA,NA,10
+15621,"Mangatainoka at Pahiatua Town Bridge",2023-08-31,"12:35:00","Overcast","2023-08-31 12:35:00",NA,"2023-08-31 15:14:00","GMills_HorizonsRC","Removed vines from WQ housing. Cleaned out WQ housing pipes.",NA,NA,NA,NA,NA
+15625,"Mangatainoka at Pahiatua Town Bridge",2023-09-01,"12:45:00","Fine","2023-09-01 12:45:00",NA,"2023-09-01 14:50:00","GMills_HorizonsRC","Continued vine clean up. Gauged 100m downstream of site. ",NA,NA,NA,NA,NA
+15664,"Mangatainoka at Pahiatua Town Bridge",2023-09-11,"10:16:00","Fine","2023-09-11 10:16:00","2023-09-11 10:16:00","2023-09-11 10:52:00","GMills_HorizonsRC","Cleaned remainder of inside WQ housing. All ok. ",NA,"TP24",NA,12.47,13.1
+15731,"Mangatainoka at Pahiatua Town Bridge",2023-09-22,"15:00:00","Overcast","2023-09-22 14:48:00","2023-09-22 15:00:00","2023-09-22 15:00:00","GMills_HorizonsRC","Removing WTW replacing with Sonde 33. Program change to accommodate. Painted container. ",NA,"TP24",NA,14.5,14.77
+15743,"Mangatainoka at Pahiatua Town Bridge",2023-09-26,"12:39:00","Overcast","2023-09-26 12:36:00","2023-09-26 12:39:00","2023-09-26 12:46:10","TBayley_HorizonsRC",NA,NA,"AquaTroll3",NA,12.39,12.41
+15769,"Mangatainoka at Pahiatua Town Bridge",2023-09-28,"13:15:00","Drizzle","2023-09-28 13:13:00","2023-09-28 13:15:00","2023-09-28 13:44:00","GMills_HorizonsRC","Gauged 250m upstream of site. ",NA,"TP24",NA,12.04,11.61
+15818,"Mangatainoka at Pahiatua Town Bridge",2023-10-10,"14:11:00","Overcast","2023-10-10 14:03:00","2023-10-10 14:11:00","2023-10-10 14:22:07","HBraddock_HorizonsRC","First time at site for me. Site looks normal. Staff gauge not in the water at this level. ",NA,"AquaTroll5",NA,14.54,14.42
+15883,"Mangatainoka at Pahiatua Town Bridge",2023-10-24,"09:30:00","Overcast","2023-10-24 09:25:00","2023-10-24 09:30:00","2023-10-24 09:46:00","GMills_HorizonsRC","WQ data looks scratchy in office, checked EXO for algae build up, small amount growing, cleaned off, all ok. ",NA,"TP24",NA,14.1,14.24
+15911,"Mangatainoka at Pahiatua Town Bridge",2023-10-30,"08:45:00","Overcast","2023-10-30 08:41:00","2023-10-30 08:45:00","2023-10-30 09:34:00","GMills_HorizonsRC","Gauged 100m above site. ",NA,"TP24",NA,12.12,12.34
+16000,"Mangatainoka at Pahiatua Town Bridge",2023-11-14,"12:31:14","Fine","2023-11-14 12:28:00","2023-11-14 12:31:14","2023-11-14 12:46:40","TBayley_HorizonsRC",NA,NA,"AquaTroll3",NA,15.37,15.5
+16315,"Mangatainoka at Pahiatua Town Bridge",2023-11-21,"14:50:00","Overcast","2023-11-21 14:50:00",NA,"2023-11-21 15:30:00","GMills_HorizonsRC","Replaced sonde DO cap and calibrated on site. ",NA,NA,NA,NA,NA
+16465,"Mangatainoka at Pahiatua Town Bridge",2023-12-12,"12:25:15","Overcast","2023-12-12 12:16:00","2023-12-12 12:25:15","2023-12-12 12:39:02","TBayley_HorizonsRC",NA,NA,"AquaTroll4",NA,15.22,15.61
+16579,"Mangatainoka at Pahiatua Town Bridge",2024-01-16,"12:40:00","Fine","2024-01-16 12:17:00","2024-01-16 12:40:00","2024-01-16 12:42:00","TBayley_HorizonsRC",NA,NA,"AquaTroll3",NA,19.25,19.3
+16615,"Mangatainoka at Pahiatua Town Bridge",2024-01-18,"12:13:00","Overcast","2024-01-18 12:07:00","2024-01-18 12:13:00","2024-01-18 13:56:00","GMills_HorizonsRC","Replaced lower ESG. Cleared blackberry and sprayed track. ",NA,"TP24",NA,21.75,21.38
+16637,"Mangatainoka at Pahiatua Town Bridge",2024-01-23,"13:52:52","Fine","2024-01-23 13:34:00","2024-01-23 13:52:52","2024-01-23 13:57:23","TBayley_HorizonsRC","Added benchmark by container",NA,"TP24",NA,22.36,22.47
+16687,"Mangatainoka at Pahiatua Town Bridge",2024-01-31,"12:45:00","Overcast","2024-01-31 12:45:00","2024-01-31 12:45:00","2024-01-31 13:25:00","GMills_HorizonsRC","Gauged 150m above site. ",NA,"TP24",NA,19.44,19.58
+16740,"Mangatainoka at Pahiatua Town Bridge",2024-02-13,"12:24:45","Fine","2024-02-13 12:20:00","2024-02-13 12:24:45","2024-02-13 12:37:00","TBayley_HorizonsRC",NA,NA,"AquaTroll2",NA,18.07,18.35
+16874,"Mangatainoka at Pahiatua Town Bridge",2024-03-12,"12:00:16","Overcast","2024-03-12 11:58:00","2024-03-12 12:00:16","2024-03-12 12:35:00","TBayley_HorizonsRC",NA,NA,"AquaTroll3",NA,17.24,17.04

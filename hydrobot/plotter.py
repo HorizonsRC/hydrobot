@@ -8,7 +8,7 @@ import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from hydrobot.evaluator import find_nearest_time, gap_finder, splitter
-from hydrobot.utils import change_blocks, merge_all_comments
+from hydrobot.utils import change_blocks
 
 
 def gap_plotter(base_series, span=20, show=True):
@@ -383,16 +383,15 @@ def make_processing_dash(
         )
     )
     fig_subplots = make_subplots(
-        rows=3,
+        rows=2,
         cols=1,
         shared_xaxes=True,
         vertical_spacing=0.02,
         specs=[
             [{"type": "scatter"}],
             [{"type": "scatter"}],
-            [{"type": "table"}],
         ],
-        row_heights=[0.4, 0.2, 0.4],
+        row_heights=[0.7, 0.3],
     )
 
     for trace in fig.data:
@@ -445,8 +444,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=raw_check_series["Water Temperature Check"].index,
-            y=hilltop_standard_series.iloc[nearest_check_indices].to_numpy()
-            - raw_check_series["Water Temperature Check"].to_numpy(),
+            y=raw_check_series["Water Temperature Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_check_indices].to_numpy(),
             mode="markers",
             name="Check data",
             marker=dict(color="darkturquoise", size=10, symbol="circle"),
@@ -459,8 +458,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=hilltop_standard_series.iloc[nearest_check_indices].index,
-            y=hilltop_standard_series.iloc[nearest_check_indices].to_numpy()
-            - raw_check_series["Water Temperature Check"].to_numpy(),
+            y=raw_check_series["Water Temperature Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_check_indices].to_numpy(),
             mode="markers",
             name="Check Align",
             marker=dict(color="darkturquoise", size=10, symbol="circle"),
@@ -478,13 +477,13 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != check[0]:
+        if stand[0] != check[0] and not pd.isna(check[1]):
             arrow_annotations.append(
                 dict(
                     ax=check[0],
-                    ay=stand[1] - check[1],
+                    ay=check[1] - stand[1],
                     x=stand[0],
-                    y=stand[1] - check[1],
+                    y=check[1] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
@@ -500,8 +499,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=prov_wq.index,
-            y=hilltop_standard_series.iloc[nearest_prov_indices].to_numpy()
-            - prov_wq["Temp Check"].to_numpy(),
+            y=prov_wq["Temp Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_prov_indices].to_numpy(),
             mode="markers",
             name="ProvWQ Check",
             marker=dict(color="darkslategray", size=10, symbol="square-open"),
@@ -513,8 +512,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=hilltop_standard_series.iloc[nearest_prov_indices].index,
-            y=hilltop_standard_series.iloc[nearest_prov_indices].to_numpy()
-            - prov_wq["Temp Check"].to_numpy(),
+            y=prov_wq["Temp Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_prov_indices].to_numpy(),
             mode="markers",
             name="ProvWQ Align",
             marker=dict(color="darkslategray", size=10, symbol="square-open"),
@@ -531,13 +530,13 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != prov[0]:
+        if stand[0] != prov[0] and not pd.isna(prov[1]["Temp Check"]):
             arrow_annotations.append(
                 dict(
                     ax=prov[0],
-                    ay=stand[1] - prov[1]["Temp Check"],
+                    ay=prov[1]["Temp Check"] - stand[1],
                     x=stand[0],
-                    y=stand[1] - prov[1]["Temp Check"],
+                    y=prov[1]["Temp Check"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
@@ -553,8 +552,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=inspections.index,
-            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
-            - inspections["Temp Check"].to_numpy(),
+            y=inspections["Temp Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
             mode="markers",
             name="S123 Check",
             marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
@@ -567,8 +566,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
-            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
-            - inspections["Temp Check"].to_numpy(),
+            y=inspections["Temp Check"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
             mode="markers",
             name="S123 Check Aligned",
             marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
@@ -590,9 +589,9 @@ def make_processing_dash(
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
-                    ay=stand[1] - insp[1]["Temp Check"],
+                    ay=insp[1]["Temp Check"] - stand[1],
                     x=stand[0],
-                    y=stand[1] - insp[1]["Temp Check"],
+                    y=insp[1]["Temp Check"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
@@ -608,8 +607,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=inspections.index,
-            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
-            - inspections["Temp Logger"].to_numpy(),
+            y=inspections["Temp Logger"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
             mode="markers",
             name="S123 Logger",
             marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
@@ -622,8 +621,8 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
-            y=hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy()
-            - inspections["Temp Logger"].to_numpy(),
+            y=inspections["Temp Logger"].to_numpy()
+            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
             mode="markers",
             name="S123 Logger Aligned",
             marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
@@ -645,9 +644,9 @@ def make_processing_dash(
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
-                    ay=stand[1] - insp[1]["Temp Logger"],
+                    ay=insp[1]["Temp Logger"] - stand[1],
                     x=stand[0],
-                    y=stand[1] - insp[1]["Temp Logger"],
+                    y=insp[1]["Temp Logger"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
@@ -704,24 +703,6 @@ def make_processing_dash(
         showlegend=False,
         legendgroup="QC500",
         visible=True,
-    )
-
-    all_comments = merge_all_comments(raw_check_series, prov_wq, inspections, ncrs)
-
-    fig_subplots.add_trace(
-        go.Table(
-            columnwidth=[1, 3, 1],
-            header=dict(
-                values=list(all_comments.columns),
-                align="left",
-            ),
-            cells=dict(
-                values=[all_comments[cn] for cn in all_comments.columns],
-                align="left",
-            ),
-        ),
-        row=3,
-        col=1,
     )
 
     fig_subplots.update_layout(
