@@ -448,8 +448,8 @@ def quality_encoder(
         The modified QC series, indexed by the start time of the QC period
     """
     qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
-    qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series = downgrade_out_of_validation(qc_series, check_series)
+    qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series = max_qc_limiter(qc_series, max_qc)
     # qc_series.index.name = "Time"
     # qc_series.name = "Value"
@@ -464,6 +464,7 @@ def downgrade_out_of_validation(
     check_series: pd.Series,
     max_interval: pd.DateOffset = _default_date_offset,
     downgraded_qc: int = 200,
+    day_end_rounding: bool = True,
 ):
     """
     Downgrades any data that has gaps between check data that is too large.
@@ -478,6 +479,8 @@ def downgrade_out_of_validation(
         How long of a gap between checks before the data gets downgraded
     downgraded_qc : int
         Which code the quality data gets downgraded to
+    day_end_rounding : bool
+        Whether to round to the day end. If true, downgraded data starts at midnight
 
     Returns
     -------
@@ -487,6 +490,8 @@ def downgrade_out_of_validation(
     # When they should have their next check by
     due_date = check_series.index + max_interval
     due_date = due_date[:-1]
+    if day_end_rounding:
+        due_date = due_date.ceil("D")
     # Whether there has been a check since then
     overdue = due_date < check_series.index[1:]
     # Select overdue times
