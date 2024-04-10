@@ -70,3 +70,9 @@ History
 
 * Updated documentation for workflow
 * Added a supplementary R script to repo
+
+0.5.2 (2024-04-10)
+----------------------------------
+
+* Updated from standard plotly to streamlit dash
+* Added to QC encoder: Water Temp downgraded to 200 if last check longer than 2 months ago.
