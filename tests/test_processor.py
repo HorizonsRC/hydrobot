@@ -80,7 +80,7 @@ def mock_qc_evaluator_dict():
 @pytest.fixture()
 def mock_xml_data():
     """Mock response from get_hilltop_xml server call method."""
-    with open("tests/xml_test_data_file.xml") as f:
+    with open("tests/test_data/xml_test_data_file.xml") as f:
         xml_string = f.read()
 
     return xml_string
@@ -113,7 +113,7 @@ def mock_get_data():
         assert result == expected_result
     ```
     """
-    with open("tests/xml_test_data_file.xml") as f:
+    with open("tests/test_data/xml_test_data_file.xml") as f:
         xml_string = f.read()
 
     xml_root = ElementTree.Element(xml_string)

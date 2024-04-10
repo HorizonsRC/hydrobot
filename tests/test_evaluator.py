@@ -311,12 +311,12 @@ def test_downgrade_out_of_validation(gap_data):
     """Test downgrade_out_of_validation."""
     assert gap_data.equals(
         evaluator.downgrade_out_of_validation(
-            gap_data, gap_data, pd.DateOffset(minutes=20), 200
+            gap_data, gap_data, pd.DateOffset(minutes=20), 200, False
         )
     ), "changes made when data is good and should be untouched"
     data_with_holes = gap_data.dropna()
     downgraded_data = evaluator.downgrade_out_of_validation(
-        data_with_holes, data_with_holes, pd.DateOffset(minutes=20), 200
+        data_with_holes, data_with_holes, pd.DateOffset(minutes=20), 200, False
     )
     expected_downgraded_data = pd.Series(
         {
