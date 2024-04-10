@@ -449,7 +449,50 @@ def quality_encoder(
     """
     qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
+    qc_series = downgrade_out_of_validation(qc_series, check_series)
     qc_series = max_qc_limiter(qc_series, max_qc)
     # qc_series.index.name = "Time"
     # qc_series.name = "Value"
+    return qc_series
+
+
+_default_date_offset = pd.DateOffset(months=2)
+
+
+def downgrade_out_of_validation(
+    qc_series: pd.Series,
+    check_series: pd.Series,
+    max_interval: pd.DateOffset = _default_date_offset,
+    downgraded_qc: int = 200,
+):
+    """
+    Downgrades any data that has gaps between check data that is too large.
+
+    Parameters
+    ----------
+    qc_series : pd.Series
+        Quality series that potentially needs downgrading
+    check_series : pd.Series
+        Check series to check for frequency of checks
+    max_interval : pd.DateOffset
+        How long of a gap between checks before the data gets downgraded
+    downgraded_qc : int
+        Which code the quality data gets downgraded to
+
+    Returns
+    -------
+    pd.Series
+        The qc_series with any downgraded data added in
+    """
+    # When they should have their next check by
+    due_date = check_series.index + max_interval
+    due_date = due_date[:-1]
+    # Whether there has been a check since then
+    overdue = due_date < check_series.index[1:]
+    # Select overdue times
+    unvalidated = due_date[overdue]
+    downgraded_times = pd.Series([downgraded_qc for i in unvalidated], unvalidated)
+    # combine and sort
+    if not downgraded_times.empty:
+        qc_series = pd.concat([qc_series, downgraded_times]).sort_index()
     return qc_series
