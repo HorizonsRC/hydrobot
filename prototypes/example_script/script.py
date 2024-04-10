@@ -58,7 +58,6 @@ data = Processor(
 inspections = import_inspections("WaterTemp_Inspections.csv")
 prov_wq = import_prov_wq("WaterTemp_ProvWQ.csv")
 ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
-print(type(inspections))
 
 data.check_series = pd.concat(
     [
