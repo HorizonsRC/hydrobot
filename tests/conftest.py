@@ -27,5 +27,5 @@ def sample_data_source_xml_file():
         result = example_xml_function(sample_data_source_xml)
         assert result == expected_result
     """
-    file_path = "tests/xml_test_data_file.xml"
+    file_path = "tests/test_data/xml_test_data_file.xml"
     return file_path
