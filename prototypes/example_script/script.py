@@ -133,7 +133,6 @@ st.set_page_config(page_title="Hydrobot0.5.1", layout="wide")
 st.title(f"{processing_parameters['site']}")
 st.header(f"{processing_parameters['standard_measurement_name']}")
 
-
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
