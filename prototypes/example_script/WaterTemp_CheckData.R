@@ -228,6 +228,8 @@ check_data = full_dat %>%
   select(Date, Time, `Water Temperature check`, `Recorder Time`, Comment) %>%
   arrange(`Recorder Time`)
 
+# Escape newlines
+check_data$Comment = gsub("\r?\n|\r", "---NEWLINE---",check_data$Comment)
 
 write.csv(check_data, paste0(folder_filepath, "WaterTemp_check_data.csv"), row.names = FALSE)
 
