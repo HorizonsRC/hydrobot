@@ -65,6 +65,9 @@ data.check_series = pd.concat(
         inspections["Temp Check"]
         .drop(data.check_series.index, errors="ignore")
         .dropna(),
+        # prov_wq["Temp Check"]
+        # .drop(data.check_series.index, errors="ignore")
+        # .dropna(),
     ]
 ).sort_index()
 
