@@ -16,7 +16,9 @@ dependencies = [
     "data-annalist>=0.4.1",
     "matplotlib>=3.8.0",
     "defusedxml>=0.7.1",
-    "plotly>=5.20.0"
+    "plotly>=5.20.0",
+    "streamlit>=1.33.0",
+    "pyyaml>=6.0.1"
 ]
 classifiers=[
     "Development Status :: 3 - Alpha",
