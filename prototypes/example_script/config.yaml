@@ -1,3 +1,7 @@
+#######################################################################################
+# Hydrobot 0.5.2 Configuration File
+#######################################################################################
+
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
 standard_hts_filename: "RawLoggerNet.hts"

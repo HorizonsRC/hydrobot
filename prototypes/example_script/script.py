@@ -131,7 +131,7 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-st.set_page_config(page_title="Hydrobot0.5.1", layout="wide")
+st.set_page_config(page_title="Hydrobot 0.5.2", layout="wide")
 st.title(f"{processing_parameters['site']}")
 st.header(f"{processing_parameters['standard_measurement_name']}")
 
