@@ -307,15 +307,15 @@ def test_max_qc_limiter(qc_data):
     assert (whoops_maybe_the_power_had_a_limit == pd.Series({})).all(), "trivial case"
 
 
-def test_downgrade_out_of_validation(gap_data):
+def test_single_downgrade_out_of_validation(gap_data):
     """Test downgrade_out_of_validation."""
     assert gap_data.equals(
-        evaluator.downgrade_out_of_validation(
+        evaluator.single_downgrade_out_of_validation(
             gap_data, gap_data, pd.DateOffset(minutes=20), 200, False
         )
     ), "changes made when data is good and should be untouched"
     data_with_holes = gap_data.dropna()
-    downgraded_data = evaluator.downgrade_out_of_validation(
+    downgraded_data = evaluator.single_downgrade_out_of_validation(
         data_with_holes, data_with_holes, pd.DateOffset(minutes=20), 200, False
     )
     expected_downgraded_data = pd.Series(
