@@ -535,7 +535,9 @@ def single_downgrade_out_of_validation(
     if day_end_rounding:
         due_date = due_date.ceil("D")
     # Whether there has been a check since then
-    overdue = due_date < check_series.index[1:]
+    overdue = (due_date < check_series.index[1:]) & (
+        qc_series[check_series.index[:-1]] > downgraded_qc
+    )
     # Select overdue times
     unvalidated = due_date[overdue]
     downgraded_times = pd.Series([downgraded_qc for i in unvalidated], unvalidated)

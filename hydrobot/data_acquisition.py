@@ -3,6 +3,7 @@
 from xml.etree import ElementTree
 
 import pandas as pd
+import yaml
 from annalist.annalist import Annalist
 from hilltoppy.utils import build_url, get_hilltop_xml
 
@@ -229,3 +230,95 @@ def import_ncr(filename):
     except FileNotFoundError:
         ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     return ncr_df
+
+
+def config_yaml_import(file_name: str):
+    """
+    Import config.yaml.
+
+    Parameters
+    ----------
+    file_name : str
+        Path to config.yaml
+
+    Returns
+    -------
+    dict
+        For inputting into processor processing_parameters
+    """
+    with open(file_name) as yaml_file:
+        processing_parameters = yaml.safe_load(yaml_file)
+
+    def parse_date_offset_dict(offset_dict):
+        """
+        Give date offset from dict.
+
+        I'm sure there is a better option than this, but I don't know what it is
+        So feast your eyes on this horror
+
+        Parameters
+        ----------
+        offset_dict : dict
+            Dictionary that encodes time_label:amount pairs
+            Example input format: {'months': 2}
+            see https://pandas.pydata.org/docs/reference/api/pandas.tseries.offsets.DateOffset.html
+
+        Returns
+        -------
+        pd.DateOffset
+            Of the time specified by the dict
+        """
+        years = 0
+        months = 0
+        weeks = 0
+        days = 0
+        hours = 0
+        minutes = 0
+        seconds = 0
+        milliseconds = 0
+        microseconds = 0
+        nanoseconds = 0
+        for time in offset_dict:
+            if time == "years":
+                years = offset_dict[time]
+            elif time == "months":
+                months = offset_dict[time]
+            elif time == "weeks":
+                weeks = offset_dict[time]
+            elif time == "days":
+                days = offset_dict[time]
+            elif time == "hours":
+                hours = offset_dict[time]
+            elif time == "minutes":
+                minutes = offset_dict[time]
+            elif time == "seconds":
+                seconds = offset_dict[time]
+            elif time == "milliseconds":
+                milliseconds = offset_dict[time]
+            elif time == "microseconds":
+                microseconds = offset_dict[time]
+            elif time == "nanoseconds":
+                nanoseconds = offset_dict[time]
+            else:
+                raise ValueError("Time label not recognised")
+        return pd.DateOffset(
+            years=years,
+            months=months,
+            weeks=weeks,
+            days=days,
+            hours=hours,
+            minutes=minutes,
+            seconds=seconds,
+            milliseconds=milliseconds,
+            microseconds=microseconds,
+            nanoseconds=nanoseconds,
+        )
+
+    if "downgrader" in processing_parameters:
+        a = processing_parameters["downgrader"]
+        d = {}
+        for key in a:
+            d[parse_date_offset_dict(a[key])] = key
+        processing_parameters["downgrader"] = d
+
+    return processing_parameters

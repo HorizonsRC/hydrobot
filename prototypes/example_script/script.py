@@ -2,10 +2,10 @@
 
 import pandas as pd
 import streamlit as st
-import yaml
 from annalist.annalist import Annalist
 
 from hydrobot.data_acquisition import (
+    config_yaml_import,
     import_inspections,
     import_ncr,
     import_prov_wq,
@@ -18,8 +18,8 @@ from hydrobot.utils import merge_all_comments
 # Reading configuration from config.yaml
 #######################################################################################
 
-with open("config.yaml") as yaml_file:
-    processing_parameters = yaml.safe_load(yaml_file)
+processing_parameters = config_yaml_import("config.yaml")
+
 
 #######################################################################################
 # Setting up logging with Annalist
@@ -73,7 +73,6 @@ data.check_series = data.check_series.loc[
     & (data.check_series.index <= processing_parameters["to_date"])
 ]
 
-
 all_comments = merge_all_comments(data.raw_check_data, prov_wq, inspections, ncrs)
 
 
@@ -103,7 +102,7 @@ data.gap_closer()
 #     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
 #     "wrong temperature into Survey123 at this site."
 # )
-# data.check_series = data.check_series.drop("2023-10-19T11:55:00")
+data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
 
 #######################################################################################
 # Assign quality codes
@@ -148,8 +147,3 @@ fig_subplots = make_processing_dash(
 st.plotly_chart(fig_subplots, use_container_width=True)
 
 st.dataframe(all_comments, use_container_width=True)
-
-# fig_subplots.show()
-# data.plot_qc_series(show=false)race(go.scatter())
-# data.plot_gaps(show=False)
-# data.plot_checks(show=False)
