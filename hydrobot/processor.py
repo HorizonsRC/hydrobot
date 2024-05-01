@@ -1488,4 +1488,4 @@ def hydrobot_config_yaml_init(config_path):
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
     )
-    return data, ann, processing_parameters
+    return data, ann

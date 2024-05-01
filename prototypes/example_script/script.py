@@ -16,7 +16,7 @@ from hydrobot.utils import merge_all_comments
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann, processing_parameters = hydrobot_config_yaml_init("config.yaml")
+data, ann = hydrobot_config_yaml_init("config.yaml")
 
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
@@ -37,8 +37,8 @@ data.check_series = pd.concat(
 ).sort_index()
 
 data.check_series = data.check_series.loc[
-    (data.check_series.index >= processing_parameters["from_date"])
-    & (data.check_series.index <= processing_parameters["to_date"])
+    (data.check_series.index >= data.from_date())
+    & (data.check_series.index <= data.to_date())
 ]
 
 all_comments = merge_all_comments(data.raw_check_data, prov_wq, inspections, ncrs)
@@ -96,14 +96,14 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 st.set_page_config(page_title="Hydrobot0.5.1", layout="wide")
-st.title(f"{processing_parameters['site']}")
-st.header(f"{processing_parameters['standard_measurement_name']}")
+st.title(f"{data.site()}")
+st.header(f"{data.standard_measurement_name()}")
 
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    processing_parameters["site"],
+    data.site(),
     data.raw_standard_series,
     data.standard_series,
     data.raw_check_data,
