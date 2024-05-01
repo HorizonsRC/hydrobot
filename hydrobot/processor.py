@@ -1443,3 +1443,49 @@ class Processor:
 
             data_blob_list += [data_blob]
         return data_blob_list
+
+
+def hydrobot_config_yaml_init(config_path):
+    """
+    Initialises a Processor class given a config file.
+
+    Parameters
+    ----------
+    config_path : string
+        Path to config.yaml.
+
+    Returns
+    -------
+    Processor, Annalist
+    """
+    processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+    #######################################################################################
+    # Setting up logging with Annalist
+    #######################################################################################
+
+    ann = Annalist()
+    ann.configure(
+        logfile=processing_parameters["logfile"],
+        analyst_name=processing_parameters["analyst_name"],
+        stream_format_str=processing_parameters["format"]["stream"],
+        file_format_str=processing_parameters["format"]["file"],
+    )
+
+    #######################################################################################
+    # Creating a Hydrobot Processor object which contains the data to be processed
+    #######################################################################################
+
+    data = Processor(
+        processing_parameters["base_url"],
+        processing_parameters["site"],
+        processing_parameters["standard_hts_filename"],
+        processing_parameters["standard_measurement_name"],
+        processing_parameters["frequency"],
+        processing_parameters["from_date"],
+        processing_parameters["to_date"],
+        processing_parameters["check_hts_filename"],
+        processing_parameters["check_measurement_name"],
+        processing_parameters["defaults"],
+    )
+    return data, ann, processing_parameters

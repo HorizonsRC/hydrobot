@@ -2,53 +2,21 @@
 
 import pandas as pd
 import streamlit as st
-from annalist.annalist import Annalist
 
 from hydrobot.data_acquisition import (
-    config_yaml_import,
     import_inspections,
     import_ncr,
     import_prov_wq,
 )
 from hydrobot.plotter import make_processing_dash
-from hydrobot.processor import Processor
+from hydrobot.processor import hydrobot_config_yaml_init
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 
-processing_parameters = config_yaml_import("config.yaml")
-
-
-#######################################################################################
-# Setting up logging with Annalist
-#######################################################################################
-
-ann = Annalist()
-ann.configure(
-    logfile=processing_parameters["logfile"],
-    analyst_name=processing_parameters["analyst_name"],
-    stream_format_str=processing_parameters["format"]["stream"],
-    file_format_str=processing_parameters["format"]["file"],
-)
-
-#######################################################################################
-# Creating a Hydrobot Processor object which contains the data to be processed
-#######################################################################################
-
-data = Processor(
-    processing_parameters["base_url"],
-    processing_parameters["site"],
-    processing_parameters["standard_hts_filename"],
-    processing_parameters["standard_measurement_name"],
-    processing_parameters["frequency"],
-    processing_parameters["from_date"],
-    processing_parameters["to_date"],
-    processing_parameters["check_hts_filename"],
-    processing_parameters["check_measurement_name"],
-    processing_parameters["defaults"],
-)
+data, ann, processing_parameters = hydrobot_config_yaml_init("config.yaml")
 
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop

@@ -134,3 +134,7 @@ watchdog==3.0.0
 wcwidth==0.2.8
 widgetsnbextension==4.0.9
 zipp==3.17.0
+
+hydrobot~=0.2.3
+streamlit~=1.33.0
+setuptools~=65.5.1
