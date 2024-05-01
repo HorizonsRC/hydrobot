@@ -1,4 +1,5 @@
 """Tools for checking quality and finding problems in the data."""
+
 import warnings
 
 import numpy as np
@@ -10,34 +11,43 @@ from hydrobot.data_sources import QualityCodeEvaluator
 annalizer = Annalist()
 
 
-def gap_finder(data: pd.Series):
+def gap_finder(data: pd.Series) -> list:
     """
-    Find gaps in a series of data (indicated by np.isnan()).
-
-    Returns a list of tuples indicating the start of the gap, and the number
-    of entries that are NaN
+    Find the indices and lengths of gaps (sequences of NaN values) in a pandas Series.
 
     Parameters
     ----------
-    data : pandas.Series
-        Input data to be clipped.
+    data : pd.Series
+        Input Series containing NaN values.
 
     Returns
     -------
-    List of Tuples
-        Each element in the list gives the index value for the start of the gap
-        and the length of the gap
+    list :
+        List of tuples, each containing the index of a NaN value, the length of the gap
+        containing it, and True for strictness.
     """
-    idx0 = np.flatnonzero(np.r_[True, np.diff(np.isnan(data)) != 0, True])
-    count = np.diff(idx0)
-    idx = idx0[:-1]
-    valid_mask = pd.isna(data.iloc[idx])
-    out_idx = idx[valid_mask]
-    out_count = count[valid_mask]
-    indices = data.iloc[out_idx].index
-    out = zip(indices, out_count, strict=True)
+    # Find the indices where NaN values start and end
+    idx0 = np.flatnonzero(np.r_[True, np.diff(pd.isna(data)) != 0, True])
 
-    return list(out)
+    # Calculate the length of each gap
+    count = np.diff(idx0)
+
+    # Mask for the gaps that contain NaN values
+    valid_mask = pd.isna(data.iloc[idx0[:-1]])
+
+    # Select indices of gaps that contain NaN values
+    out_idx = idx0[:-1][valid_mask]
+
+    # Select lengths of gaps that contain NaN values
+    out_count = count[valid_mask]
+
+    # Select indices of NaN values in the original Series
+    indices = data.iloc[out_idx].index
+
+    # Create a list of tuples containing index, gap length, and strictness
+    out = list(zip(indices, out_count, [True] * len(indices), strict=True))
+
+    return out
 
 
 def small_gap_closer(series: pd.Series, gap_limit: int) -> pd.Series:
@@ -354,9 +364,11 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
     split_data = splitter(base_series, qc_series, frequency)
     for qc in split_data:
         print(
-            f"Data that is QC{qc} makes up {len(split_data[qc].dropna()) / len(base_series.dropna()) * 100:.2f}% of "
-            f"the "
-            f"workable data and {len(split_data[qc].dropna()) / len(base_series) * 100:.2f}% of the time period"
+            f"Data that is QC{qc} makes up "
+            f"{len(split_data[qc].dropna()) / len(base_series.dropna()) * 100:.2f}% "
+            "of the workable data and "
+            f"{len(split_data[qc].dropna()) / len(base_series) * 100:.2f}% "
+            "of the time period"
         )
 
 
@@ -383,6 +395,7 @@ def splitter(base_series, qc_series, frequency):
     """
     qc_list = [0, 100, 200, 300, 400, 500, 600]
     return_dict = {}
+
     for qc in qc_list:
         if qc == 100:
             return_dict[qc] = (

@@ -124,7 +124,7 @@ def get_series(
     from_date,
     to_date,
     tstype="Standard",
-) -> tuple[ElementTree.Element, pd.Series | pd.DataFrame]:
+) -> tuple[ElementTree.Element, pd.DataFrame]:
     """Pack data from get_data as a pd.Series.
 
     Parameters
@@ -173,7 +173,7 @@ def get_series(
             else:
                 data.index = pd.to_datetime(data.index)
     else:
-        data = pd.Series({})
+        data = pd.DataFrame({})
     return xml, data
 
 

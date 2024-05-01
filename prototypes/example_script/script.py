@@ -65,9 +65,7 @@ data.check_series = pd.concat(
         inspections["Temp Check"]
         .drop(data.check_series.index, errors="ignore")
         .dropna(),
-        # prov_wq["Temp Check"]
-        # .drop(data.check_series.index, errors="ignore")
-        # .dropna(),
+        prov_wq["Temp Check"].drop(data.check_series.index, errors="ignore").dropna(),
     ]
 ).sort_index()
 
@@ -76,9 +74,10 @@ data.check_series = data.check_series.loc[
     & (data.check_series.index <= processing_parameters["to_date"])
 ]
 
+print(data.check_series)
 
 all_comments = merge_all_comments(data.raw_check_data, prov_wq, inspections, ncrs)
-
+quit()
 
 #######################################################################################
 # Common auto-processing steps
@@ -126,6 +125,7 @@ data.data_exporter("processed.xml")
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
 
+quit()
 #######################################################################################
 # Launch Hydrobot Processing Visualiser (HPV)
 # Known issues:

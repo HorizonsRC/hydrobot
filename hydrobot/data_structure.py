@@ -138,19 +138,19 @@ class ItemInfo:
         )
 
         item_name_element = ElementTree.SubElement(item_info_root, "ItemName")
-        item_name_element.text = self.item_name
+        item_name_element.text = str(self.item_name)
 
         item_format_element = ElementTree.SubElement(item_info_root, "ItemFormat")
-        item_format_element.text = self.item_format
+        item_format_element.text = str(self.item_format)
 
         divisor_element = ElementTree.SubElement(item_info_root, "Divisor")
-        divisor_element.text = self.divisor
+        divisor_element.text = str(self.divisor)
 
         units_element = ElementTree.SubElement(item_info_root, "Units")
-        units_element.text = self.units
+        units_element.text = str(self.units)
 
         format_element = ElementTree.SubElement(item_info_root, "Format")
-        format_element.text = self.format
+        format_element.text = str(self.format)
 
         return item_info_root
 
@@ -351,18 +351,18 @@ class DataSource:
         )
 
         ts_type_element = ElementTree.SubElement(data_source_root, "TSType")
-        ts_type_element.text = self.ts_type
+        ts_type_element.text = str(self.ts_type)
 
         data_type_element = ElementTree.SubElement(data_source_root, "DataType")
-        data_type_element.text = self.data_type
+        data_type_element.text = str(self.data_type)
 
         interpolation_element = ElementTree.SubElement(
             data_source_root, "Interpolation"
         )
-        interpolation_element.text = self.interpolation
+        interpolation_element.text = str(self.interpolation)
 
         item_format_element = ElementTree.SubElement(data_source_root, "ItemFormat")
-        item_format_element.text = self.item_format
+        item_format_element.text = str(self.item_format)
 
         if self.item_info is not None:
             data_source_root.extend(
@@ -396,7 +396,7 @@ class Data:
         self,
         date_format: str,
         num_items: int,
-        timeseries: pd.Series | pd.DataFrame,
+        timeseries: pd.DataFrame,
     ):
         """
         Initialize a Data instance.
@@ -499,14 +499,7 @@ class Data:
                     "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
                 )
 
-        if num_items > 1:
-            timeseries = pd.DataFrame(data_list).set_index("T")
-        else:
-            data_key = list(data_list[0].keys())[1]
-            timeseries = pd.Series(
-                [dat[data_key] for dat in data_list],
-                index=[dat["T"] for dat in data_list],
-            )
+        timeseries = pd.DataFrame(data_list).set_index("T")
         return cls(date_format, num_items, timeseries)
 
     def to_xml_tree(self):
@@ -541,30 +534,19 @@ class Data:
             },
         )
 
-        if isinstance(self.timeseries, pd.Series):
-            for date, val in self.timeseries.items():
-                if pd.isna(val):
-                    element = ElementTree.SubElement(data_root, "Gap")
-                else:
-                    element = ElementTree.SubElement(data_root, "E")
-                    timestamp = ElementTree.SubElement(element, "T")
-                    timestamp.text = str(date)
-                    val_item = ElementTree.SubElement(element, "I1")
-                    val_item.text = str(val)
-        elif isinstance(self.timeseries, pd.DataFrame):
-            for date, row in self.timeseries.iterrows():
-                if pd.isna(row).all():
-                    # If all values in a row are NaNs, insert a Gap.
-                    element = ElementTree.SubElement(data_root, "Gap")
-                else:
-                    element = ElementTree.SubElement(data_root, "E")
-                    timestamp = ElementTree.SubElement(element, "T")
-                    timestamp.text = str(date)
-                    for i, val in enumerate(row):
-                        # If only one field in the element is a NaN, leave it blank?
-                        val_item = ElementTree.SubElement(element, f"I{i+1}")
-                        if not pd.isna(val):
-                            val_item.text = str(val)
+        for date, row in self.timeseries.iterrows():
+            if (pd.isna(row).sum() > 0) or (sum(row.to_numpy() == "nan") > 0):
+                # If all values in a row are NaNs, insert a Gap.
+                element = ElementTree.SubElement(data_root, "Gap")
+            else:
+                element = ElementTree.SubElement(data_root, "E")
+                timestamp = ElementTree.SubElement(element, "T")
+                timestamp.text = str(date)
+                for i, val in enumerate(row):
+                    # If only one field in the element is a NaN, leave it blank?
+                    val_item = ElementTree.SubElement(element, f"I{i+1}")
+                    if not pd.isna(val):
+                        val_item.text = str(val)
 
         # Collapse all duplicate Gap tags into a single Gap marker:
         current_gap_count = 0
@@ -784,7 +766,7 @@ class DataSourceBlob:
         return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
 
 
-def parse_xml(source) -> list[DataSourceBlob] | None:
+def parse_xml(source) -> list[DataSourceBlob]:
     """
     Parse Hilltop XML to get a list of DataSourceBlob objects.
 
@@ -840,14 +822,12 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
 
     if root.tag == "HilltopServer":
         ElementTree.indent(root, space="\t")
-        print("Hilltop xml possibly returned no data. Check for yourself:")
-        ElementTree.dump(root)
         err_text = root.findtext("Error")
-        if "No data from " in str(err_text):
-            warnings.warn(str(err_text), stacklevel=1)
-            return None
+        if "No data" in str(err_text):
+            warnings.warn(f"Empty hilltop response: {err_text}", stacklevel=1)
         else:
             raise ValueError(err_text)
+
     elif root.tag != "Hilltop":
         raise ValueError(
             f"Possibly malformed Hilltop xml. Root tag is '{root.tag}',"
@@ -889,7 +869,7 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
 
             else:
                 sorted_item_names = []
-            if len(sorted_item_names) > 1 and isinstance(
+            if len(sorted_item_names) > 0 and isinstance(
                 data_source_blob.data.timeseries, pd.DataFrame
             ):
                 cols = {
@@ -903,11 +883,11 @@ def parse_xml(source) -> list[DataSourceBlob] | None:
                 data_source_blob.data.timeseries = (
                     data_source_blob.data.timeseries.rename(columns=cols)
                 )
-            elif len(sorted_item_names) > 0:
-                data_source_blob.data.timeseries.name = sorted_item_names[0]
             else:
                 # It seems that if iteminfo is missing it's always a QC
-                data_source_blob.data.timeseries.name = "QualityCode"
+                data_source_blob.data.timeseries = (
+                    data_source_blob.data.timeseries.rename(columns={"I1": "Value"})
+                )
             data_source_blob.data.timeseries.index.name = "Time"
             data_source_blob_list += [data_source_blob]
 

@@ -145,7 +145,8 @@ def remove_range(
     input_series: pd.Series,
     from_date: str | None,
     to_date: str | None,
-    insert_gaps: bool | int = False,
+    min_gap_length: int = 1,
+    insert_gaps: str = "none",
 ):
     """
     Remove data from series in given range.
@@ -166,10 +167,14 @@ def remove_range(
         Start of removed section
     to_date : str | None
         End of removed section
-    insert_gaps : bool or int
-        If True, inserts a gap.
-        If False, does not insert a gap.
-        If int, will insert gaps if missing more data points than insert_gaps
+    min_gap_length : int
+        Will insert gaps based on insert_gaps strategy if missing more data points than
+        min_gap_length in a row.
+    insert_gaps : str
+        If "all" will insert np.NaN at every missing point.
+        If "start" will insert np.NaN only at from_date.
+        If "end" will insert np.NaN only at to_date.
+        If "none" will insert no np.NaN values, and remove all timestamps completely.
 
     Returns
     -------
@@ -177,13 +182,26 @@ def remove_range(
         The series with relevant slice removed
     """
     slice_to_remove = input_series.loc[from_date:to_date]
-    series_to_return = input_series.drop(slice_to_remove.index)
-    if isinstance(insert_gaps, bool):
-        if insert_gaps:
-            series_to_return[from_date] = np.NaN
+    if len(slice_to_remove) > min_gap_length:
+        if insert_gaps == "all":
+            input_series.loc[from_date:to_date] = np.NaN
+            series_to_return = input_series
+        else:
+            series_to_return = input_series.drop(slice_to_remove.index)
+            if insert_gaps == "start":
+                start_idx = slice_to_remove.index[0]
+                series_to_return[start_idx] = np.NaN
+            elif insert_gaps == "end":
+                end_idx = slice_to_remove.index[-1]
+                series_to_return[end_idx] = np.NaN
+            elif insert_gaps == "none":
+                pass
+            else:
+                raise ValueError(
+                    f"Unknown value for argument {insert_gaps}. Choose one of 'all', 'start', 'end', 'none'."
+                )
     else:
-        if len(slice_to_remove) > insert_gaps:
-            series_to_return[from_date] = np.NaN
+        series_to_return = input_series.drop(slice_to_remove.index)
     return series_to_return.sort_index()
 
 

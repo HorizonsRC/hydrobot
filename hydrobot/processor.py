@@ -23,9 +23,9 @@ from hydrobot import (
 annalizer = Annalist()
 
 DEFAULTS = {
-    "high_clip": 20000,
+    "high_clip": 30,
     "low_clip": 0,
-    "delta": 1000,
+    "delta": 30,
     "span": 10,
     "gap_limit": 12,
     "max_qc": np.NaN,
@@ -189,6 +189,21 @@ class Processor:
                 f"{list(available_check_measurements.MeasurementName)}"
             )
 
+        self.standard_item_info = {
+            "ItemName": self.standard_item_name,
+            "ItemFormat": "F",
+            "Divisor": 1,
+            "Units": "",
+            "Format": "###.##",
+        }
+
+        self.check_item_info = {
+            "ItemName": self.check_item_name,
+            "ItemFormat": "F",
+            "Divisor": 1,
+            "Units": "",
+            "Format": "$$$",
+        }
         self._base_url = base_url
         self._standard_hts = standard_hts
         self._check_hts = check_hts
@@ -200,17 +215,42 @@ class Processor:
         )
         self._stale = True
         self._no_data = True
-        self._standard_series = pd.Series({})
-        self._check_series = pd.Series({})
-        self._quality_series = pd.Series({})
+        self._standard_data = pd.DataFrame(
+            columns=[
+                "Time",
+                "Raw",
+                "Value",
+                "Changes",
+                "Remove",
+            ]
+        ).set_index("Time")
+        self._check_data = pd.DataFrame(
+            columns=[
+                "Time",
+                "Raw",
+                "Value",
+                "Changes",
+                "Recorder Time",
+                "Comment",
+                "Source",
+            ]
+        ).set_index("Time")
+        self._quality_data = pd.DataFrame(
+            columns=[
+                "Time",
+                "Raw",
+                "Value",
+                "Changes",
+                "Reason",
+            ]
+        ).set_index("Time")
 
-        self.raw_standard_series = pd.Series({})
         self.raw_standard_blob = None
         self.raw_standard_xml = None
-        self.raw_quality_series = pd.Series({})
+
         self.raw_quality_blob = None
         self.raw_quality_xml = None
-        self.raw_check_data = pd.DataFrame({})
+
         self.raw_check_blob = None
         self.raw_check_xml = None
 
@@ -224,65 +264,37 @@ class Processor:
 
     @property
     def site(self):  # type: ignore
-        """
-        str: The site to be processed.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The site to be processed."""
         return self._site
 
     @property
     def from_date(self):  # type: ignore
-        """
-        str: The start date of the data.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The start date of the data."""
         return self._from_date
 
     @property
     def to_date(self):  # type: ignore
-        """
-        str: The end date of the data.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The end date of the data."""
         return self._to_date
 
     @property
     def frequency(self):  # type: ignore
-        """
-        str: The frequency of the data.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The frequency of the data."""
         return self._frequency
 
     @property
     def base_url(self):  # type: ignore
-        """
-        str: The base URL of the Hilltop server.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The base URL of the Hilltop server."""
         return self._base_url
 
     @property
     def standard_hts(self):  # type: ignore
-        """
-        str: The standard Hilltop service.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The standard Hilltop service."""
         return self._standard_hts
 
     @property
     def check_hts(self):  # type: ignore
-        """
-        str: The Hilltop service to be checked.
-
-        Setting this property will mark the data as stale.
-        """
+        """str: The Hilltop service to be checked."""
         return self._check_hts
 
     @property
@@ -298,47 +310,38 @@ class Processor:
 
     @property
     def defaults(self):  # type: ignore
-        """
-        dict: The default settings.
-
-        Setting this property will mark the data as stale.
-        """
+        """dict: The default settings."""
         return self._defaults
 
     @property  # type: ignore
-    def standard_series(self) -> pd.Series:  # type: ignore
+    def standard_data(self) -> pd.DataFrame:  # type: ignore
         """pd.Series: The standard series data."""
-        return self._standard_series
+        return self._standard_data
 
     @ClassLogger  # type: ignore
-    @standard_series.setter
-    def standard_series(self, value):
-        self._standard_series = value
+    @standard_data.setter
+    def standard_data(self, value):
+        self._standard_data = value
 
-    @property
-    def check_series(self):  # type: ignore
+    @property  # type: ignore
+    def check_data(self) -> pd.DataFrame:  # type: ignore
         """pd.Series: The series containing check data."""
-        return self._check_series
+        return self._check_data
 
     @ClassLogger  # type: ignore
-    @check_series.setter
-    def check_series(self, value):
-        self._check_series = value
+    @check_data.setter
+    def check_data(self, value):
+        self._check_data = value
 
-    @property
-    def quality_series(self):  # type: ignore
-        """
-        pd.Series: The quality series data.
-
-        Setting this property will mark the data as stale.
-        """
-        return self._quality_series
+    @property  # type: ignore
+    def quality_data(self) -> pd.DataFrame:  # type: ignore
+        """pd.Series: The quality series data."""
+        return self._quality_data
 
     @ClassLogger  # type: ignore
-    @quality_series.setter
-    def quality_series(self, value):
-        self._quality_series = value
-        self._stale = True
+    @quality_data.setter
+    def quality_data(self, value):
+        self._quality_data = value
 
     @ClassLogger
     def import_standard(
@@ -406,6 +409,7 @@ class Processor:
 
         date_format = "Calendar"
         data_source_list = []
+        raw_standard_data = pd.DataFrame({})
         if blob_list is None or len(blob_list) == 0:
             warnings.warn(
                 "No standard data found within specified date range.",
@@ -417,13 +421,28 @@ class Processor:
                 if (blob.data_source.name == self.standard_data_source_name) and (
                     blob.data_source.ts_type == "StdSeries"
                 ):
-                    self.raw_standard_series = blob.data.timeseries
+                    raw_standard_data = blob.data.timeseries
                     date_format = blob.data.date_format
-                    if self.raw_standard_series is not None:
+                    if raw_standard_data is not None:
                         # Found it. Now we extract it.
                         blob_found = True
                         self.raw_standard_blob = blob
                         self.raw_standard_xml = xml_tree
+                        self.standard_item_info[
+                            "ItemName"
+                        ] = blob.data_source.item_info[0].item_name
+                        self.standard_item_info[
+                            "ItemFormat"
+                        ] = blob.data_source.item_info[0].item_format
+                        self.standard_item_info["Divisor"] = blob.data_source.item_info[
+                            0
+                        ].divisor
+                        self.standard_item_info["Units"] = blob.data_source.item_info[
+                            0
+                        ].units
+                        self.standard_item_info["Format"] = blob.data_source.item_info[
+                            0
+                        ].format
             if not blob_found:
                 raise ValueError(
                     f"Standard Data Not Found under name "
@@ -431,26 +450,24 @@ class Processor:
                     f"Available data sources are: {data_source_list}"
                 )
 
-            if not isinstance(self.raw_standard_series, pd.Series):
+            if not isinstance(raw_standard_data, pd.DataFrame):
                 raise TypeError(
-                    f"Expecting pd.Series for Standard data, but got {type(self.raw_standard_series)}"
-                    "from parser."
+                    "Expecting pd.DataFrame for Standard data, "
+                    f"but got {type(raw_standard_data)} from parser."
                 )
-            if not self.raw_standard_series.empty:
+            if not raw_standard_data.empty:
                 if date_format == "mowsecs":
-                    self.raw_standard_series.index = utils.mowsecs_to_datetime_index(
-                        self.raw_standard_series.index
+                    raw_standard_data.index = utils.mowsecs_to_datetime_index(
+                        raw_standard_data.index
                     )
                 else:
-                    self.raw_standard_series.index = pd.to_datetime(
-                        self.raw_standard_series.index
-                    )
-                self.raw_standard_series = self.raw_standard_series.asfreq(
+                    raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
+                raw_standard_data = raw_standard_data.asfreq(
                     self._frequency, fill_value=np.NaN
                 )
             if self.raw_standard_blob is not None:
-                fmt = self.raw_standard_blob.data_source.item_info[0].item_format
-                div = self.raw_standard_blob.data_source.item_info[0].divisor
+                fmt = self.standard_item_info["ItemFormat"]
+                div = self.standard_item_info["Divisor"]
             else:
                 warnings.warn(
                     "Could not extract standard data format from data source. "
@@ -462,20 +479,22 @@ class Processor:
             if div is None or div == "None":
                 div = 1
             if fmt == "I":
-                self.raw_standard_series = self.raw_standard_series.astype(int) / int(
-                    div
-                )
+                raw_standard_data.iloc[:, 0] = raw_standard_data.iloc[:, 0].astype(
+                    int
+                ) / int(div)
             elif fmt == "F":
-                self.raw_standard_series = self.raw_standard_series.astype(
+                raw_standard_data.iloc[:, 0] = raw_standard_data.iloc[:, 0].astype(
                     np.float32
                 ) / float(div)
             elif fmt == "D":  # Not sure if this would ever really happen, but...
-                self.raw_standard_series = utils.mowsecs_to_datetime_index(
-                    self.raw_standard_series
+                raw_standard_data.iloc[:, 0] = utils.mowsecs_to_datetime_index(
+                    raw_standard_data.iloc[:, 0]
                 )
             else:
                 raise ValueError(f"Unknown Format Spec: {fmt}")
-            self.standard_series = self.raw_standard_series
+
+            self.standard_data["Raw"] = raw_standard_data.iloc[:, 0]
+            self.standard_data["Value"] = self.standard_data["Raw"]
 
     @ClassLogger
     def import_quality(
@@ -537,6 +556,7 @@ class Processor:
         )
 
         blob_found = False
+        raw_quality_data = pd.DataFrame({})
 
         if blob_list is None or len(blob_list) == 0:
             warnings.warn(
@@ -552,9 +572,9 @@ class Processor:
                     # Found it. Now we extract it.
                     blob_found = True
 
-                    self.raw_quality_series = blob.data.timeseries
+                    raw_quality_data = blob.data.timeseries
                     date_format = blob.data.date_format
-                    if self.raw_quality_series is not None:
+                    if raw_quality_data is not None:
                         # Found it. Now we extract it.
                         blob_found = True
                         self.raw_quality_blob = blob
@@ -565,23 +585,23 @@ class Processor:
                     stacklevel=2,
                 )
 
-            if not isinstance(self.raw_quality_series, pd.Series):
+            if not isinstance(raw_quality_data, pd.DataFrame):
                 raise TypeError(
-                    f"Expecting pd.Series for Quality data, but got "
-                    f"{type(self.raw_quality_series)} from parser."
+                    f"Expecting pd.DataFrame for Quality data, but got "
+                    f"{type(raw_quality_data)} from parser."
                 )
-            if not self.raw_quality_series.empty:
+            if not raw_quality_data.empty:
                 if date_format == "mowsecs":
-                    self.raw_quality_series.index = utils.mowsecs_to_datetime_index(
-                        self.raw_quality_series.index
+                    raw_quality_data.index = utils.mowsecs_to_datetime_index(
+                        raw_quality_data.index
                     )
                 else:
-                    self.raw_quality_series.index = pd.to_datetime(
-                        self.raw_quality_series.index
-                    )
+                    raw_quality_data.index = pd.to_datetime(raw_quality_data.index)
 
-            self.quality_series = self.raw_quality_series.astype(int)
-            self._quality_series.name = self._standard_measurement_name + " [Quality]"
+            raw_quality_data.iloc[:, 0] = raw_quality_data.iloc[:, 0].astype(int)
+
+            self.quality_data["Raw"] = raw_quality_data.iloc[:, 0]
+            self.quality_data["Value"] = self.quality_data["Raw"]
 
     @ClassLogger
     def import_check(
@@ -650,6 +670,7 @@ class Processor:
                 stacklevel=2,
             )
         else:
+            raw_check_data = pd.DataFrame({})
             data_source_options = []
             for blob in blob_list:
                 data_source_options += [blob.data_source.name]
@@ -666,7 +687,22 @@ class Processor:
                     if import_data is not None:
                         self.raw_check_blob = blob
                         self.raw_check_xml = xml_tree
-                        self.raw_check_data = import_data
+                        raw_check_data = import_data
+                        self.check_item_info["ItemName"] = blob.data_source.item_info[
+                            0
+                        ].item_name
+                        self.check_item_info["ItemFormat"] = blob.data_source.item_info[
+                            0
+                        ].item_format
+                        self.check_item_info["Divisor"] = blob.data_source.item_info[
+                            0
+                        ].divisor
+                        self.check_item_info["Units"] = blob.data_source.item_info[
+                            0
+                        ].units
+                        self.check_item_info["Format"] = blob.data_source.item_info[
+                            0
+                        ].format
             if not blob_found:
                 warnings.warn(
                     f"Check data {self.check_data_source_name} not found in server "
@@ -674,51 +710,45 @@ class Processor:
                     stacklevel=2,
                 )
 
-            if not isinstance(self.raw_check_data, pd.DataFrame):
+            if not isinstance(raw_check_data, pd.DataFrame):
                 raise TypeError(
-                    f"Expecting pd.DataFrame for Check data, but got {type(self.raw_check_data)}"
+                    f"Expecting pd.DataFrame for Check data, but got {type(raw_check_data)}"
                     "from parser."
                 )
-            if not self.raw_check_data.empty:
+            if not raw_check_data.empty:
                 if date_format == "mowsecs":
-                    self.raw_check_data.index = utils.mowsecs_to_datetime_index(
-                        self.raw_check_data.index
+                    raw_check_data.index = utils.mowsecs_to_datetime_index(
+                        raw_check_data.index
                     )
                 else:
-                    self.raw_check_data.index = pd.to_datetime(
-                        self.raw_check_data.index
-                    )
+                    raw_check_data.index = pd.to_datetime(raw_check_data.index)
 
-            if not self.raw_check_data.empty and self.raw_check_blob is not None:
+            if not raw_check_data.empty and self.raw_check_blob is not None:
                 # TODO: Maybe this should happen in the parser?
                 for i, item in enumerate(self.raw_check_blob.data_source.item_info):
                     fmt = item.item_format
                     div = item.divisor
-                    col = self.raw_check_data.iloc[:, i]
+                    col = raw_check_data.iloc[:, i]
                     if fmt == "I":
-                        self.raw_check_data.iloc[:, i] = col.astype(int) / int(div)
+                        raw_check_data.iloc[:, i] = col.astype(int) / int(div)
                     elif fmt == "F":
-                        self.raw_check_data.iloc[:, i] = col.astype(np.float32) / float(
-                            div
-                        )
+                        raw_check_data.iloc[:, i] = col.astype(np.float32) / float(div)
                     elif fmt == "D":
-                        if self.raw_check_data.iloc[:, i].dtype != pd.Timestamp:
+                        if raw_check_data.iloc[:, i].dtype != pd.Timestamp:
                             if date_format == "mowsecs":
-                                self.raw_check_data.iloc[
+                                raw_check_data.iloc[
                                     :, i
                                 ] = utils.mowsecs_to_datetime_index(col)
                             else:
-                                self.raw_check_data.iloc[:, i] = col.astype(
-                                    pd.Timestamp
-                                )
+                                raw_check_data.iloc[:, i] = col.astype(pd.Timestamp)
                     elif fmt == "S":
-                        self.raw_check_data.iloc[:, i] = col.astype(str)
+                        raw_check_data.iloc[:, i] = col.astype(str)
 
-            if not self.raw_check_data.empty:
-                self.check_series = self.raw_check_data[self.check_item_name]
-            else:
-                self.check_series = pd.Series({})
-            self._check_series.name = self._standard_measurement_name + " [Check]"
+            if not raw_check_data.empty:
+                self.check_data["Raw"] = raw_check_data[self.check_item_name]
+                self.check_data["Value"] = self.check_data["Raw"]
+                self.check_data["Recorder Time"] = raw_check_data["Recorder Time"]
+                self.check_data["Comment"] = raw_check_data["Comment"]
 
     def import_data(
         self,
@@ -759,26 +789,12 @@ class Processor:
         >>> processor.stale
         False
         """
-        if (
-            self._standard_series is not None
-            and not self._standard_series.empty
-            and self._quality_series is not None
-            and not self._quality_series.empty
-            and self._check_series is not None
-            and not self._check_series.empty
-        ):
-            warnings.warn(
-                "When you reimport, you are overwriting your data. You will lose all"
-                "progess up to this point.",
-                stacklevel=1,
-            )
         if standard:
             self.import_standard(from_date, to_date)
         if quality:
             self.import_quality(from_date, to_date)
         if check:
             self.import_check(from_date, to_date)
-        self._stale = False
 
     @ClassLogger
     def add_standard(self, extra_standard):
@@ -837,6 +853,10 @@ class Processor:
         """
         Close small gaps in the standard series.
 
+        DEPRECATED: The use of this method is discouraged as it completely removes rows
+        from the dataframes. The gap closing functionality has been moved to
+        data_exporter, where gaps are handled automatically before data export.
+
         Parameters
         ----------
         gap_limit : int or None, optional
@@ -860,11 +880,18 @@ class Processor:
         >>> processor.standard_series
         <updated standard series with closed gaps>
         """
+        warnings.warn(
+            "DEPRECATED: The use of gap_closer is discouraged as it completely "
+            "removes rows from the dataframes.",
+            stacklevel=1,
+        )
         if gap_limit is None:
             gap_limit = int(self._defaults["gap_limit"])
-        self.standard_series = evaluator.small_gap_closer(
-            self._standard_series, gap_limit=gap_limit
+
+        gapless = evaluator.small_gap_closer(
+            self._standard_data["Value"].squeeze(), gap_limit=gap_limit
         )
+        self._standard_data = self._standard_data.loc[gapless.index]
 
     # @stale_warning  # type: ignore
     @ClassLogger
@@ -903,15 +930,14 @@ class Processor:
             gap_limit = int(self._defaults["gap_limit"])
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
-        self.quality_series = evaluator.quality_encoder(
-            self._standard_series,
-            self._check_series,
+        self.quality_data["Value"] = evaluator.quality_encoder(
+            self._standard_data["Value"],
+            self._check_data["Value"],
             self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,
         )
 
-    # @stale_warning  # type: ignore
     @ClassLogger
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """
@@ -950,9 +976,27 @@ class Processor:
         if high_clip is None:
             high_clip = float(self._defaults["high_clip"])
 
-        self.standard_series = filters.clip(self._standard_series, low_clip, high_clip)
+        clipped = filters.clip(
+            self._standard_data["Value"].squeeze(), low_clip, high_clip
+        )
+        self._standard_data = self._apply_changes(
+            self._standard_data, clipped, "CLP", mark_remove=True
+        )
 
-    # @stale_warning  # type: ignore
+    @staticmethod
+    def _apply_changes(
+        dataframe,
+        changed_values,
+        change_code,
+        mark_remove=False,
+    ):
+        diffs = dataframe["Value"] != changed_values
+        if mark_remove:
+            dataframe.loc[diffs, "Remove"] = mark_remove
+        dataframe.loc[diffs, "Changes"] = change_code
+        dataframe["Value"] = changed_values
+        return dataframe
+
     @ClassLogger
     def remove_outliers(self, span: int | None = None, delta: float | None = None):
         """
@@ -989,15 +1033,13 @@ class Processor:
         if delta is None:
             delta = float(self._defaults["delta"])
 
-        if isinstance(self._standard_series, pd.Series):
-            self.standard_series = filters.remove_outliers(
-                self._standard_series, span, delta
-            )
-        else:
-            raise TypeError(
-                "Standard Series should be pd.Series, "
-                f"found {type(self._standard_series)}."
-            )
+        rm_outliers = filters.remove_outliers(
+            self._standard_data["Value"].squeeze(), span, delta
+        )
+
+        self._standard_data = self._apply_changes(
+            self._standard_data, rm_outliers, "OUT", mark_remove=True
+        )
 
     # @stale_warning  # type: ignore
     @ClassLogger
@@ -1052,21 +1094,78 @@ class Processor:
         if delta is None:
             delta = float(self._defaults["delta"])
 
-        if isinstance(self._standard_series, pd.Series):
-            self.standard_series = filters.remove_spikes(
-                self._standard_series, span, low_clip, high_clip, delta
-            )
-        else:
-            raise TypeError(
-                "Standard Series should be pd.Series,"
-                f"found {type(self._standard_series)}"
-            )
+        rm_spikes = filters.remove_spikes(
+            self._standard_data["Value"].squeeze(),
+            span,
+            low_clip,
+            high_clip,
+            delta,
+        )
+
+        self._standard_data = self._apply_changes(
+            self._standard_data, rm_spikes, "SPK", mark_remove=True
+        )
 
     @ClassLogger
     def remove_flatlined_values(self, span: int = 3):
         """Remove repeated values in std series a la flatline_value_remover()."""
-        self.standard_series = filters.flatline_value_remover(
-            self._standard_series, span=span
+        rm_fln = filters.flatline_value_remover(self._standard_data["Value"], span=span)
+
+        self._standard_data = self._apply_changes(
+            self._standard_data, rm_fln, "FLN", mark_remove=True
+        )
+
+    @ClassLogger
+    def remove_range(
+        self,
+        from_date,
+        to_date,
+    ):
+        """
+        Mark a range in standard_data for removal.
+
+        Parameters
+        ----------
+        from_date : str
+            The start date of the range to delete.
+        to_date : str
+            The end date of the range to delete.
+        tstype_standard : bool, optional
+            Flag to delete data from the standard series, by default True.
+        tstype_check : bool, optional
+            Flag to delete data from the check series, by default False.
+        tstype_quality : bool, optional
+            Flag to delete data from the quality series, by default False.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method deletes a specified range of data from the selected time series
+        types. The range is defined by the `from_date` and `to_date` parameters.
+
+        Examples
+        --------
+        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
+        >>> processor.remove_range(from_date="2022-01-01", to_date="2022-12-31", \
+                tstype_standard=True)
+        >>> processor.standard_data
+        <standard series with specified range deleted>
+        >>> processor.remove_range(from_date="2022-01-01", to_date="2022-12-31", \
+                tstype_check=True)
+        >>> processor.check_data
+        <check series with specified range deleted>
+        """
+        rm_range = filters.remove_range(
+            self._standard_data["Value"],
+            from_date,
+            to_date,
+            insert_gaps="all",
+        )
+        self.standard_data = self._apply_changes(
+            self._standard_data, rm_range, "MAN", mark_remove=True
         )
 
     @ClassLogger
@@ -1077,9 +1176,15 @@ class Processor:
         tstype_standard=True,
         tstype_check=False,
         tstype_quality=False,
+        gap_limit=None,
     ):
         """
         Delete a range of data from specified time series types.
+
+        DEPRECATED: The use of this method is discouraged as it completely removes rows
+        from the dataframes. User is encouraged to use 'remove_range' which marks rows
+        for removal, but retains the timestamp to be associated with the other values
+        in the row such as the raw value, reason for removal, etc.
 
         Parameters
         ----------
@@ -1108,24 +1213,47 @@ class Processor:
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.delete_range(from_date="2022-01-01", to_date="2022-12-31", \
                 tstype_standard=True)
-        >>> processor.standard_series
+        >>> processor.standard_data
         <standard series with specified range deleted>
         >>> processor.delete_range(from_date="2022-01-01", to_date="2022-12-31", \
                 tstype_check=True)
-        >>> processor.check_series
+        >>> processor.check_data
         <check series with specified range deleted>
         """
+        warnings.warn(
+            "DEPRECATED: The use of delete_range is discouraged as it completely "
+            "removes rows from the dataframes. User is encouraged to use "
+            "'remove_range' which marks rows for removal, but retains the timestamp "
+            "to be associated with the other values "
+            "in the row such as the raw value, reason for removal, etc.",
+            stacklevel=1,
+        )
+        if gap_limit is None:
+            gap_limit = self._defaults["gap_limit"]
+
         if tstype_standard:
-            self.standard_series = filters.remove_range(
-                self._standard_series, from_date, to_date
+            self.standard_data = filters.remove_range(
+                self._standard_data,
+                from_date,
+                to_date,
+                min_gap_length=gap_limit,
+                insert_gaps="start",
             )
         if tstype_check:
-            self.check_series = filters.remove_range(
-                self._check_series, from_date, to_date
+            self.check_data = filters.remove_range(
+                self._check_data,
+                from_date,
+                to_date,
+                min_gap_length=gap_limit,
+                insert_gaps="start",
             )
         if tstype_quality:
-            self.quality_series = filters.remove_range(
-                self._quality_series, from_date, to_date
+            self.quality_data = filters.remove_range(
+                self._quality_data,
+                from_date,
+                to_date,
+                min_gap_length=gap_limit,
+                insert_gaps="start",
             )
 
     @ClassLogger
@@ -1154,7 +1282,7 @@ class Processor:
         >>> processor.standard_series
         <standard series with missing values filled with NaNs>
         """
-        self.standard_series = self._standard_series.asfreq(self._frequency)
+        self.standard_data = self._standard_data.asfreq(self._frequency)
 
     @ClassLogger
     def data_exporter(
@@ -1163,7 +1291,7 @@ class Processor:
         ftype="xml",
         standard: bool = True,
         quality: bool = True,
-        check: bool = False,
+        check: bool = True,
         trimmed=True,
     ):
         """
@@ -1204,21 +1332,26 @@ class Processor:
         """
         export_selections = [standard, quality, check]
         if trimmed:
-            std_series = filters.trim_series(
-                self._standard_series,
-                self._check_series,
+            std_data = filters.trim_series(
+                self._standard_data["Value"],
+                self._check_data["Value"],
             )
         else:
-            std_series = self._standard_series
+            std_data = self._standard_data
 
         if ftype == "csv":
-            all_series = [
-                self._standard_series,
-                self._quality_series,
-                self._check_series,
+            all_data = [
+                self._standard_data["Value"],
+                self._quality_data["Value"],
+                self._check_data["Value"],
             ]
+            columns = ["Standard", "Quality", "Check"]
+
+            for data, col in zip(all_data, columns, strict=True):
+                data.name = col
+
             export_list = [
-                i for (i, v) in zip(all_series, export_selections, strict=True) if v
+                i for (i, v) in zip(all_data, export_selections, strict=True) if v
             ]
             data_sources.series_export_to_csv(file_location, series=export_list)
         elif ftype == "hilltop_csv":
@@ -1226,9 +1359,9 @@ class Processor:
                 file_location,
                 self._site,
                 self._quality_code_evaluator.name,
-                std_series,
-                self._check_series,
-                self._quality_series,
+                std_data,
+                self._check_data["Value"],
+                self._quality_data["Value"],
             )
         elif ftype == "xml":
             blob_list = self.to_xml_data_structure(
@@ -1260,18 +1393,18 @@ class Processor:
         >>> # View diagnostic information about the data.
         """
         evaluator.diagnose_data(
-            self._standard_series,
-            self._check_series,
-            self._quality_series,
+            self._standard_data["Value"],
+            self._check_data["Value"],
+            self._quality_data["Value"],
             self._frequency,
         )
 
     def plot_qc_series(self, check=False, show=True):
         """Implement qc_plotter()."""
         fig = plotter.qc_plotter_plotly(
-            self._standard_series,
-            (self._check_series if check else None),
-            self._quality_series,
+            self._standard_data["Value"],
+            (self._check_data["Value"] if check else None),
+            self._quality_data["Value"],
             self._frequency,
             show=show,
         )
@@ -1280,10 +1413,10 @@ class Processor:
     def plot_comparison_qc_series(self, show=True):
         """Implement comparison_qc_plotter()."""
         fig = plotter.comparison_qc_plotter_plotly(
-            self._standard_series,
-            self.raw_standard_series,
-            self._check_series,
-            self._quality_series,
+            self._standard_data["Value"],
+            self._standard_data["Raw"],
+            self._check_data["Value"],
+            self._quality_data["Value"],
             self._frequency,
             show=show,
         )
@@ -1319,9 +1452,9 @@ class Processor:
         >>> # Display a plot showing gaps in the standard series.
         """
         if span is None:
-            plotter.gap_plotter(self._standard_series, show=show)
+            plotter.gap_plotter(self._standard_data["Value"], show=show)
         else:
-            plotter.gap_plotter(self._standard_series, span, show=show)
+            plotter.gap_plotter(self._standard_data["Value"], span, show=show)
 
     def plot_checks(self, span=None, show=True):
         """
@@ -1353,10 +1486,17 @@ class Processor:
         >>> # Display a plot comparing checks to the standard series.
         """
         if span is None:
-            plotter.check_plotter(self._standard_series, self._check_series, show=show)
+            plotter.check_plotter(
+                self._standard_data["Value"],
+                self._check_data["Value"],
+                show=show,
+            )
         else:
             plotter.check_plotter(
-                self._standard_series, self._check_series, span, show=show
+                self._standard_data["Value"],
+                self._check_data["Value"],
+                span,
+                show=show,
             )
 
     def to_xml_data_structure(self, standard=True, quality=True, check=True):
@@ -1384,114 +1524,147 @@ class Processor:
         >>> # Convert Processor data to a list of XML data structures.
         """
         data_blob_list = []
-        selections = [standard, quality, check]
-        dtypes = ["standard", "quality", "check"]
-        blobs = [
-            self.raw_standard_blob,
-            self.raw_quality_blob,
-            self.raw_check_blob,
-        ]
-        selected_types = [dt for sel, dt in zip(selections, dtypes, strict=True) if sel]
-        selected_blobs = [
-            blob for sel, blob in zip(selections, blobs, strict=True) if sel
-        ]
 
-        for dtype, raw_blob in zip(selected_types, selected_blobs, strict=True):
-            if raw_blob is None:
-                raise ValueError(
-                    f"Can't reconstruct the {dtype} data structure without having an xml import"
-                    " to mimic."
-                )
-            if (
-                hasattr(raw_blob, "data_source")
-                and raw_blob.data_source is not None
-                and hasattr(raw_blob.data_source, "item_info")
-                and (raw_blob.data_source.item_info) is not None
-            ):
-                item_info_list = []
-                for i, info in enumerate(raw_blob.data_source.item_info):
-                    item_info = data_structure.ItemInfo(
-                        item_number=i,
-                        item_name=info.item_name,
-                        item_format=info.item_format,
-                        divisor=info.divisor,
-                        units=info.units,
-                        format=info.format,
+        if standard:
+            standard_item_info = data_structure.ItemInfo(
+                item_number=1,
+                item_name=self.standard_item_info["ItemName"],
+                item_format=self.standard_item_info["ItemFormat"],
+                divisor=self.standard_item_info["Divisor"],
+                units=self.standard_item_info["Units"],
+                format=self.standard_item_info["Format"],
+            )
+            standard_data_source = data_structure.DataSource(
+                name=self.standard_data_source_name,
+                num_items=1,
+                ts_type="StdSeries",
+                data_type="SimpleTimeSeries",
+                interpolation="Instant",
+                item_format="1",
+                item_info=[standard_item_info],
+            )
+            formatted_std_timeseries = self.standard_data["Value"].astype(str)
+            if standard_item_info.item_format == "F":
+                pattern = re.compile(r"#+\.?(#*)")
+                match = pattern.match(standard_item_info.format)
+                float_format = "{:.1f}"
+                if match:
+                    group = match.group(1)
+                    dp = len(group)
+                    float_format = "{:." + str(dp) + "f}"
+                    formatted_std_timeseries = (
+                        self.standard_data["Value"]
+                        .astype(np.float64)
+                        .map(lambda x, f=float_format: f.format(x))
                     )
-                    item_info_list += [item_info]
-            else:
-                item_info_list = []
 
-            data_source = data_structure.DataSource(
-                name=self._standard_measurement_name,
-                num_items=raw_blob.data_source.num_items,
-                ts_type=raw_blob.data_source.ts_type,
-                data_type=raw_blob.data_source.data_type,
-                interpolation=raw_blob.data_source.interpolation,
-                item_format=raw_blob.data_source.item_format,
-                item_info=raw_blob.data_source.item_info,
+            actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
+            print(actual_nan_timeseries)
+
+            # TODO: Handle gaps
+            standard_timeseries = evaluator.small_gap_closer(
+                actual_nan_timeseries,
+                gap_limit=self._defaults["gap_limit"],
             )
 
-            if dtype == "standard":
-                if isinstance(self._standard_series, pd.Series):
-                    timeseries = self._standard_series
-                else:
-                    raise TypeError(
-                        "Standard Series should be pd.Series, "
-                        f"found {type(self._standard_series)}"
-                    )
-
-            elif dtype == "quality":
-                if isinstance(self._quality_series, pd.Series):
-                    timeseries = self._quality_series
-                else:
-                    raise TypeError(
-                        "Quality Series should be pd.Series, "
-                        f"found {type(self._quality_series)}"
-                    )
-            elif dtype == "check":
-                if isinstance(self._check_series, pd.Series):
-                    timeseries = self.raw_check_data
-                    timeseries[self.check_item_name] = self._check_series
-                else:
-                    raise TypeError(
-                        "Check Data should be pd.Series, "
-                        f"found {type(self._check_series)}"
-                    )
-            else:
-                raise ValueError("No data found for export.")
-            if (
-                hasattr(raw_blob.data_source, "item_info")
-                and raw_blob.data_source.item_info is not None
-            ):
-                for i, info in enumerate(raw_blob.data_source.item_info):
-                    if info.item_format == "F":
-                        pattern = re.compile(r"#+\.?(#*)")
-                        match = pattern.match(info.format)
-                        float_format = "{:.1f}"
-                        if match:
-                            group = match.group(1)
-                            dp = len(group)
-                            float_format = "{:." + str(dp) + "f}"
-                        if isinstance(timeseries, pd.DataFrame):
-                            timeseries.iloc[:, i] = timeseries.iloc[:, i].map(
-                                lambda x, f=float_format: f.format(x)
-                            )
-                        elif isinstance(timeseries, pd.Series):
-                            timeseries = timeseries.map(
-                                lambda x, f=float_format: f.format(x)
-                            )
-            data = data_structure.Data(
-                date_format=raw_blob.data.date_format,
-                num_items=raw_blob.data.num_items,
-                timeseries=timeseries,
+            standard_data = data_structure.Data(
+                date_format="Calendar",
+                num_items=3,
+                timeseries=standard_timeseries.to_frame(),
             )
 
-            data_blob = data_structure.DataSourceBlob(
-                site_name=raw_blob.site_name,
-                data_source=data_source,
-                data=data,
+            standard_data_blob = data_structure.DataSourceBlob(
+                site_name=self.site,
+                data_source=standard_data_source,
+                data=standard_data,
+            )
+            data_blob_list += [standard_data_blob]
+
+        if check:
+            check_item_info = data_structure.ItemInfo(
+                item_number=1,
+                item_name=self.check_item_info["ItemName"],
+                item_format=self.check_item_info["ItemFormat"],
+                divisor=self.check_item_info["Divisor"],
+                units=self.check_item_info["Units"],
+                format=self.check_item_info["Format"],
+            )
+            recorder_time_item_info = data_structure.ItemInfo(
+                item_number=2,
+                item_name="Recorder Time",
+                item_format="D",
+                divisor="1",
+                units="",
+                format="###",
+            )
+            comment_item_info = data_structure.ItemInfo(
+                item_number=3,
+                item_name="Comment",
+                item_format="F",
+                divisor="1",
+                units="",
+                format="###",
             )
 
-            data_blob_list += [data_blob]
+            check_data_source = data_structure.DataSource(
+                name=self.check_data_source_name,
+                num_items=3,
+                ts_type="CheckSeries",
+                data_type="SimpleTimeSeries",
+                interpolation="Discrete",
+                item_format="45",
+                item_info=[
+                    check_item_info,
+                    recorder_time_item_info,
+                    comment_item_info,
+                ],
+            )
+
+            if check_item_info.item_format == "F":
+                pattern = re.compile(r"#+\.?(#*)")
+                match = pattern.match(check_item_info.format)
+                float_format = "{:.1f}"
+                if match:
+                    group = match.group(1)
+                    dp = len(group)
+                    float_format = "{:." + str(dp) + "f}"
+                    self.check_data.loc[:, "Value"] = self.check_data.loc[
+                        :, "Value"
+                    ].map(lambda x, f=float_format: f.format(x))
+
+            check_data = data_structure.Data(
+                date_format="Calendar",
+                num_items=3,
+                timeseries=self.check_data[["Value", "Recorder Time", "Comment"]],
+            )
+
+            check_data_blob = data_structure.DataSourceBlob(
+                site_name=self.site,
+                data_source=check_data_source,
+                data=check_data,
+            )
+            data_blob_list += [check_data_blob]
+
+        if quality:
+            quality_data_source = data_structure.DataSource(
+                name=self.standard_data_source_name,
+                num_items=1,
+                ts_type="StdQualSeries",
+                data_type="SimpleTimeSeries",
+                interpolation="Event",
+                item_format="0",
+            )
+
+            quality_data = data_structure.Data(
+                date_format="Calendar",
+                num_items=3,
+                timeseries=self.quality_data["Value"].to_frame(),
+            )
+
+            quality_data_blob = data_structure.DataSourceBlob(
+                site_name=self.site,
+                data_source=quality_data_source,
+                data=quality_data,
+            )
+            data_blob_list += [quality_data_blob]
         return data_blob_list
