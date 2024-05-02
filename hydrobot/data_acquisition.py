@@ -3,6 +3,7 @@
 from xml.etree import ElementTree
 
 import pandas as pd
+import yaml
 from annalist.annalist import Annalist
 from hilltoppy.utils import build_url, get_hilltop_xml
 
@@ -229,3 +230,30 @@ def import_ncr(filename):
     except FileNotFoundError:
         ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     return ncr_df
+
+
+def config_yaml_import(file_name: str):
+    """
+    Import config.yaml.
+
+    Parameters
+    ----------
+    file_name : str
+        Path to config.yaml
+
+    Returns
+    -------
+    dict
+        For inputting into processor processing_parameters
+    """
+    with open(file_name) as yaml_file:
+        processing_parameters = yaml.safe_load(yaml_file)
+
+    if "inspection_expiry" in processing_parameters:
+        a = processing_parameters["inspection_expiry"]
+        d = {}
+        for key in a:
+            d[pd.DateOffset(**a[key])] = key
+        processing_parameters["inspection_expiry"] = d
+
+    return processing_parameters

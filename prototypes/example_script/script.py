@@ -2,8 +2,6 @@
 
 import pandas as pd
 import streamlit as st
-import yaml
-from annalist.annalist import Annalist
 
 from hydrobot.data_acquisition import (
     import_inspections,
@@ -11,44 +9,14 @@ from hydrobot.data_acquisition import (
     import_prov_wq,
 )
 from hydrobot.plotter import make_processing_dash
-from hydrobot.processor import Processor
+from hydrobot.processor import hydrobot_config_yaml_init
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 
-with open("config.yaml") as yaml_file:
-    processing_parameters = yaml.safe_load(yaml_file)
-
-#######################################################################################
-# Setting up logging with Annalist
-#######################################################################################
-
-ann = Annalist()
-ann.configure(
-    logfile=processing_parameters["logfile"],
-    analyst_name=processing_parameters["analyst_name"],
-    stream_format_str=processing_parameters["format"]["stream"],
-    file_format_str=processing_parameters["format"]["file"],
-)
-
-#######################################################################################
-# Creating a Hydrobot Processor object which contains the data to be processed
-#######################################################################################
-
-data = Processor(
-    processing_parameters["base_url"],
-    processing_parameters["site"],
-    processing_parameters["standard_hts_filename"],
-    processing_parameters["standard_measurement_name"],
-    processing_parameters["frequency"],
-    processing_parameters["from_date"],
-    processing_parameters["to_date"],
-    processing_parameters["check_hts_filename"],
-    processing_parameters["check_measurement_name"],
-    processing_parameters["defaults"],
-)
+data, ann = hydrobot_config_yaml_init("config.yaml")
 
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
@@ -70,14 +38,11 @@ data.check_series = pd.concat(
 ).sort_index()
 
 data.check_series = data.check_series.loc[
-    (data.check_series.index >= processing_parameters["from_date"])
-    & (data.check_series.index <= processing_parameters["to_date"])
+    (data.check_series.index >= data.from_date())
+    & (data.check_series.index <= data.to_date())
 ]
 
-print(data.check_series)
-
 all_comments = merge_all_comments(data.raw_check_data, prov_wq, inspections, ncrs)
-quit()
 
 #######################################################################################
 # Common auto-processing steps
@@ -105,7 +70,7 @@ data.gap_closer()
 #     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
 #     "wrong temperature into Survey123 at this site."
 # )
-# data.check_series = data.check_series.drop("2023-10-19T11:55:00")
+data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
 
 #######################################################################################
 # Assign quality codes
@@ -125,21 +90,20 @@ data.data_exporter("processed.xml")
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
 
-quit()
 #######################################################################################
 # Launch Hydrobot Processing Visualiser (HPV)
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-st.set_page_config(page_title="Hydrobot 0.5.2", layout="wide")
-st.title(f"{processing_parameters['site']}")
-st.header(f"{processing_parameters['standard_measurement_name']}")
+st.set_page_config(page_title="Hydrobot0.5.1", layout="wide")
+st.title(f"{data.site()}")
+st.header(f"{data.standard_measurement_name()}")
 
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    processing_parameters["site"],
+    data.site(),
     data.raw_standard_series,
     data.standard_series,
     data.raw_check_data,
@@ -151,8 +115,3 @@ fig_subplots = make_processing_dash(
 st.plotly_chart(fig_subplots, use_container_width=True)
 
 st.dataframe(all_comments, use_container_width=True)
-
-# fig_subplots.show()
-# data.plot_qc_series(show=false)race(go.scatter())
-# data.plot_gaps(show=False)
-# data.plot_checks(show=False)

@@ -37,3 +37,11 @@ s123_database: "survey123"
 s123_query_type: "WaterTemp"
 # s123_sql_driver: "SQL Server" # If on Windows
 s123_sql_driver: "/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.5.1" # If on WSL
+
+inspection_expiry:
+    500:
+        months: 2
+    400:
+        months: 4
+    200:
+        months: 6

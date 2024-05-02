@@ -2,7 +2,6 @@
 
 import re
 import warnings
-from functools import wraps
 
 import numpy as np
 import pandas as pd
@@ -30,52 +29,6 @@ DEFAULTS = {
     "gap_limit": 12,
     "max_qc": np.NaN,
 }
-
-
-def stale_warning(method):
-    """Decorate dangerous functions.
-
-    Check whether the data is stale, and warn user if so.
-    Warning will then take input form user to determine whether to proceed or cancel.
-    Cancelling will return a null function, which returns None with no side effects no
-    matter what the input
-
-    Currently broken
-
-    Parameters
-    ----------
-    method : function
-        A function that might have some problems if the parameters have been changed
-        but the data hasn't been updated
-
-    Returns
-    -------
-    function
-        null function if warning is heeded, otherwise
-    """
-
-    @wraps(method)
-    def _impl(self, *method_args, **method_kwargs):
-        if self._stale:
-            warnings.warn(
-                "Warning: a key parameter of the data has changed but the data itself "
-                "has not been reloaded.",
-                stacklevel=2,
-            )
-            while True:
-                user_input = input("Do you want to continue? y/n: ")
-
-                if user_input.lower() in ["y", "ye", "yes"]:
-                    print("Continuing")
-                    return method(self, *method_args, **method_kwargs)
-                if user_input.lower() in ["n", "no"]:
-                    print("Function cancelled")
-                    return lambda *_: None
-                print("Type y or n (or yes or no, or even ye, all ye who enter here)")
-        else:
-            return method(self, *method_args, **method_kwargs)
-
-    return _impl
 
 
 class Processor:
@@ -847,7 +800,6 @@ class Processor:
         combined = utils.merge_series(self.quality_series, extra_quality)
         self.quality_series = combined
 
-    # @stale_warning  # type: ignore
     @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
         """
@@ -893,7 +845,6 @@ class Processor:
         )
         self._standard_data = self._standard_data.loc[gapless.index]
 
-    # @stale_warning  # type: ignore
     @ClassLogger
     def quality_encoder(
         self, gap_limit: int | None = None, max_qc: int | float | None = None
@@ -1041,7 +992,6 @@ class Processor:
             self._standard_data, rm_outliers, "OUT", mark_remove=True
         )
 
-    # @stale_warning  # type: ignore
     @ClassLogger
     def remove_spikes(
         self,
@@ -1667,3 +1617,49 @@ class Processor:
             )
             data_blob_list += [quality_data_blob]
         return data_blob_list
+
+
+def hydrobot_config_yaml_init(config_path):
+    """
+    Initialises a Processor class given a config file.
+
+    Parameters
+    ----------
+    config_path : string
+        Path to config.yaml.
+
+    Returns
+    -------
+    Processor, Annalist
+    """
+    processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+    #######################################################################################
+    # Setting up logging with Annalist
+    #######################################################################################
+
+    ann = Annalist()
+    ann.configure(
+        logfile=processing_parameters["logfile"],
+        analyst_name=processing_parameters["analyst_name"],
+        stream_format_str=processing_parameters["format"]["stream"],
+        file_format_str=processing_parameters["format"]["file"],
+    )
+
+    #######################################################################################
+    # Creating a Hydrobot Processor object which contains the data to be processed
+    #######################################################################################
+
+    data = Processor(
+        processing_parameters["base_url"],
+        processing_parameters["site"],
+        processing_parameters["standard_hts_filename"],
+        processing_parameters["standard_measurement_name"],
+        processing_parameters["frequency"],
+        processing_parameters["from_date"],
+        processing_parameters["to_date"],
+        processing_parameters["check_hts_filename"],
+        processing_parameters["check_measurement_name"],
+        processing_parameters["defaults"],
+    )
+    return data, ann
