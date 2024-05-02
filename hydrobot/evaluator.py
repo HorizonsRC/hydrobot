@@ -448,7 +448,7 @@ def quality_encoder(
         The modified QC series, indexed by the start time of the QC period
     """
     qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
-    qc_series = downgrade_out_of_validation(qc_series, check_series)
+    qc_series = bulk_downgrade_out_of_validation(qc_series, check_series)
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series = max_qc_limiter(qc_series, max_qc)
     # qc_series.index.name = "Time"
@@ -457,9 +457,49 @@ def quality_encoder(
 
 
 _default_date_offset = pd.DateOffset(months=2)
+_default_date_offset_dict = {
+    pd.DateOffset(months=2): 500,
+    pd.DateOffset(months=4): 400,
+    pd.DateOffset(months=6): 200,
+}
 
 
-def downgrade_out_of_validation(
+def bulk_downgrade_out_of_validation(
+    qc_series: pd.Series,
+    check_series: pd.Series,
+    interval_dict: dict = _default_date_offset_dict,
+    day_end_rounding: bool = True,
+):
+    """
+    Applies caps on quality codes for any data that has gaps between check data that is too large.
+
+    Utilises single_downgrade_out_of_validation multiple times for different time periods.
+
+    Parameters
+    ----------
+    qc_series : pd.Series
+        Quality series that potentially needs downgrading
+    check_series : pd.Series
+        Check series to check for frequency of checks
+    interval_dict : dict
+        Key:Value pairs of max_interval:downgraded_qc for single_downgrade_out_of_validation
+    day_end_rounding : bool
+        Whether to round to the day end. If true, downgraded data starts at midnight
+
+    Returns
+    -------
+    pd.Series
+        The qc_series with any downgraded QCs added in
+
+    """
+    for key in interval_dict:
+        qc_series = single_downgrade_out_of_validation(
+            qc_series, check_series, key, interval_dict[key], day_end_rounding
+        )
+    return qc_series
+
+
+def single_downgrade_out_of_validation(
     qc_series: pd.Series,
     check_series: pd.Series,
     max_interval: pd.DateOffset = _default_date_offset,
@@ -467,7 +507,9 @@ def downgrade_out_of_validation(
     day_end_rounding: bool = True,
 ):
     """
-    Downgrades any data that has gaps between check data that is too large.
+    Applies a cap on quality codes for any data that has gaps between check data that is too large.
+
+    Only applies a single cap quality code, see bulk_downgrade_out_of_validation for multiple steps.
 
     Parameters
     ----------
@@ -485,7 +527,7 @@ def downgrade_out_of_validation(
     Returns
     -------
     pd.Series
-        The qc_series with any downgraded data added in
+        The qc_series with any downgraded QCs added in
     """
     # When they should have their next check by
     due_date = check_series.index + max_interval
@@ -493,7 +535,9 @@ def downgrade_out_of_validation(
     if day_end_rounding:
         due_date = due_date.ceil("D")
     # Whether there has been a check since then
-    overdue = due_date < check_series.index[1:]
+    overdue = (due_date < check_series.index[1:]) & (
+        qc_series[check_series.index[:-1]] > downgraded_qc
+    )
     # Select overdue times
     unvalidated = due_date[overdue]
     downgraded_times = pd.Series([downgraded_qc for i in unvalidated], unvalidated)
