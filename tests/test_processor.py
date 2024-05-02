@@ -82,7 +82,6 @@ def mock_xml_data():
     """Mock response from get_hilltop_xml server call method."""
     with open("tests/test_data/xml_test_data_file.xml") as f:
         xml_string = f.read()
-
     return xml_string
 
 
@@ -414,14 +413,13 @@ def test_processor_init(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        standard_measurement_name=MEASUREMENTS[1],
-        check_measurement_name=CHECK_MEASUREMENTS[1],
-        frequency="5min",
+        standard_measurement_name=MEASUREMENTS[0],
+        check_measurement_name=CHECK_MEASUREMENTS[0],
+        frequency="15min",
     )
 
     captured = capsys.readouterr()
     ann_output = captured.err.split("\n")
-
     correct = [
         "import_standard | Mid Stream at Cowtoilet Farm",
         "import_quality | Mid Stream at Cowtoilet Farm",
@@ -435,10 +433,11 @@ def test_processor_init(
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
+
     assert pr.raw_standard_blob is not None
     assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
-    assert float(pr.standard_data.loc["2023-01-01 00:10:00", "Value"]) == pytest.approx(
-        1882.1
+    assert float(pr.standard_data.loc["2023-01-01 00:45:00", "Value"]) == pytest.approx(
+        17.8
     )
     assert pr.standard_data.index.dtype == np.dtype("datetime64[ns]")
     assert pr.quality_data.index.dtype == np.dtype("datetime64[ns]")
@@ -541,7 +540,7 @@ def test_to_xml_data_structure(
             standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
             check_measurement_name=check,
-            frequency="5min",
+            frequency="15min",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -642,7 +641,7 @@ def test_import_data(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
@@ -734,39 +733,39 @@ def test_remove_range(
     monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
 
     from_date = "2023-01-01"
-    to_date = "2023/01/01 00:20"
+    to_date = "2023/01/01 01:00"
 
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
-    del_from = "2023-01-01 00:05:00"
-    del_to = "2023-01-01 00:15:00"
+    del_from = "2023-01-01 00:15:00"
+    del_to = "2023-01-01 00:45:00"
 
     pr.remove_range(
         del_from,
         del_to,
     )
 
-    assert pd.isna(pr.standard_data.loc["2023-01-01 00:05:00", "Value"])
-    assert pd.isna(pr.standard_data.loc["2023-01-01 00:10:00", "Value"])
     assert pd.isna(pr.standard_data.loc["2023-01-01 00:15:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:30:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:45:00", "Value"])
 
-    assert pr.standard_data.loc["2023-01-01 00:05:00", "Changes"] == "MAN"
-    assert pr.standard_data.loc["2023-01-01 00:10:00", "Changes"] == "MAN"
     assert pr.standard_data.loc["2023-01-01 00:15:00", "Changes"] == "MAN"
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Changes"] == "MAN"
+    assert pr.standard_data.loc["2023-01-01 00:45:00", "Changes"] == "MAN"
 
-    assert pr.standard_data.loc["2023-01-01 00:05:00", "Remove"]
-    assert pr.standard_data.loc["2023-01-01 00:10:00", "Remove"]
     assert pr.standard_data.loc["2023-01-01 00:15:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:45:00", "Remove"]
 
 
 def test_clip(
@@ -840,14 +839,14 @@ def test_clip(
     monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
 
     from_date = "2023-01-01"
-    to_date = "2023/01/01 00:20"
+    to_date = "2023/01/01 02:00"
 
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
@@ -941,14 +940,14 @@ def test_remove_spikes(
     monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
 
     from_date = "2023-01-01"
-    to_date = "2023/01/01 00:20"
+    to_date = "2023/01/01 02:00"
 
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
@@ -1039,14 +1038,14 @@ def test_remove_flatlined_values(
     monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
 
     from_date = "2023-01-01"
-    to_date = "2023/01/01 00:20"
+    to_date = "2023/01/01 00:30"
 
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
@@ -1054,13 +1053,19 @@ def test_remove_flatlined_values(
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
+    flatty = pr.standard_data.loc["2023-01-01 00:00:00", "Value"]
+    pr.standard_data.loc["2023-01-01 00:15:00", "Value"] = flatty
+    pr.standard_data.loc["2023-01-01 00:30:00", "Value"] = flatty
+    pr.standard_data.loc["2023-01-01 00:45:00", "Value"] = flatty
+
     pr.remove_flatlined_values()
+    print(pr.standard_data.head())
 
-    assert pd.isna(pr.standard_data.loc["2023-01-01 00:20:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:30:00", "Value"])
 
-    assert pr.standard_data.loc["2023-01-01 00:20:00", "Changes"] == "FLN"
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Changes"] == "FLN"
 
-    assert pr.standard_data.loc["2023-01-01 00:20:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Remove"]
 
 
 def test_gap_closer(
@@ -1143,15 +1148,15 @@ def test_gap_closer(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
     # Checking that the data points I want to delete actually exist:
-    start_idx = "2023-01-01 00:20:00"
-    end_idx = "2023-01-01 00:25:00"
+    start_idx = "2023-01-01 00:15:00"
+    end_idx = "2023-01-01 00:45:00"
     assert pd.to_datetime(start_idx) in pr.standard_data.index
     assert pd.to_datetime(end_idx) in pr.standard_data.index
 
@@ -1185,6 +1190,43 @@ def test_gap_closer(
     ), "processor.gap_closer appears to be broken."
     assert (
         pd.to_datetime(end_idx) not in pr.standard_data
+    ), "processor.gap_closer appears to be broken."
+
+    # Make a LARGE gap
+    # Checking that the data points I want to delete actually exist:
+    start_idx = "2023-01-01 05:00:00"
+    end_idx = "2023-01-05 00:00:00"
+    assert pd.to_datetime(start_idx) in pr.standard_data.index
+    assert pd.to_datetime(end_idx) in pr.standard_data.index
+    pr.delete_range(start_idx, end_idx)
+
+    # Check that gap was made
+    assert (
+        pd.to_datetime(start_idx) not in pr.standard_data.index
+    ), "processor.delete_range appears to be broken."
+    assert (
+        pd.to_datetime(end_idx) not in pr.standard_data.index
+    ), "processor.delete_range appears to be broken."
+
+    # Insert nans where values are missing
+    pr.insert_missing_nans()
+    # Check that NaNs are inserted
+    assert pd.isna(
+        pr.standard_data.loc[start_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+    assert pd.isna(
+        pr.standard_data.loc[end_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+
+    # "Close" gaps (i.e. remove nan rows)
+    pr.gap_closer()
+
+    # Check that gap was NOT closed
+    assert pd.isna(
+        pr.standard_data.loc[start_idx, "Value"]
+    ), "processor.gap_closer appears to be broken."
+    assert pd.isna(
+        pr.standard_data.loc[end_idx, "Value"]
     ), "processor.gap_closer appears to be broken."
 
 
@@ -1234,21 +1276,20 @@ def test_data_export(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
     # Checking that the data points I want to delete actually exist:
-    start_idx = "2023-01-01 00:20:00"
-    end_idx = "2023-01-01 00:25:00"
+    start_idx = "2023-01-01 00:15:00"
+    end_idx = "2023-01-05 00:45:00"
     assert pd.to_datetime(start_idx) in pr.standard_data["Value"]
     assert pd.to_datetime(end_idx) in pr.standard_data["Value"]
 
-    # =======================Make a small gap========================
-    print("Gappy Chappy")
-    pr.delete_range(start_idx, end_idx)
+    # =======================Make a gap========================
+    pr.remove_range(start_idx, end_idx)
 
     gap_path_csv = tmp_path / "gap_output.csv"
     gap_path_hilltop_csv = tmp_path / "gap_output_hilltop"
@@ -1257,7 +1298,6 @@ def test_data_export(
     pr.data_exporter(gap_path_csv, ftype="csv")
 
     read_csv_df = pd.read_csv(gap_path_csv)
-    print(read_csv_df)
     # Check that the csv was filled in with nans where there are no quality values
     assert pd.isna(read_csv_df["Quality"].iloc[1])
 
@@ -1275,9 +1315,8 @@ def test_data_export(
     assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
     assert start_idx not in list(read_hilltop_check_csv_df.index)
 
-    print("Before xml export:", pr.quality_data.index)
     pr.data_exporter(gap_path_xml, ftype="xml")
-    print("After xml export:", pr.quality_data.index)
+
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
@@ -1289,9 +1328,7 @@ def test_data_export(
     # =======================Insert Nans========================
     # This is how we internally represent gaps. They need to be converted to the Gap
     # tag for xml export.
-    print("Before nans:", pr.quality_data.index)
     pr.insert_missing_nans()
-    print("After nans:", pr.quality_data.index)
 
     pr.data_exporter(gap_path_csv, ftype="csv")
 
@@ -1310,85 +1347,14 @@ def test_data_export(
     # Check that the deleted values have not been filled somehow
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
     # assert start_idx not in list(read_hilltop_check_csv_df.index)
-    print(read_hilltop_std_qc_csv_df)
-    print(read_hilltop_check_csv_df)
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
 
-    print(gap_path_xml.read_text())
+    assert gap_path_xml.read_text().split("\n")[22].strip() == "<Gap />"
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
     assert gap_path_blob is not None
     std_indices = gap_path_blob[0].data.timeseries.index
     assert start_idx not in list(std_indices)
-
-
-def test_xml_reconstruction(
-    monkeypatch,
-    mock_site_list,
-    mock_measurement_list,
-    mock_get_data_no_check,
-    mock_get_data_no_qual,
-    mock_qc_evaluator_dict,
-    tmp_path,
-):
-    """Test the 'data_exporter' method of the Processor class."""
-
-    def get_mock_site_list(*args, **kwargs):
-        _ = args, kwargs
-        return mock_site_list
-
-    def get_mock_measurement_list(*args, **kwargs):
-        _ = args, kwargs
-        return mock_measurement_list
-
-    def get_mock_get_data_no_check(*args, **kwargs):
-        xml, data_func = mock_get_data_no_check
-        return xml, data_func(*args, **kwargs)
-
-    def get_mock_get_data_no_qual(*args, **kwargs):
-        xml, data_func = mock_get_data_no_qual
-        return xml, data_func(*args, **kwargs)
-
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
-        _ = args, kwargs
-        return mock_qc_evaluator_dict
-
-    ann.configure(stream_format_str="%(function_name)s | %(site)s")
-
-    # Here we patch the Hilltop Class
-    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
-    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
-    monkeypatch.setattr(
-        data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
-    )
-
-    # However, in this case, we need to patch the INSTANCE as imported in
-    # data_acquisition. Not sure if this makes sense to me, but it works.
-    monkeypatch.setattr(
-        "hydrobot.data_acquisition.get_data", get_mock_get_data_no_check
-    )
-
-    pr = processor.Processor(
-        base_url="https://greenwashed.and.pleasant/",
-        site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
-    )
-    # Checking that the data points I want to delete actually exist:
-    start_idx = "2023-01-01 00:20:00"
-    end_idx = "2023-01-01 00:25:00"
-    assert pd.to_datetime(start_idx) in pr.standard_data.index
-    assert pd.to_datetime(end_idx) in pr.standard_data.index
-    # =======================Make a small gap========================
-    pr.delete_range(start_idx, end_idx)
-
-    gap_path_xml = "test_output.xml"
-
-    pr.data_exporter(gap_path_xml, ftype="xml")
-    print("After xml export:", pr.quality_data.index)

@@ -70,7 +70,7 @@ def stale_warning(method):
                     return method(self, *method_args, **method_kwargs)
                 if user_input.lower() in ["n", "no"]:
                     print("Function cancelled")
-                    return lambda *x: None
+                    return lambda *_: None
                 print("Type y or n (or yes or no, or even ye, all ye who enter here)")
         else:
             return method(self, *method_args, **method_kwargs)
@@ -1559,7 +1559,6 @@ class Processor:
                     )
 
             actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
-            print(actual_nan_timeseries)
 
             # TODO: Handle gaps
             standard_timeseries = evaluator.small_gap_closer(

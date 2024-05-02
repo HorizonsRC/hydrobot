@@ -12,7 +12,7 @@
                 <ItemFormat>I</ItemFormat>
                 <Divisor>1</Divisor>
                 <Units>out of 10</Units>
-                <Format>#.###</Format>
+                <Format>###.##</Format>
             </ItemInfo>
         </DataSource>
         <Data DateFormat="mowsecs" NumItems="1">

@@ -509,7 +509,8 @@ def downgrade_out_of_validation(
     overdue = due_date < check_series.index[1:]
     # Select overdue times
     unvalidated = due_date[overdue]
-    downgraded_times = pd.Series([downgraded_qc for i in unvalidated], unvalidated)
+    downgraded_times = pd.Series([downgraded_qc for _ in unvalidated], unvalidated)
+
     # combine and sort
     if not downgraded_times.empty:
         qc_series = pd.concat([qc_series, downgraded_times]).sort_index()
