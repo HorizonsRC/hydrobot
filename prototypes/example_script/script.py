@@ -1,4 +1,11 @@
-"""Script to run through a processing task with the processor class."""
+r"""Script to run through a processing task with the processor class.
+
+Run command:
+
+cd .\prototypes\example_script\
+streamlit run .\script.py
+
+"""
 
 import pandas as pd
 import streamlit as st
@@ -37,8 +44,8 @@ data.check_series = pd.concat(
 ).sort_index()
 
 data.check_series = data.check_series.loc[
-    (data.check_series.index >= data.from_date())
-    & (data.check_series.index <= data.to_date())
+    (data.check_series.index >= data.from_date)
+    & (data.check_series.index <= data.to_date)
 ]
 
 all_comments = merge_all_comments(data.raw_check_data, prov_wq, inspections, ncrs)
@@ -70,7 +77,7 @@ data.gap_closer()
 #     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
 #     "wrong temperature into Survey123 at this site."
 # )
-data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
+# data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
 
 #######################################################################################
 # Assign quality codes
@@ -96,14 +103,14 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 st.set_page_config(page_title="Hydrobot0.5.1", layout="wide")
-st.title(f"{data.site()}")
-st.header(f"{data.standard_measurement_name()}")
+st.title(f"{data.site}")
+st.header(f"{data.standard_measurement_name}")
 
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    data.site(),
+    data.site,
     data.raw_standard_series,
     data.standard_series,
     data.raw_check_data,
