@@ -186,6 +186,7 @@ class Processor:
                 "Recorder Time",
                 "Comment",
                 "Source",
+                "QC",
             ]
         ).set_index("Time")
         self._quality_data = pd.DataFrame(
@@ -702,6 +703,8 @@ class Processor:
                 self.check_data["Value"] = self.check_data["Raw"]
                 self.check_data["Recorder Time"] = raw_check_data["Recorder Time"]
                 self.check_data["Comment"] = raw_check_data["Comment"]
+                self.check_data["Source"] = "HTP"
+                self.check_data["QC"] = True
 
     def import_data(
         self,
@@ -881,9 +884,11 @@ class Processor:
             gap_limit = int(self._defaults["gap_limit"])
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+
+        qc_checks = self.check_data[self.check_data["QC"]]
         self.quality_data["Value"] = evaluator.quality_encoder(
             self._standard_data["Value"],
-            self._check_data["Value"],
+            qc_checks["Value"],
             self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,

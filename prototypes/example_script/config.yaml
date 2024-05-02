@@ -14,7 +14,7 @@ check_measurement_name: "Water Temperature Check [Water Temperature]"
 frequency: "15min"
 
 # Processing Configuration
-from_date: "2023-06-15 10:30"
+from_date: "2023-01-15 10:30"
 to_date: "2023-06-15 15:30"
 defaults:
   delta: 5

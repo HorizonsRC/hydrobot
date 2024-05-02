@@ -193,6 +193,12 @@ def import_inspections(filename):
             insp_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     except FileNotFoundError:
         insp_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+
+    insp_df["Value"] = insp_df["Temp Check"]
+    insp_df["Raw"] = insp_df["Temp Check"]
+    insp_df = insp_df[~insp_df["Value"].isna()]
+    insp_df["Source"] = "INS"
+    insp_df["QC"] = True
     return insp_df
 
 
@@ -211,6 +217,11 @@ def import_prov_wq(filename):
             prov_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
     except FileNotFoundError:
         prov_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+    prov_df["Value"] = prov_df["Temp Check"]
+    prov_df["Raw"] = prov_df["Temp Check"]
+    prov_df = prov_df[~prov_df["Value"].isna()]
+    prov_df["Source"] = "SOE"
+    prov_df["QC"] = False
     return prov_df
 
 
