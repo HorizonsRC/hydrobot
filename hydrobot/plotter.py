@@ -96,7 +96,7 @@ def check_plotter(base_series, check_series, span=20, show=True):
             check_series[check],
             label="Check data",
             marker="o",
-            color="darkturquoise",
+            color="darkcyan",
         )
         plt.title(f"Check at {check}")
     if show:
@@ -117,8 +117,8 @@ def qc_colour(qc):
         Hex code for the colour of the QC
     """
     qc_dict = {
-        None: "darkslategrey",
-        "nan": "darkslategrey",
+        None: "darkgray",
+        "nan": "darkgray",
         0: "#9900ff",
         100: "#ff0000",
         200: "#8B5A00",
@@ -166,7 +166,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         check_series,
         label="Check data",
         marker="o",
-        color="gray",
+        color="darkgray",
         linestyle="None",
     )
     plt.xticks(rotation=45, ha="right")
@@ -218,7 +218,7 @@ def qc_plotter_plotly(
                 y=check_series,
                 mode="markers",
                 name="Check data",
-                marker=dict(color="darkturquoise", size=10),
+                marker=dict(color="darkcyan", size=10),
             )
         )
     fig.update_layout(
@@ -264,7 +264,7 @@ def comparison_qc_plotter(
         raw_series.index,
         raw_series,
         label="Raw data",
-        color="black",
+        color="darkgray",
         marker="",
         linestyle="dashed",
     )
@@ -314,7 +314,7 @@ def comparison_qc_plotter_plotly(
             y=raw_series,
             mode="lines",
             name="Raw data",
-            line=dict(color="black", dash="dash"),
+            line=dict(color="darkgray", dash="dash"),
         )
     )
     if show:
@@ -325,61 +325,60 @@ def comparison_qc_plotter_plotly(
 def make_processing_dash(
     fig,
     title,
-    raw_standard_series,
-    hilltop_standard_series,
-    raw_check_series,
-    prov_wq,
-    inspections,
-    ncrs,
+    standard_data,
+    check_data,
 ):
     """Make the processing dash.
 
     Sorry about these docs I'm in a rush.
     """
+    htp_check = check_data[check_data["Source"] == "HTP"]
+    srv_check = check_data[check_data["Source"] == "INS"]
+    pwq_check = check_data[check_data["Source"] == "SOE"]
     fig.add_trace(
         go.Scatter(
-            x=raw_standard_series.index,
-            y=raw_standard_series.to_numpy(),
+            x=standard_data["Raw"].index,
+            y=standard_data["Raw"].to_numpy(),
             mode="lines",
             name="Raw data",
-            line=dict(color="darkslategray", width=0.5),
+            line=dict(color="darkgray", width=0.5),
             opacity=0.5,
         )
     )
     fig.add_trace(
         go.Scatter(
-            x=raw_check_series.index,
-            y=raw_check_series["Water Temperature Check"],
+            x=htp_check.index,
+            y=htp_check["Value"],
             mode="markers",
             name="Check data",
-            marker=dict(color="darkturquoise", size=10),
+            marker=dict(color="darkcyan", size=10),
         )
     )
     fig.add_trace(
         go.Scatter(
-            x=prov_wq.index,
-            y=prov_wq["Temp Check"],
+            x=pwq_check.index,
+            y=pwq_check["Value"],
             mode="markers",
             name="ProvWQ Check",
-            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+            marker=dict(color="darkgray", size=10, symbol="square-open"),
         )
     )
     fig.add_trace(
         go.Scatter(
-            x=inspections.index,
-            y=inspections["Temp Check"],
+            x=srv_check.index,
+            y=srv_check["Value"],
             mode="markers",
             name="S123 Check",
-            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+            marker=dict(color="darkgray", size=10, symbol="circle-open-dot"),
         )
     )
     fig.add_trace(
         go.Scatter(
-            x=inspections.index,
-            y=inspections["Temp Logger"],
+            x=srv_check.index,
+            y=srv_check["Temp Logger"],
             mode="markers",
             name="S123 Logger",
-            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+            marker=dict(color="darkgray", size=10, symbol="x-thin-open"),
         )
     )
     fig_subplots = make_subplots(
@@ -412,19 +411,13 @@ def make_processing_dash(
 
         return nearest_periodic_indices
 
-    nearest_check_indices = find_nearest_periodic_indices(
-        hilltop_standard_series, raw_check_series["Water Temperature Check"]
-    )
+    nearest_htp_indices = find_nearest_periodic_indices(standard_data, htp_check)
 
-    nearest_prov_indices = find_nearest_periodic_indices(
-        hilltop_standard_series, prov_wq
-    )
+    nearest_pwq_indices = find_nearest_periodic_indices(standard_data, pwq_check)
 
-    nearest_inspection_indices = find_nearest_periodic_indices(
-        hilltop_standard_series, inspections
-    )
+    nearest_srv_indices = find_nearest_periodic_indices(standard_data, srv_check)
 
-    edited_blocks = change_blocks(raw_standard_series, hilltop_standard_series)
+    edited_blocks = change_blocks(standard_data["Raw"], standard_data["Value"])
 
     first_change = True
     for change_start, change_end in edited_blocks:
@@ -432,7 +425,7 @@ def make_processing_dash(
             x0=change_start,
             x1=change_end,
             showlegend=first_change,
-            fillcolor="blue",
+            fillcolor="teal",
             opacity=0.25,
             line_width=0,
             name="Changes",
@@ -441,14 +434,17 @@ def make_processing_dash(
         )
         first_change = False
 
+    print(len(htp_check))
+    print(standard_data["Value"].iloc[nearest_htp_indices])
+
     fig_subplots.add_trace(
         go.Scatter(
-            x=raw_check_series["Water Temperature Check"].index,
-            y=raw_check_series["Water Temperature Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_check_indices].to_numpy(),
+            x=htp_check["Value"].index,
+            y=htp_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_htp_indices].to_numpy(),
             mode="markers",
             name="Check data",
-            marker=dict(color="darkturquoise", size=10, symbol="circle"),
+            marker=dict(color="darkcyan", size=10, symbol="circle"),
             showlegend=False,
         ),
         row=2,
@@ -457,12 +453,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=hilltop_standard_series.iloc[nearest_check_indices].index,
-            y=raw_check_series["Water Temperature Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_check_indices].to_numpy(),
+            x=standard_data["Value"].iloc[nearest_htp_indices].index,
+            y=htp_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_htp_indices].to_numpy(),
             mode="markers",
             name="Check Align",
-            marker=dict(color="darkturquoise", size=10, symbol="circle"),
+            marker=dict(color="darkcyan", size=10, symbol="circle"),
             showlegend=False,
             opacity=0.5,
             hoverinfo="skip",
@@ -472,8 +468,8 @@ def make_processing_dash(
     )
     arrow_annotations = []
     for stand, check in zip(
-        hilltop_standard_series.iloc[nearest_check_indices].items(),
-        raw_check_series["Water Temperature Check"].items(),
+        standard_data["Value"].iloc[nearest_htp_indices].items(),
+        htp_check["Value"].items(),
         strict=True,
     ):
         # If the timestamps are not the same
@@ -489,7 +485,7 @@ def make_processing_dash(
                     xref="x2",
                     yref="y2",
                     arrowhead=2,
-                    arrowcolor="darkturquoise",
+                    arrowcolor="darkcyan",
                     showarrow=True,
                     opacity=0.5,
                     standoff=6,
@@ -498,12 +494,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=prov_wq.index,
-            y=prov_wq["Temp Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_prov_indices].to_numpy(),
+            x=pwq_check.index,
+            y=pwq_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_pwq_indices].to_numpy(),
             mode="markers",
             name="ProvWQ Check",
-            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+            marker=dict(color="darkgray", size=10, symbol="square-open"),
             showlegend=False,
         ),
         row=2,
@@ -511,12 +507,12 @@ def make_processing_dash(
     )
     fig_subplots.add_trace(
         go.Scatter(
-            x=hilltop_standard_series.iloc[nearest_prov_indices].index,
-            y=prov_wq["Temp Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_prov_indices].to_numpy(),
+            x=standard_data["Value"].iloc[nearest_pwq_indices].index,
+            y=pwq_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_pwq_indices].to_numpy(),
             mode="markers",
             name="ProvWQ Align",
-            marker=dict(color="darkslategray", size=10, symbol="square-open"),
+            marker=dict(color="darkgray", size=10, symbol="square-open"),
             showlegend=False,
             opacity=0.5,
             hoverinfo="skip",
@@ -525,24 +521,24 @@ def make_processing_dash(
         col=1,
     )
     for stand, prov in zip(
-        hilltop_standard_series.iloc[nearest_prov_indices].items(),
-        prov_wq.iterrows(),
+        standard_data["Value"].iloc[nearest_pwq_indices].items(),
+        pwq_check.iterrows(),
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != prov[0] and not pd.isna(prov[1]["Temp Check"]):
+        if stand[0] != prov[0] and not pd.isna(prov[1]["Value"]):
             arrow_annotations.append(
                 dict(
                     ax=prov[0],
-                    ay=prov[1]["Temp Check"] - stand[1],
+                    ay=prov[1]["Value"] - stand[1],
                     x=stand[0],
-                    y=prov[1]["Temp Check"] - stand[1],
+                    y=prov[1]["Value"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
                     yref="y2",
                     arrowhead=2,
-                    arrowcolor="darkslategray",
+                    arrowcolor="darkgray",
                     showarrow=True,
                     opacity=0.5,
                     standoff=6,
@@ -551,12 +547,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=inspections.index,
-            y=inspections["Temp Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
+            x=srv_check.index,
+            y=srv_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Check",
-            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+            marker=dict(color="darkgray", size=10, symbol="circle-open-dot"),
             showlegend=False,
         ),
         row=2,
@@ -565,12 +561,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
-            y=inspections["Temp Check"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
+            x=standard_data["Value"].iloc[nearest_srv_indices].index,
+            y=srv_check["Value"].to_numpy()
+            - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Check Aligned",
-            marker=dict(color="darkslategray", size=10, symbol="circle-open-dot"),
+            marker=dict(color="darkgray", size=10, symbol="circle-open-dot"),
             showlegend=False,
             opacity=0.5,
             hoverinfo="skip",
@@ -580,8 +576,8 @@ def make_processing_dash(
     )
 
     for stand, insp in zip(
-        hilltop_standard_series.iloc[nearest_inspection_indices].items(),
-        inspections.iterrows(),
+        standard_data["Value"].iloc[nearest_srv_indices].items(),
+        srv_check.iterrows(),
         strict=True,
     ):
         # If the timestamps are not the same
@@ -589,15 +585,15 @@ def make_processing_dash(
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
-                    ay=insp[1]["Temp Check"] - stand[1],
+                    ay=insp[1]["Value"] - stand[1],
                     x=stand[0],
-                    y=insp[1]["Temp Check"] - stand[1],
+                    y=insp[1]["Value"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
                     yref="y2",
                     arrowhead=2,
-                    arrowcolor="darkslategray",
+                    arrowcolor="darkgray",
                     showarrow=True,
                     opacity=0.5,
                     standoff=6,
@@ -606,12 +602,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=inspections.index,
-            y=inspections["Temp Logger"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
+            x=srv_check.index,
+            y=srv_check["Temp Logger"].to_numpy()
+            - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger",
-            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+            marker=dict(color="darkgray", size=10, symbol="x-thin-open"),
             showlegend=False,
         ),
         row=2,
@@ -620,12 +616,12 @@ def make_processing_dash(
 
     fig_subplots.add_trace(
         go.Scatter(
-            x=hilltop_standard_series.iloc[nearest_inspection_indices].index,
-            y=inspections["Temp Logger"].to_numpy()
-            - hilltop_standard_series.iloc[nearest_inspection_indices].to_numpy(),
+            x=standard_data["Value"].iloc[nearest_srv_indices].index,
+            y=srv_check["Temp Logger"].to_numpy()
+            - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger Aligned",
-            marker=dict(color="darkslategray", size=10, symbol="x-thin-open"),
+            marker=dict(color="darkgray", size=10, symbol="x-thin-open"),
             showlegend=False,
             opacity=0.5,
             hoverinfo="skip",
@@ -635,8 +631,8 @@ def make_processing_dash(
     )
 
     for stand, insp in zip(
-        hilltop_standard_series.iloc[nearest_inspection_indices].items(),
-        inspections.iterrows(),
+        standard_data["Value"].iloc[nearest_srv_indices].items(),
+        srv_check.iterrows(),
         strict=True,
     ):
         # If the timestamps are not the same
@@ -652,7 +648,7 @@ def make_processing_dash(
                     xref="x2",
                     yref="y2",
                     arrowhead=2,
-                    arrowcolor="darkslategray",
+                    arrowcolor="darkgray",
                     showarrow=True,
                     opacity=0.5,
                     standoff=6,

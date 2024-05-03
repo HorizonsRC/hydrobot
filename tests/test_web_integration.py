@@ -1,4 +1,5 @@
 """Test actual integration tests."""
+
 from xml.etree import ElementTree
 
 import pandas as pd
@@ -30,8 +31,8 @@ def test_data_structure_integration(tmp_path):
     site information, date range, and default settings.
     Annalist is configured to log information during the test.
     Processor is instantiated with the provided processing parameters.
-    Assertions are made to ensure that essential series (`standard_series`, `check_data`
-    , `check_series`, `quality_series`) are not empty.
+    Assertions are made to ensure that essential series (`standard_data`, `check_data`
+    , `check_data`, `quality_data`) are not empty.
     Data clipping, removal of flatlined values and spikes, range deletion, insertion of
     missing NaNs, gap closure, quality encoding, XML data structure creation,
     data export, and diagnosis are tested.
@@ -204,8 +205,8 @@ def test_processor_integration(tmp_path):
 
     Annalist is configured to log information during the test.
     Processor is instantiated with the provided processing parameters.
-    Assertions are made to ensure that essential series (standard_series, check_data,
-    check_series, quality_series) are not empty.
+    Assertions are made to ensure that essential series (standard_data, check_data,
+    check_data, quality_data) are not empty.
 
     Data clipping, removal of flatlined values and spikes, range deletion, insertion of
     missing NaNs, gap closure, quality encoding, XML data structure creation, data
@@ -231,7 +232,7 @@ def test_processor_integration(tmp_path):
         "check_measurement_name": "External S.G. [Water Level NRT]",
         "defaults": {
             "high_clip": 5000,
-            "low_clip": 0,
+            "low_clip": 4500,
             "delta": 1000,
             "span": 10,
             "gap_limit": 12,
@@ -263,57 +264,91 @@ def test_processor_integration(tmp_path):
         processing_parameters["defaults"],
     )
 
-    assert not data.standard_series.empty
-    assert not data.check_series.empty
-    assert not data.quality_series.empty
+    assert isinstance(data.standard_data, pd.DataFrame)
+    assert isinstance(data.quality_data, pd.DataFrame)
+    assert isinstance(data.check_data, pd.DataFrame)
 
-    standard_before_clip = data.standard_series
-    check_before_clip = data.check_series
+    assert not data.standard_data.empty
+    assert not data.check_data.empty
+    assert not data.quality_data.empty
 
+    clip_one = "2021-01-15 12:00"
+    clip_two = "2021-02-01 00:00"
+
+    data.standard_data.loc[clip_one, "Value"] = 10000
+    data.standard_data.loc[clip_two, "Value"] = 100
     data.clip()
 
-    standard_after_clip = data.standard_series
-    check_after_clip = data.check_series
+    assert pd.isna(data.standard_data.loc[clip_one, "Value"])
+    assert pd.isna(data.standard_data.loc[clip_two, "Value"])
 
-    assert not standard_before_clip.equals(standard_after_clip)
-    assert check_before_clip.equals(check_after_clip)
+    assert data.standard_data.loc[clip_one, "Changes"] == "CLP"
+    assert data.standard_data.loc[clip_two, "Changes"] == "CLP"
 
-    assert (
-        data.standard_series[
-            standard_before_clip > processing_parameters["defaults"]["high_clip"]
-        ]
-        .isna()
-        .all()
-    )
-    assert (
-        data.check_series[
-            check_before_clip > processing_parameters["defaults"]["high_clip"]
-        ]
-        .isna()
-        .all()
-    )
+    assert data.standard_data.loc[clip_one, "Remove"]
+    assert data.standard_data.loc[clip_two, "Remove"]
+
+    flat_one = "2021-01-20 12:05"
+    flat_two = "2021-01-20 12:10"
+    flat_three = "2021-01-20 12:15"
+
+    flat_val = data.standard_data.loc["2021-01-20 12:00", "Value"]
+
+    data.standard_data.loc[flat_one, "Value"] = flat_val
+    data.standard_data.loc[flat_two, "Value"] = flat_val
+    data.standard_data.loc[flat_three, "Value"] = flat_val
 
     data.remove_flatlined_values()
-    # TODO: Write test for remove_flatlined_values
+
+    assert pd.isna(data.standard_data.loc[flat_one, "Value"])
+    assert pd.isna(data.standard_data.loc[flat_two, "Value"])
+    assert pd.isna(data.standard_data.loc[flat_three, "Value"])
+
+    assert data.standard_data.loc[flat_one, "Changes"] == "FLN"
+    assert data.standard_data.loc[flat_two, "Changes"] == "FLN"
+    assert data.standard_data.loc[flat_three, "Changes"] == "FLN"
+
+    assert data.standard_data.loc[flat_one, "Remove"]
+    assert data.standard_data.loc[flat_two, "Remove"]
+    assert data.standard_data.loc[flat_three, "Remove"]
+
+    spike = "2021-01-10 08:00"
+
+    data.standard_data.loc[spike, "Value"] = 100
 
     data.remove_spikes()
-    # TODO: Write test for remove_spikes
 
-    # Checking that the data points I want to delete actually exist:
-    start_idx = "2021-01-01 11:00"
-    end_idx = "2021-01-01 11:30"
-    assert pd.to_datetime(start_idx) in data.standard_series
-    assert pd.to_datetime(end_idx) in data.standard_series
+    assert pd.isna(data.standard_data.loc[spike, "Value"])
 
-    # Make a small gap
-    data.delete_range(start_idx, end_idx)
+    assert data.standard_data.loc[spike, "Changes"] == "SPK"
 
-    # Check that gap was made
+    assert data.standard_data.loc[spike, "Remove"]
+
+    start_idx = "2021-01-01 12:00"
+    end_idx = "2021-01-01 12:30"
+
+    data.remove_range(start_idx, end_idx)
+
+    assert pd.isna(
+        data.standard_data.loc[start_idx:end_idx, "Value"]
+    ).all(), "processor.remove_range appears to be broken."
     assert (
-        pd.to_datetime(start_idx) not in data.standard_series
+        data.standard_data.loc[start_idx:end_idx, "Changes"]
+        .apply(lambda x: x == "MAN")
+        .all()
+    ), "processor.remove_range appears to be broken."
+
+    # Small Gap
+    start_idx = "2021-02-02 11:00"
+    end_idx = "2021-02-02 11:30"
+
+    data.delete_range(start_idx, end_idx)
+    # Check that row was completely deleted
+    assert (
+        pd.to_datetime(start_idx) not in data.standard_data.index
     ), "processor.delete_range appears to be broken."
     assert (
-        pd.to_datetime(end_idx) not in data.standard_series
+        pd.to_datetime(end_idx) not in data.standard_data.index
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
@@ -321,30 +356,65 @@ def test_processor_integration(tmp_path):
 
     # Check that NaNs are inserted
     assert pd.isna(
-        data.standard_series[start_idx]
+        data.standard_data.loc[start_idx, "Value"]
     ), "processor.insert_missing_nans appears to be broken."
     assert pd.isna(
-        data.standard_series[end_idx]
+        data.standard_data.loc[end_idx, "Value"]
     ), "processor.insert_missing_nans appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
+    print(data.standard_data.loc[start_idx])
     data.gap_closer()
 
     # Check that gap was closed
     assert (
-        pd.to_datetime(start_idx) not in data.standard_series
+        pd.to_datetime(start_idx) not in data.standard_data.index
     ), "processor.gap_closer appears to be broken."
     assert (
-        pd.to_datetime(end_idx) not in data.standard_series
+        pd.to_datetime(end_idx) not in data.standard_data.index
     ), "processor.gap_closer appears to be broken."
+
+    # BigGap
+    start_idx = "2021-01-30 00:00"
+    end_idx = "2021-02-01 00:00"
+
+    data.delete_range(start_idx, end_idx)
+    # Check that row was completely deleted
+    assert (
+        pd.to_datetime(start_idx) not in data.standard_data.index
+    ), "processor.delete_range appears to be broken."
+    assert (
+        pd.to_datetime(end_idx) not in data.standard_data.index
+    ), "processor.delete_range appears to be broken."
+
+    # Insert nans where values are missing
+    data.insert_missing_nans()
+
+    # Check that NaNs are inserted
+    assert pd.isna(
+        data.standard_data.loc[start_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+    assert pd.isna(
+        data.standard_data.loc[end_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+
+    # "Close" gaps (i.e. remove nan rows)
+    print(data.standard_data.loc[start_idx])
+    data.gap_closer()
+
+    # Check that gap was closed
+    # assert (
+    #     pd.to_datetime(start_idx) not in data.standard_data.index
+    # ), "processor.gap_closer appears to be broken."
+    # assert (
+    #     pd.to_datetime(end_idx) not in data.standard_data.index
+    # ), "processor.gap_closer appears to be broken."
 
     data.quality_encoder()
 
     # TODO: Write test for quality_encoder
 
     data.to_xml_data_structure()
-
-    # TODO: Write test for to_xml_data_structure
 
     data.data_exporter(tmp_path / "xml_data.xml")
     data.data_exporter(tmp_path / "csv_data.csv", ftype="csv")
@@ -376,8 +446,8 @@ def test_empty_response(tmp_path):
 
     Annalist is configured to log information during the test.
     Processor is instantiated with the provided processing parameters.
-    Assertions are made to ensure that essential series (standard_series, check_data,
-    check_series, quality_series) are not empty.
+    Assertions are made to ensure that essential series (standard_data, check_data,
+    check_data, quality_data) are not empty.
 
     Data clipping, removal of flatlined values and spikes, range deletion, insertion of
     missing NaNs, gap closure, quality encoding, XML data structure creation, data
@@ -434,17 +504,17 @@ def test_empty_response(tmp_path):
             processing_parameters["check_measurement_name"],
             processing_parameters["defaults"],
         )
+        assert isinstance(data.standard_data, pd.DataFrame)
+        assert isinstance(data.quality_data, pd.DataFrame)
+        assert isinstance(data.check_data, pd.DataFrame)
 
-        assert data.standard_series.empty
-        assert data.check_series.empty
-        assert data.quality_series.empty
-        assert data.raw_standard_series.empty
+        assert data.standard_data.empty
+        assert data.check_data.empty
+        assert data.quality_data.empty
         assert data.raw_standard_blob is None
         assert data.raw_standard_xml is None
-        assert data.raw_quality_series.empty
         assert data.raw_quality_blob is None
         assert data.raw_quality_xml is None
-        assert data.raw_check_data.empty
         assert data.raw_check_blob is None
         assert data.raw_check_xml is None
 
@@ -470,8 +540,8 @@ def test_failed_requests(tmp_path):
 
     Annalist is configured to log information during the test.
     Processor is instantiated with the provided processing parameters.
-    Assertions are made to ensure that essential series (standard_series, check_data,
-    check_series, quality_series) are not empty.
+    Assertions are made to ensure that essential series (standard_data, check_data,
+    check_data, quality_data) are not empty.
 
     Data clipping, removal of flatlined values and spikes, range deletion, insertion of
     missing NaNs, gap closure, quality encoding, XML data structure creation, data
@@ -588,7 +658,6 @@ def test_failed_requests(tmp_path):
             "Standard measurement name 'Notarealmeasurement' not found at site"
             in str(excinfo.value)
         )
-
         with pytest.raises(
             ValueError,
             match=r"Unrecognised start time",
@@ -649,7 +718,8 @@ def test_failed_requests(tmp_path):
         assert "No sites found for the base_url and hts combo." in str(excinfo.value)
 
         with pytest.raises(
-            ValueError, match=r"Check measurement name 'Notarealmeasurement' not found "
+            ValueError,
+            match=r"Check measurement name 'Notarealmeasurement' not found ",
         ) as excinfo:
             _ = Processor(
                 processing_parameters["base_url"],
