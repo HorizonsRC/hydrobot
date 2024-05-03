@@ -1,4 +1,11 @@
-"""Script to run through a processing task with the processor class."""
+r"""Script to run through a processing task with the processor class.
+
+Run command:
+
+cd .\prototypes\example_script\
+streamlit run .\script.py
+
+"""
 
 import pandas as pd
 import streamlit as st
@@ -28,7 +35,6 @@ prov_wq = import_prov_wq("WaterTemp_ProvWQ.csv")
 ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 
 # inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-
 # prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
 
 data.check_data = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
@@ -37,10 +43,7 @@ data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
 ]
 
-print(data.check_data["Source"])
-
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
-
 
 #######################################################################################
 # Common auto-processing steps
