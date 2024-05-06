@@ -30,14 +30,27 @@ data, ann = hydrobot_config_yaml_init("config.yaml")
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
 
-inspections = import_inspections("WaterTemp_Inspections.csv")
-prov_wq = import_prov_wq("WaterTemp_ProvWQ.csv")
-ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
+check_col = "AP Handheld"
+logger_col = "AP Logger"
 
-# inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-# prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+inspections = import_inspections(
+    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
+)
+prov_wq = import_prov_wq("AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col)
+ncrs = import_ncr("AP_non-conformance_reports.csv")
 
-data.check_data = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
+prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+
+all_checks = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+
+all_checks = all_checks.loc[
+    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+]
+
+data.check_data = pd.concat(
+    [data.check_data, inspections_no_dup, prov_wq_no_dup]
+).sort_index()
 
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
@@ -95,14 +108,14 @@ data.data_exporter("processed.xml")
 st.set_page_config(page_title="Hydrobot0.5.1", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
-
+st.dataframe(data.standard_data)
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
     data.site,
     data.standard_data,
-    data.check_data,
+    all_checks,
 )
 
 st.plotly_chart(fig_subplots, use_container_width=True)

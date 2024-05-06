@@ -375,7 +375,7 @@ def make_processing_dash(
     fig.add_trace(
         go.Scatter(
             x=srv_check.index,
-            y=srv_check["Temp Logger"],
+            y=srv_check["Logger"],
             mode="markers",
             name="S123 Logger",
             marker=dict(color="darkgray", size=10, symbol="x-thin-open"),
@@ -581,7 +581,7 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Logger"]):
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
@@ -603,7 +603,7 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=srv_check.index,
-            y=srv_check["Temp Logger"].to_numpy()
+            y=srv_check["Logger"].to_numpy()
             - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger",
@@ -617,7 +617,7 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=standard_data["Value"].iloc[nearest_srv_indices].index,
-            y=srv_check["Temp Logger"].to_numpy()
+            y=srv_check["Logger"].to_numpy()
             - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger Aligned",
@@ -636,13 +636,13 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Logger"]):
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
-                    ay=insp[1]["Temp Logger"] - stand[1],
+                    ay=insp[1]["Logger"] - stand[1],
                     x=stand[0],
-                    y=insp[1]["Temp Logger"] - stand[1],
+                    y=insp[1]["Logger"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
