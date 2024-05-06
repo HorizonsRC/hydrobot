@@ -23,6 +23,10 @@
 ########################################################################################
 
 
+# Make sure the script is working in the right place
+setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
+# setwd(getSrcDirectory(function(){})[1]) # might need to use this if it's run as a script
+
 
 # load required libraries
 library(RODBC); library(dplyr); library(DT);
@@ -155,6 +159,8 @@ if (site %in% sites){
   full_dat = Inspections
 }
 
+
+
 # ------ Pull non-conformances for sites ------
 # Connect to survey123 sql table
 ch = odbcDriverConnect('driver={SQL Server};server=DBSurvey123Live.horizons.govt.nz;database=survey123;trusted_connection=true')
@@ -216,7 +222,8 @@ write.csv(NCRs, paste0(folder_filepath, "WaterTemp_non-conformance_reports.csv")
 
 # ------ Keep just check data, format to fit Hilltop and save as csv ------
 
-check_data = full_dat %>%
+# Replace "Inspections" with "full_dat" to include prov_wq in QC calculation.
+check_data = Inspections %>%
   select(Date, Time, `Temp Check`, `Arrival Time`, `Inspection Time`, Notes) %>%
   filter(!is.na(`Temp Check`),
          Date <= endDate) %>%

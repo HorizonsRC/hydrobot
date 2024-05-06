@@ -1,4 +1,5 @@
 """Test the filters module."""
+
 import math
 
 import numpy as np
@@ -189,14 +190,78 @@ def test_remove_range(raw_data):
     e = filters.remove_range(raw_data, None, None)
     assert e.empty, "double None causes error"
 
-    f = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", True)
-    assert f.isna().sum() == 1, "gap failed to be inserted for true case"
+    f = filters.remove_range(
+        raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="all"
+    )
+    assert pd.isna(
+        f.loc["2021-01-01 00:05"]
+    ), "gap failed to be inserted for 'all' case"
+    assert pd.isna(
+        f.loc["2021-01-01 00:10"]
+    ), "gap failed to be inserted for 'all' case"
 
-    g = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", 2)
-    assert g.isna().sum() == 0, "gap inserted when gap threshold too big"
+    g = filters.remove_range(
+        raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="start"
+    )
+    assert pd.isna(
+        g.loc["2021-01-01 00:05"]
+    ), "gap failed to be inserted for 'start' case"
+    assert "2021-01-01 00:10" not in g.index, "incorrect gap inserted for 'start' case"
 
-    h = filters.remove_range(raw_data, "2021-01-01 00:03", "2021-01-01 00:14", 1)
-    assert h.isna().sum() == 1, "gap not inserted when gap threshold is met"
+    h = filters.remove_range(
+        raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="end"
+    )
+    assert "2021-01-01 00:05" not in h.index, "gap failed to be inserted for 'end' case"
+    assert pd.isna(h.loc["2021-01-01 00:10"]), "incorrect gap inserted for 'end' case"
+
+    i = filters.remove_range(
+        raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="none"
+    )
+    assert i.isna().sum() == 0, "incorrect gap inserted for 'none' case"
+
+    j = filters.remove_range(
+        raw_data,
+        "2021-01-01 00:03",
+        "2021-01-01 00:14",
+        min_gap_length=3,
+        insert_gaps="all",
+    )
+    assert (
+        j.isna().sum() == 0
+    ), "incorrect gap inserted for 'all' case where gap smaller than min gap."
+
+    k = filters.remove_range(
+        raw_data,
+        "2021-01-01 00:03",
+        "2021-01-01 00:14",
+        min_gap_length=3,
+        insert_gaps="start",
+    )
+    assert (
+        k.isna().sum() == 0
+    ), "incorrect gap inserted for 'start' case where gap smaller than min gap."
+
+    ll = filters.remove_range(
+        raw_data,
+        "2021-01-01 00:03",
+        "2021-01-01 00:14",
+        min_gap_length=3,
+        insert_gaps="end",
+    )
+    assert (
+        ll.isna().sum() == 0
+    ), "incorrect gap inserted for 'end' case where gap smaller than min gap."
+
+    m = filters.remove_range(
+        raw_data,
+        "2021-01-01 00:03",
+        "2021-01-01 00:14",
+        min_gap_length=3,
+        insert_gaps="none",
+    )
+    assert (
+        m.isna().sum() == 0
+    ), "incorrect gap inserted for 'none' case where gap smaller than min gap."
 
 
 def test_trim_series(raw_data):

@@ -82,6 +82,23 @@ def mock_xml_data():
     """Mock response from get_hilltop_xml server call method."""
     with open("tests/test_data/xml_test_data_file.xml") as f:
         xml_string = f.read()
+    return xml_string
+
+
+@pytest.fixture()
+def mock_xml_data_no_check():
+    """Mock response from get_hilltop_xml server call method."""
+    with open("tests/test_data/xml_test_data_no_check.xml") as f:
+        xml_string = f.read()
+
+    return xml_string
+
+
+@pytest.fixture()
+def mock_xml_data_no_qual():
+    """Mock response from get_hilltop_xml server call method."""
+    with open("tests/test_data/xml_test_data_no_qual.xml") as f:
+        xml_string = f.read()
 
     return xml_string
 
@@ -114,6 +131,160 @@ def mock_get_data():
     ```
     """
     with open("tests/test_data/xml_test_data_file.xml") as f:
+        xml_string = f.read()
+
+    xml_root = ElementTree.Element(xml_string)
+
+    def _extract_data(
+        base_url,
+        hts,
+        site,
+        measurement,
+        from_date,
+        to_date,
+        tstype,
+    ):
+        _ = base_url, hts, site
+        data_blobs = parse_xml(xml_string)
+
+        keep_blobs = []
+
+        type_map = {
+            "Standard": "StdSeries",
+            "Quality": "StdQualSeries",
+            "Check": "CheckSeries",
+        }
+        if data_blobs is not None:
+            for blob in data_blobs:
+                if (
+                    blob.data_source.name == measurement
+                    and blob.data_source.ts_type == type_map[tstype]
+                ):
+                    conv_timestamps = utils.mowsecs_to_datetime_index(
+                        blob.data.timeseries.index
+                    )
+                    if from_date is None:
+                        from_date = conv_timestamps[0]
+                    if to_date is None:
+                        to_date = conv_timestamps[-1]
+                    mask = (conv_timestamps >= pd.to_datetime(from_date)) & (
+                        conv_timestamps <= pd.to_datetime(to_date)
+                    )
+                    blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
+                    keep_blobs += [blob]
+        else:
+            return None
+
+        return keep_blobs
+
+    return xml_root, _extract_data
+
+
+@pytest.fixture()
+def mock_get_data_no_check():
+    """
+    Fixture to mock the response from the get_data server call method.
+
+    Parameters
+    ----------
+    No direct parameters; indirectly passed into the inner function.
+
+    Notes
+    -----
+    This fixture simulates the response from the get_data server call method.
+    It reads XML test data from the specified file and provides a function that extracts
+    relevant data based on input parameters.
+
+    Example Usage
+    -------------
+    To use this fixture in a test, include it as a parameter in the test function.
+    For example:
+
+    ```python
+    def test_my_function(mock_get_data):
+        # Your test code here
+        result = my_function_that_uses_get_data(mock_get_data)
+        assert result == expected_result
+    ```
+    """
+    with open("tests/test_data/xml_test_data_no_check.xml") as f:
+        xml_string = f.read()
+
+    xml_root = ElementTree.Element(xml_string)
+
+    def _extract_data(
+        base_url,
+        hts,
+        site,
+        measurement,
+        from_date,
+        to_date,
+        tstype,
+    ):
+        _ = base_url, hts, site
+        data_blobs = parse_xml(xml_string)
+
+        keep_blobs = []
+
+        type_map = {
+            "Standard": "StdSeries",
+            "Quality": "StdQualSeries",
+            "Check": "CheckSeries",
+        }
+        if data_blobs is not None:
+            for blob in data_blobs:
+                if (
+                    blob.data_source.name == measurement
+                    and blob.data_source.ts_type == type_map[tstype]
+                ):
+                    conv_timestamps = utils.mowsecs_to_datetime_index(
+                        blob.data.timeseries.index
+                    )
+                    if from_date is None:
+                        from_date = conv_timestamps[0]
+                    if to_date is None:
+                        to_date = conv_timestamps[-1]
+                    mask = (conv_timestamps >= pd.to_datetime(from_date)) & (
+                        conv_timestamps <= pd.to_datetime(to_date)
+                    )
+                    blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
+                    keep_blobs += [blob]
+        else:
+            return None
+
+        return keep_blobs
+
+    return xml_root, _extract_data
+
+
+@pytest.fixture()
+def mock_get_data_no_qual():
+    """
+    Fixture to mock the response from the get_data server call method.
+
+    Parameters
+    ----------
+    No direct parameters; indirectly passed into the inner function.
+
+    Notes
+    -----
+    This fixture simulates the response from the get_data server call method.
+    It reads XML test data from the specified file and provides a function that extracts
+    relevant data based on input parameters.
+
+    Example Usage
+    -------------
+    To use this fixture in a test, include it as a parameter in the test function.
+    For example:
+
+    ```python
+    def test_my_function(mock_get_data):
+        # Your test code here
+        result = my_function_that_uses_get_data(mock_get_data)
+        assert result == expected_result
+    ```
+    """
+    with open("tests/test_data/xml_test_data_no_qual.xml") as f:
         xml_string = f.read()
 
     xml_root = ElementTree.Element(xml_string)
@@ -242,20 +413,16 @@ def test_processor_init(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        standard_measurement_name=MEASUREMENTS[1],
-        check_measurement_name=CHECK_MEASUREMENTS[1],
-        frequency="5min",
+        standard_measurement_name=MEASUREMENTS[0],
+        check_measurement_name=CHECK_MEASUREMENTS[0],
+        frequency="15min",
     )
 
     captured = capsys.readouterr()
     ann_output = captured.err.split("\n")
-
     correct = [
-        "standard_series | Mid Stream at Cowtoilet Farm",
         "import_standard | Mid Stream at Cowtoilet Farm",
-        "quality_series | Mid Stream at Cowtoilet Farm",
         "import_quality | Mid Stream at Cowtoilet Farm",
-        "check_series | Mid Stream at Cowtoilet Farm",
         "import_check | Mid Stream at Cowtoilet Farm",
         "__init__ | Mid Stream at Cowtoilet Farm",
     ]
@@ -263,11 +430,35 @@ def test_processor_init(
     for i, out in enumerate(ann_output[0:-1]):
         assert out == correct[i], f"Failed on log number {i} with output {out}"
 
-    assert isinstance(pr.standard_series, pd.Series)
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+
     assert pr.raw_standard_blob is not None
     assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
-    assert float(pr.standard_series.loc["2023-01-01 00:10:00"]) == pytest.approx(1882.1)
-    assert pr.standard_series.index.dtype == np.dtype("datetime64[ns]")
+    assert float(pr.standard_data.loc["2023-01-01 00:45:00", "Value"]) == pytest.approx(
+        17.8
+    )
+    assert pr.standard_data.index.dtype == np.dtype("datetime64[ns]")
+    assert pr.quality_data.index.dtype == np.dtype("datetime64[ns]")
+    assert pr.check_data.index.dtype == np.dtype("datetime64[ns]")
+
+    assert pr.standard_data.columns.to_numpy()[0] == "Raw"
+    assert pr.standard_data.columns.to_numpy()[1] == "Value"
+    assert pr.standard_data.columns.to_numpy()[2] == "Changes"
+    assert pr.standard_data.columns.to_numpy()[3] == "Remove"
+
+    assert pr.quality_data.columns.to_numpy()[0] == "Raw"
+    assert pr.quality_data.columns.to_numpy()[1] == "Value"
+    assert pr.quality_data.columns.to_numpy()[2] == "Changes"
+    assert pr.quality_data.columns.to_numpy()[3] == "Reason"
+
+    assert pr.check_data.columns.to_numpy()[0] == "Raw"
+    assert pr.check_data.columns.to_numpy()[1] == "Value"
+    assert pr.check_data.columns.to_numpy()[2] == "Changes"
+    assert pr.check_data.columns.to_numpy()[3] == "Recorder Time"
+    assert pr.check_data.columns.to_numpy()[4] == "Comment"
+    assert pr.check_data.columns.to_numpy()[5] == "Source"
 
 
 def test_to_xml_data_structure(
@@ -349,7 +540,7 @@ def test_to_xml_data_structure(
             standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
             check_measurement_name=check,
-            frequency="5min",
+            frequency="15min",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -450,22 +641,431 @@ def test_import_data(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
         from_date=from_date,
         to_date=to_date,
     )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
 
-    for idx in pr.standard_series.index:
+    for idx in pr.standard_data.index:
         assert idx >= pd.to_datetime(from_date)
         assert idx <= pd.to_datetime(to_date)
 
-    for idx in pr.quality_series.index:
+    for idx in pr.quality_data.index:
         assert idx >= pd.to_datetime(from_date)
         assert idx <= pd.to_datetime(to_date)
 
-    for idx in pr.check_series.index:
+    for idx in pr.check_data.index:
         assert idx >= pd.to_datetime(from_date)
         assert idx <= pd.to_datetime(to_date)
+
+
+def test_remove_range(
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_get_data,
+    mock_qc_evaluator_dict,
+):
+    """
+    Test the remove_range method of the Processor class.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Pytest fixture for monkeypatching.
+    mock_site_list : List[str]
+        Mocked list of site names.
+    mock_measurement_list : List[str]
+        Mocked list of measurement names.
+    mock_get_data : Callable
+        Mocked get_data function.
+    mock_qc_evaluator_dict : Dict[str, Any]
+        Mocked QC evaluator dictionary.
+
+    Notes
+    -----
+    This test function checks the remove_range method of the Processor class.
+    It mocks relevant functions and classes for the test.
+
+    Assertions
+    ----------
+    - For each index in standard_series, quality_series, and check_series, it is within
+        the specified date range.
+    - The import_data method updates the series with new data and retains existing
+        changes without overwriting.
+    - The import_data method overwrites existing data when the 'overwrite' parameter
+        is set to True.
+
+    """
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_get_data(*args, **kwargs):
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
+
+    from_date = "2023-01-01"
+    to_date = "2023/01/01 01:00"
+
+    pr = processor.Processor(
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[0],
+        frequency="15min",
+        from_date=from_date,
+        to_date=to_date,
+    )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+    del_from = "2023-01-01 00:15:00"
+    del_to = "2023-01-01 00:45:00"
+
+    pr.remove_range(
+        del_from,
+        del_to,
+    )
+
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:15:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:30:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:45:00", "Value"])
+
+    assert pr.standard_data.loc["2023-01-01 00:15:00", "Changes"] == "MAN"
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Changes"] == "MAN"
+    assert pr.standard_data.loc["2023-01-01 00:45:00", "Changes"] == "MAN"
+
+    assert pr.standard_data.loc["2023-01-01 00:15:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:45:00", "Remove"]
+
+
+def test_clip(
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_get_data,
+    mock_qc_evaluator_dict,
+):
+    """
+    Test the clip method of the Processor class.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Pytest fixture for monkeypatching.
+    mock_site_list : List[str]
+        Mocked list of site names.
+    mock_measurement_list : List[str]
+        Mocked list of measurement names.
+    mock_get_data : Callable
+        Mocked get_data function.
+    mock_qc_evaluator_dict : Dict[str, Any]
+        Mocked QC evaluator dictionary.
+
+    Notes
+    -----
+    This test function checks the clip method of the Processor class.
+    It mocks relevant functions and classes for the test.
+
+    Assertions
+    ----------
+    - For each index in standard_series, quality_series, and check_series, it is within
+        the specified date range.
+    - The import_data method updates the series with new data and retains existing
+        changes without overwriting.
+    - The import_data method overwrites existing data when the 'overwrite' parameter
+        is set to True.
+
+    """
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_get_data(*args, **kwargs):
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
+
+    from_date = "2023-01-01"
+    to_date = "2023/01/01 02:00"
+
+    pr = processor.Processor(
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[0],
+        frequency="15min",
+        from_date=from_date,
+        to_date=to_date,
+    )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+
+    pr.standard_data.loc["2023-01-01 00:10:00", "Value"] = 50
+    pr.standard_data.loc["2023-01-01 00:15:00", "Value"] = -1
+
+    pr.clip()
+
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:10:00", "Value"])
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:15:00", "Value"])
+
+    assert pr.standard_data.loc["2023-01-01 00:10:00", "Changes"] == "CLP"
+    assert pr.standard_data.loc["2023-01-01 00:15:00", "Changes"] == "CLP"
+
+    assert pr.standard_data.loc["2023-01-01 00:10:00", "Remove"]
+    assert pr.standard_data.loc["2023-01-01 00:15:00", "Remove"]
+
+
+def test_remove_spikes(
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_get_data,
+    mock_qc_evaluator_dict,
+):
+    """
+    Test the remove_spikes method of the Processor class.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Pytest fixture for monkeypatching.
+    mock_site_list : List[str]
+        Mocked list of site names.
+    mock_measurement_list : List[str]
+        Mocked list of measurement names.
+    mock_get_data : Callable
+        Mocked get_data function.
+    mock_qc_evaluator_dict : Dict[str, Any]
+        Mocked QC evaluator dictionary.
+
+    Notes
+    -----
+    This test function checks the remove_spikes method of the Processor class.
+    It mocks relevant functions and classes for the test.
+
+    Assertions
+    ----------
+    - For each index in standard_series, quality_series, and check_series, it is within
+        the specified date range.
+    - The import_data method updates the series with new data and retains existing
+        changes without overwriting.
+    - The import_data method overwrites existing data when the 'overwrite' parameter
+        is set to True.
+
+    """
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_get_data(*args, **kwargs):
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
+
+    from_date = "2023-01-01"
+    to_date = "2023/01/01 02:00"
+
+    pr = processor.Processor(
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[0],
+        frequency="15min",
+        from_date=from_date,
+        to_date=to_date,
+    )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+
+    pr.standard_data.loc["2023-01-01 00:10:00", "Value"] = 100
+
+    pr.remove_spikes()
+
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:10:00", "Value"])
+
+    assert pr.standard_data.loc["2023-01-01 00:10:00", "Changes"] == "SPK"
+
+    assert pr.standard_data.loc["2023-01-01 00:10:00", "Remove"]
+    print(pr.standard_data)
+
+
+def test_remove_flatlined_values(
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_get_data,
+    mock_qc_evaluator_dict,
+):
+    """
+    Test the remove_flatlined_values method of the Processor class.
+
+    Parameters
+    ----------
+    monkeypatch : pytest.MonkeyPatch
+        Pytest fixture for monkeypatching.
+    mock_site_list : List[str]
+        Mocked list of site names.
+    mock_measurement_list : List[str]
+        Mocked list of measurement names.
+    mock_get_data : Callable
+        Mocked get_data function.
+    mock_qc_evaluator_dict : Dict[str, Any]
+        Mocked QC evaluator dictionary.
+
+    Notes
+    -----
+    This test function checks the remove_flatlined_values method of the Processor class.
+    It mocks relevant functions and classes for the test.
+
+    Assertions
+    ----------
+    - For each index in standard_series, quality_series, and check_series, it is within
+        the specified date range.
+    - The import_data method updates the series with new data and retains existing
+        changes without overwriting.
+    - The import_data method overwrites existing data when the 'overwrite' parameter
+        is set to True.
+
+    """
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_get_data(*args, **kwargs):
+        xml, data_func = mock_get_data
+        return xml, data_func(*args, **kwargs)
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    ann.configure(stream_format_str="%(function_name)s | %(site)s")
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in this case, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_data", get_mock_get_data)
+
+    from_date = "2023-01-01"
+    to_date = "2023/01/01 00:30"
+
+    pr = processor.Processor(
+        base_url="https://greenwashed.and.pleasant/",
+        site=SITES[1],
+        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_measurement_name=MEASUREMENTS[0],
+        frequency="15min",
+        from_date=from_date,
+        to_date=to_date,
+    )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+
+    flatty = pr.standard_data.loc["2023-01-01 00:00:00", "Value"]
+    pr.standard_data.loc["2023-01-01 00:15:00", "Value"] = flatty
+    pr.standard_data.loc["2023-01-01 00:30:00", "Value"] = flatty
+    pr.standard_data.loc["2023-01-01 00:45:00", "Value"] = flatty
+
+    pr.remove_flatlined_values()
+    print(pr.standard_data.head())
+
+    assert pd.isna(pr.standard_data.loc["2023-01-01 00:30:00", "Value"])
+
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Changes"] == "FLN"
+
+    assert pr.standard_data.loc["2023-01-01 00:30:00", "Remove"]
 
 
 def test_gap_closer(
@@ -548,35 +1148,37 @@ def test_gap_closer(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
     )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
 
     # Checking that the data points I want to delete actually exist:
-    start_idx = "2023-01-01 00:20:00"
-    end_idx = "2023-01-01 00:25:00"
-    assert pd.to_datetime(start_idx) in pr.standard_series
-    assert pd.to_datetime(end_idx) in pr.standard_series
+    start_idx = "2023-01-01 00:15:00"
+    end_idx = "2023-01-01 00:45:00"
+    assert pd.to_datetime(start_idx) in pr.standard_data.index
+    assert pd.to_datetime(end_idx) in pr.standard_data.index
 
     # Make a small gap
     pr.delete_range(start_idx, end_idx)
 
     # Check that gap was made
     assert (
-        pd.to_datetime(start_idx) not in pr.standard_series
+        pd.to_datetime(start_idx) not in pr.standard_data.index
     ), "processor.delete_range appears to be broken."
     assert (
-        pd.to_datetime(end_idx) not in pr.standard_series
+        pd.to_datetime(end_idx) not in pr.standard_data.index
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
     pr.insert_missing_nans()
-
     # Check that NaNs are inserted
     assert pd.isna(
-        pr.standard_series[start_idx]
+        pr.standard_data.loc[start_idx, "Value"]
     ), "processor.insert_missing_nans appears to be broken."
     assert pd.isna(
-        pr.standard_series[end_idx]
+        pr.standard_data.loc[end_idx, "Value"]
     ), "processor.insert_missing_nans appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
@@ -584,10 +1186,47 @@ def test_gap_closer(
 
     # Check that gap was closed
     assert (
-        pd.to_datetime(start_idx) not in pr.standard_series
+        pd.to_datetime(start_idx) not in pr.standard_data
     ), "processor.gap_closer appears to be broken."
     assert (
-        pd.to_datetime(end_idx) not in pr.standard_series
+        pd.to_datetime(end_idx) not in pr.standard_data
+    ), "processor.gap_closer appears to be broken."
+
+    # Make a LARGE gap
+    # Checking that the data points I want to delete actually exist:
+    start_idx = "2023-01-01 05:00:00"
+    end_idx = "2023-01-05 00:00:00"
+    assert pd.to_datetime(start_idx) in pr.standard_data.index
+    assert pd.to_datetime(end_idx) in pr.standard_data.index
+    pr.delete_range(start_idx, end_idx)
+
+    # Check that gap was made
+    assert (
+        pd.to_datetime(start_idx) not in pr.standard_data.index
+    ), "processor.delete_range appears to be broken."
+    assert (
+        pd.to_datetime(end_idx) not in pr.standard_data.index
+    ), "processor.delete_range appears to be broken."
+
+    # Insert nans where values are missing
+    pr.insert_missing_nans()
+    # Check that NaNs are inserted
+    assert pd.isna(
+        pr.standard_data.loc[start_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+    assert pd.isna(
+        pr.standard_data.loc[end_idx, "Value"]
+    ), "processor.insert_missing_nans appears to be broken."
+
+    # "Close" gaps (i.e. remove nan rows)
+    pr.gap_closer()
+
+    # Check that gap was NOT closed
+    assert pd.isna(
+        pr.standard_data.loc[start_idx, "Value"]
+    ), "processor.gap_closer appears to be broken."
+    assert pd.isna(
+        pr.standard_data.loc[end_idx, "Value"]
     ), "processor.gap_closer appears to be broken."
 
 
@@ -599,42 +1238,7 @@ def test_data_export(
     mock_qc_evaluator_dict,
     tmp_path,
 ):
-    """
-    Test the 'gap_closer' method of the Processor class.
-
-    Parameters
-    ----------
-    monkeypatch : pytest.MonkeyPatch
-        Pytest fixture to modify or mock modules during testing.
-    mock_site_list : pytest fixture
-        Mocked response for the site list.
-    mock_measurement_list : pytest fixture
-        Mocked response for the measurement list.
-    mock_get_data : pytest fixture
-        Mock response for the get_data server call method.
-    mock_qc_evaluator_dict : pytest fixture
-        Mocked response for the quality control evaluator dictionary.
-
-    Notes
-    -----
-    - This test checks the functionality of the 'gap_closer' method in the Processor
-        class.
-    - It involves creating a Processor object, making a gap in the data, inserting NaNs,
-        and then closing the gap.
-    - Assertions are made to ensure that the gap is properly created, NaNs are inserted,
-        and the gap is closed.
-
-    Assertions
-    ----------
-    - The data points that are intended to be deleted actually exist before the gap
-        creation.
-    - After creating a small gap, check that the gap was made by confirming the absence
-        of the specified data points.
-    - Check that NaNs are correctly inserted into the specified positions in the data.
-    - After closing the gaps, verify that the specified data points are no longer
-        present in the data.
-
-    """
+    """Test the 'data_exporter' method of the Processor class."""
 
     def get_mock_site_list(*args, **kwargs):
         _ = args, kwargs
@@ -672,18 +1276,20 @@ def test_data_export(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        frequency="5min",
+        frequency="15min",
     )
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
 
     # Checking that the data points I want to delete actually exist:
-    start_idx = "2023-01-01 00:20:00"
-    end_idx = "2023-01-01 00:25:00"
-    assert pd.to_datetime(start_idx) in pr.standard_series
-    assert pd.to_datetime(end_idx) in pr.standard_series
+    start_idx = "2023-01-01 00:15:00"
+    end_idx = "2023-01-05 00:45:00"
+    assert pd.to_datetime(start_idx) in pr.standard_data["Value"]
+    assert pd.to_datetime(end_idx) in pr.standard_data["Value"]
 
-    # =======================Make a small gap========================
-    print("Gappy Chappy")
-    pr.delete_range(start_idx, end_idx)
+    # =======================Make a gap========================
+    pr.remove_range(start_idx, end_idx)
 
     gap_path_csv = tmp_path / "gap_output.csv"
     gap_path_hilltop_csv = tmp_path / "gap_output_hilltop"
@@ -693,7 +1299,7 @@ def test_data_export(
 
     read_csv_df = pd.read_csv(gap_path_csv)
     # Check that the csv was filled in with nans where there are no quality values
-    assert pd.isna(read_csv_df["General Nastiness [Quality]"].iloc[1])
+    assert pd.isna(read_csv_df["Quality"].iloc[1])
 
     # The hilltop_csv format outputs two files:
     # one for standard and qc together,
@@ -709,11 +1315,12 @@ def test_data_export(
     assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
     assert start_idx not in list(read_hilltop_check_csv_df.index)
 
-    print("Before xml export:", pr.quality_series.index)
     pr.data_exporter(gap_path_xml, ftype="xml")
-    print("After xml export:", pr.quality_series.index)
+
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
+
+    assert gap_path_blob is not None
 
     std_indices = gap_path_blob[0].data.timeseries.index
     assert pd.Timestamp(start_idx) not in list(std_indices)
@@ -721,9 +1328,7 @@ def test_data_export(
     # =======================Insert Nans========================
     # This is how we internally represent gaps. They need to be converted to the Gap
     # tag for xml export.
-    print("Before nans:", pr.quality_series.index)
     pr.insert_missing_nans()
-    print("After nans:", pr.quality_series.index)
 
     pr.data_exporter(gap_path_csv, ftype="csv")
 
@@ -742,15 +1347,14 @@ def test_data_export(
     # Check that the deleted values have not been filled somehow
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
     # assert start_idx not in list(read_hilltop_check_csv_df.index)
-    print(read_hilltop_std_qc_csv_df)
-    print(read_hilltop_check_csv_df)
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
 
-    print(gap_path_xml.read_text())
+    assert gap_path_xml.read_text().split("\n")[22].strip() == "<Gap />"
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
+    assert gap_path_blob is not None
     std_indices = gap_path_blob[0].data.timeseries.index
     assert start_idx not in list(std_indices)

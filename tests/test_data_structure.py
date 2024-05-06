@@ -48,8 +48,8 @@ def correct_blobs():
     ]
 
     data_types = [
-        pd.Series,
-        pd.Series,
+        pd.DataFrame,
+        pd.DataFrame,
         pd.DataFrame,
     ]
 

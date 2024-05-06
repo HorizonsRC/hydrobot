@@ -157,6 +157,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
+
         if interval_dict is None:
             self._interval_dict = {}
         else:
@@ -892,6 +893,7 @@ class Processor:
                 gap_limit = int(self._defaults["gap_limit"])
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+
         if interval_dict is None:
             interval_dict = self._interval_dict
 
