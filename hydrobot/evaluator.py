@@ -425,6 +425,7 @@ def quality_encoder(
     qc_evaluator: QualityCodeEvaluator,
     gap_limit: int,
     max_qc=np.NaN,
+    interval_dict: dict = None,
 ) -> pd.Series:
     """
     Return complete QC series.
@@ -437,10 +438,12 @@ def quality_encoder(
         Check data time series
     qc_evaluator : data_sources.QualityCodeEvaluator
         Handler for QC comparisons
-    gap_limit
+    gap_limit : int
         Maximum size of gaps which will be ignored
-    max_qc
+    max_qc : numeric
         Maximum allowed QC value
+    interval_dict : dict
+        Key:Value pairs of max_interval:downgraded_qc for single_downgrade_out_of_validation
 
     Returns
     -------
@@ -448,7 +451,11 @@ def quality_encoder(
         The modified QC series, indexed by the start time of the QC period
     """
     qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
-    qc_series = bulk_downgrade_out_of_validation(qc_series, check_series)
+    if interval_dict is None:
+        interval_dict = {}
+    qc_series = bulk_downgrade_out_of_validation(
+        qc_series, check_series, interval_dict=interval_dict
+    )
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
     qc_series = max_qc_limiter(qc_series, max_qc)
     # qc_series.index.name = "Time"
@@ -456,18 +463,10 @@ def quality_encoder(
     return qc_series
 
 
-_default_date_offset = pd.DateOffset(months=2)
-_default_date_offset_dict = {
-    pd.DateOffset(months=2): 500,
-    pd.DateOffset(months=4): 400,
-    pd.DateOffset(months=6): 200,
-}
-
-
 def bulk_downgrade_out_of_validation(
     qc_series: pd.Series,
     check_series: pd.Series,
-    interval_dict: dict = _default_date_offset_dict,
+    interval_dict: dict,
     day_end_rounding: bool = True,
 ):
     """
@@ -502,7 +501,7 @@ def bulk_downgrade_out_of_validation(
 def single_downgrade_out_of_validation(
     qc_series: pd.Series,
     check_series: pd.Series,
-    max_interval: pd.DateOffset = _default_date_offset,
+    max_interval: pd.DateOffset,
     downgraded_qc: int = 200,
     day_end_rounding: bool = True,
 ):
