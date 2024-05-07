@@ -886,15 +886,58 @@ class Processor:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
 
         qc_checks = self.check_data[self.check_data["QC"]]
-        self.quality_data["Value"] = evaluator.quality_encoder(
-            self._standard_data["Value"],
+
+        chk_frame = evaluator.check_data_quality_code(
+            self.standard_data["Value"],
             qc_checks["Value"],
             self._quality_code_evaluator,
-            gap_limit=gap_limit,
-            max_qc=max_qc,
         )
+        self._apply_quality(chk_frame, replace=True)
 
-    @ClassLogger
+        oov_frame = evaluator.bulk_downgrade_out_of_validation(
+            self.quality_data, qc_checks["Value"]
+        )
+        self._apply_quality(oov_frame)
+
+        msg_frame = evaluator.missing_data_quality_code(
+            self.standard_data["Value"],
+            self.quality_data,
+            gap_limit=gap_limit,
+        )
+        self._apply_quality(msg_frame)
+
+        lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
+        self._apply_quality(lim_frame)
+
+    def _apply_quality(
+        self,
+        changed_data,
+        replace=False,
+    ):
+        if replace:
+            self.quality_data = changed_data
+        else:
+            # Step 1: Merge the dataframes using an outer join
+            merged_df = self.quality_data.merge(
+                changed_data,
+                how="outer",
+                left_index=True,
+                right_index=True,
+                suffixes=("_old", "_new"),
+            )
+
+            # Step 2: Replace NaN values in df1 with corresponding values from df2
+            merged_df["Value"] = merged_df["Value_old"].fillna(merged_df["Value_new"])
+            merged_df["Code"] = merged_df["Code_old"].fillna(merged_df["Code_new"])
+            merged_df["Details"] = merged_df["Details_old"].fillna(
+                merged_df["Details_new"]
+            )
+
+            # Step 3: Combine the two dataframes, prioritizing non-null values from df2
+            self.quality_data = merged_df[["Value", "Code", "Details"]].combine_first(
+                self.quality_data
+            )
+
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """
         Clip data within specified low and high values.

@@ -52,6 +52,7 @@ class QualityCodeEvaluator:
             qc = 500
         else:
             qc = 400
+
         return qc
 
 

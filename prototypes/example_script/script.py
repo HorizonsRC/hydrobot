@@ -25,6 +25,10 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = hydrobot_config_yaml_init("config.yaml")
 
+st.set_page_config(page_title="Hydrobot0.5.2", layout="wide", page_icon="💦")
+st.title(f"{data.site}")
+st.header(f"{data.standard_measurement_name}")
+
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
@@ -61,6 +65,7 @@ all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
+
 
 data.insert_missing_nans()
 
@@ -105,10 +110,6 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-st.set_page_config(page_title="Hydrobot0.5.1", layout="wide", page_icon="💦")
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-st.dataframe(data.standard_data)
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(

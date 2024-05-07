@@ -78,7 +78,11 @@ def check_data():
 def qc_data():
     """Example data for testing. Do not change these values."""
     data_series = pd.Series(qc_data_dict)
-    return data_series
+    qc_frame = pd.DataFrame({})
+    qc_frame["Value"] = data_series
+    qc_frame["Code"] = "CHK"
+    qc_frame["Details"] = "Message goes here"
+    return qc_frame
 
 
 @pytest.mark.dependency(name="test_gap_finder")
@@ -198,10 +202,10 @@ def test_check_data_quality_code(raw_data, check_data):
     assert (
         len(output) == len(check_data) + 1
     ), "different amount of QC values than check data values"
-    assert output.iloc[0] == 600, "QC 600 test failed"
-    assert output.iloc[1] == 500, "QC 500 test failed"
-    assert output.iloc[2] == 400, "QC 400 test failed"
-    assert output.iloc[3] == 0, "Should have QC 0 at the end"
+    assert output.iloc[0, 0] == 600, "QC 600 test failed"
+    assert output.iloc[1, 0] == 500, "QC 500 test failed"
+    assert output.iloc[2, 0] == 400, "QC 400 test failed"
+    assert output.iloc[3, 0] == 0, "Should have QC 0 at the end"
 
 
 def test_base_data_qc_filter(gap_data, qc_data):
