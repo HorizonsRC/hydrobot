@@ -42,4 +42,4 @@ inspection_expiry:
     500:
         months: 2
     0:
-        months: 6
+        months: 4

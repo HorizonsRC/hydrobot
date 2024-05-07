@@ -110,7 +110,6 @@ def get_time_range(
     )
 
     hilltop_xml = get_hilltop_xml(url)
-    print(url)
 
     data_object = parse_xml(hilltop_xml)
 

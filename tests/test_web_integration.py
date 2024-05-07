@@ -46,14 +46,14 @@ def test_data_structure_integration(tmp_path):
     """
     processing_parameters = {
         "base_url": "http://hilltopdev.horizons.govt.nz/",
-        "standard_hts_filename": "RawLogger.hts",
-        "check_hts_filename": "boo.hts",
+        "standard_hts_filename": "RawLoggerNet.hts",
+        "check_hts_filename": "Archive.hts",
         "site": "Whanganui at Te Rewa",
         "from_date": "2021-06-28 00:00",
         "to_date": "2021-07-01 23:00",
         "frequency": "5min",
         "standard_measurement_name": "Stage",
-        "check_measurement_name": "External S.G. [Water Level NRT]",
+        "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
             "high_clip": 20000,
             "low_clip": 0,
@@ -174,10 +174,10 @@ def test_data_structure_integration(tmp_path):
 
     write_hilltop_xml(check_blobs, check_output_path)
 
-    with open(check_input_path) as f:
+    with open(check_input_path, encoding="utf8") as f:
         check_input_xml = f.read()
 
-    with open(check_output_path) as f:
+    with open(check_output_path, encoding="utf8") as f:
         check_output_xml = f.read()
 
     check_input_tree = DefusedElementTree.fromstring(check_input_xml)
@@ -222,14 +222,14 @@ def test_processor_integration(tmp_path):
     """
     processing_parameters = {
         "base_url": "http://hilltopdev.horizons.govt.nz/",
-        "standard_hts_filename": "RawLogger.hts",
-        "check_hts_filename": "boo.hts",
+        "standard_hts_filename": "RawLoggerNet.hts",
+        "check_hts_filename": "Archive.hts",
         "site": "Whanganui at Te Rewa",
         "from_date": "2021-01-01 00:00",
         "to_date": "2021-02-02 23:00",
         "frequency": "5min",
         "standard_measurement_name": "Water level statistics: Point Sample",
-        "check_measurement_name": "External S.G. [Water Level NRT]",
+        "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
             "high_clip": 5000,
             "low_clip": 4500,
@@ -462,14 +462,14 @@ def test_empty_response(tmp_path):
     """
     processing_parameters = {
         "base_url": "http://hilltopdev.horizons.govt.nz/",
-        "standard_hts_filename": "RawLogger.hts",
-        "check_hts_filename": "boo.hts",
+        "standard_hts_filename": "RawLoggerNet.hts",
+        "check_hts_filename": "Archive.hts",
         "site": "Whanganui at Te Rewa",
-        "from_date": "2003-01-01 00:00",
-        "to_date": "2003-02-02 23:00",
+        "from_date": "1903-01-01 00:00",
+        "to_date": "1903-02-02 23:00",
         "frequency": "5min",
         "standard_measurement_name": "Water level statistics: Point Sample",
-        "check_measurement_name": "External S.G. [Water Level NRT]",
+        "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
             "high_clip": 5000,
             "low_clip": 0,
@@ -556,14 +556,14 @@ def test_failed_requests(tmp_path):
     """
     processing_parameters = {
         "base_url": "http://hilltopdev.horizons.govt.nz/",
-        "standard_hts_filename": "RawLogger.hts",
-        "check_hts_filename": "boo.hts",
+        "standard_hts_filename": "RawLoggerNet.hts",
+        "check_hts_filename": "Archive.hts",
         "site": "Whanganui at Te Rewa",
         "from_date": "2003-01-01 00:00",
         "to_date": "2003-02-02 23:00",
         "frequency": "4min",
         "standard_measurement_name": "Water level statistics: Point Sample",
-        "check_measurement_name": "External S.G. [Water Level NRT]",
+        "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
             "high_clip": 5000,
             "low_clip": 0,
