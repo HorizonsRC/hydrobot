@@ -434,9 +434,6 @@ def make_processing_dash(
         )
         first_change = False
 
-    print(len(htp_check))
-    print(standard_data["Value"].iloc[nearest_htp_indices])
-
     fig_subplots.add_trace(
         go.Scatter(
             x=htp_check["Value"].index,

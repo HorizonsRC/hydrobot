@@ -21,15 +21,6 @@ from hydrobot import (
 
 annalizer = Annalist()
 
-DEFAULTS = {
-    "high_clip": 30,
-    "low_clip": 0,
-    "delta": 30,
-    "span": 10,
-    "gap_limit": 12,
-    "max_qc": np.NaN,
-}
-
 
 class Processor:
     """A class used to process data from a Hilltop server."""
@@ -47,6 +38,7 @@ class Processor:
         check_hts: str | None = None,
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
+        interval_dict: dict | None = None,
         **kwargs,
     ):
         """
@@ -74,13 +66,12 @@ class Processor:
             The measurement to be checked (default is None).
         defaults : dict, optional
             The default settings (default is None).
+        interval_dict : dict, optional
+            Determines how data with old checks is downgraded
         kwargs : dict
             Additional keyword arguments.
         """
-        if defaults is None:
-            self._defaults = DEFAULTS
-        else:
-            self._defaults = defaults
+        self._defaults = defaults
         if check_hts is None:
             check_hts = standard_hts
         if check_measurement_name is None:
@@ -166,8 +157,12 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
-        self._stale = True
-        self._no_data = True
+
+        if interval_dict is None:
+            self._interval_dict = {}
+        else:
+            self._interval_dict = interval_dict
+
         self._standard_data = pd.DataFrame(
             columns=[
                 "Time",
@@ -260,7 +255,6 @@ class Processor:
     @quality_code_evaluator.setter
     def quality_code_evaluator(self, value):
         self._quality_code_evaluator = value
-        self._stale = True
 
     @property
     def defaults(self):  # type: ignore
@@ -742,7 +736,6 @@ class Processor:
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.set_date_range("2022-01-01", "2022-12-31")
         >>> processor.import_data(standard=True, check=True)
-        >>> processor.stale
         False
         """
         if standard:
@@ -841,7 +834,10 @@ class Processor:
             stacklevel=1,
         )
         if gap_limit is None:
-            gap_limit = int(self._defaults["gap_limit"])
+            if "gap_limit" not in self._defaults:
+                raise ValueError("gap_limit value required, no value found in defaults")
+            else:
+                gap_limit = int(self._defaults["gap_limit"])
 
         gapless = evaluator.small_gap_closer(
             self._standard_data["Value"].squeeze(), gap_limit=gap_limit
@@ -850,7 +846,10 @@ class Processor:
 
     @ClassLogger
     def quality_encoder(
-        self, gap_limit: int | None = None, max_qc: int | float | None = None
+        self,
+        gap_limit: int | None = None,
+        max_qc: int | float | None = None,
+        interval_dict: dict | None = None,
     ):
         """
         Encode quality information in the quality series.
@@ -861,6 +860,13 @@ class Processor:
             The maximum number of consecutive missing values to consider as gaps, by
             default None.
             If None, the gap limit from the class defaults is used.
+        max_qc : numeric or None, optional
+            Maximum quality code possible at site
+            If None, the max qc from the class defaults is used.
+        interval_dict : dict or None, optional
+            Dictionary that dictates when to downgrade data with old checks
+            Takes pd.DateOffset:quality_code pairs
+            If None, the interval_dict from the class defaults is used.
 
         Returns
         -------
@@ -881,9 +887,15 @@ class Processor:
         <updated quality series with encoded quality flags>
         """
         if gap_limit is None:
-            gap_limit = int(self._defaults["gap_limit"])
+            if "gap_limit" not in self._defaults:
+                raise ValueError("gap_limit value required, no value found in defaults")
+            else:
+                gap_limit = int(self._defaults["gap_limit"])
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+
+        if interval_dict is None:
+            interval_dict = self._interval_dict
 
         qc_checks = self.check_data[self.check_data["QC"]]
         self.quality_data["Value"] = evaluator.quality_encoder(
@@ -892,6 +904,7 @@ class Processor:
             self._quality_code_evaluator,
             gap_limit=gap_limit,
             max_qc=max_qc,
+            interval_dict=interval_dict,
         )
 
     @ClassLogger
@@ -928,9 +941,17 @@ class Processor:
         <clipped check series within the specified range>
         """
         if low_clip is None:
-            low_clip = float(self._defaults["low_clip"])
+            low_clip = (
+                float(self._defaults["low_clip"])
+                if "low_clip" in self._defaults
+                else np.NaN
+            )
         if high_clip is None:
-            high_clip = float(self._defaults["high_clip"])
+            high_clip = (
+                float(self._defaults["high_clip"])
+                if "high_clip" in self._defaults
+                else np.NaN
+            )
 
         clipped = filters.clip(
             self._standard_data["Value"].squeeze(), low_clip, high_clip
@@ -985,9 +1006,15 @@ class Processor:
         <standard series with outliers removed>
         """
         if span is None:
-            span = int(self._defaults["span"])
+            if "span" not in self._defaults:
+                raise ValueError("span value required, no value found in defaults")
+            else:
+                span = int(self._defaults["span"])
         if delta is None:
-            delta = float(self._defaults["delta"])
+            if "delta" not in self._defaults:
+                raise ValueError("delta value required, no value found in defaults")
+            else:
+                delta = float(self._defaults["delta"])
 
         rm_outliers = filters.remove_outliers(
             self._standard_data["Value"].squeeze(), span, delta
@@ -1041,13 +1068,27 @@ class Processor:
         <standard series with spikes removed>
         """
         if low_clip is None:
-            low_clip = float(self._defaults["low_clip"])
+            low_clip = (
+                float(self._defaults["low_clip"])
+                if "low_clip" in self._defaults
+                else np.NaN
+            )
         if high_clip is None:
-            high_clip = float(self._defaults["high_clip"])
+            high_clip = (
+                float(self._defaults["high_clip"])
+                if "low_clip" in self._defaults
+                else np.NaN
+            )
         if span is None:
-            span = int(self._defaults["span"])
+            if "span" not in self._defaults:
+                raise ValueError("span value required, no value found in defaults")
+            else:
+                span = int(self._defaults["span"])
         if delta is None:
-            delta = float(self._defaults["delta"])
+            if "delta" not in self._defaults:
+                raise ValueError("delta value required, no value found in defaults")
+            else:
+                delta = float(self._defaults["delta"])
 
         rm_spikes = filters.remove_spikes(
             self._standard_data["Value"].squeeze(),
@@ -1184,7 +1225,10 @@ class Processor:
             stacklevel=1,
         )
         if gap_limit is None:
-            gap_limit = self._defaults["gap_limit"]
+            if "gap_limit" not in self._defaults:
+                raise ValueError("gap_limit value required, no value found in defaults")
+            else:
+                gap_limit = self._defaults["gap_limit"]
 
         if tstype_standard:
             self.standard_data = filters.remove_range(
@@ -1516,10 +1560,13 @@ class Processor:
             actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
 
             # TODO: Handle gaps
-            standard_timeseries = evaluator.small_gap_closer(
-                actual_nan_timeseries,
-                gap_limit=self._defaults["gap_limit"],
-            )
+            if "gap_limit" not in self._defaults:
+                pass
+            else:
+                standard_timeseries = evaluator.small_gap_closer(
+                    actual_nan_timeseries,
+                    gap_limit=self._defaults["gap_limit"],
+                )
 
             standard_data = data_structure.Data(
                 date_format="Calendar",
@@ -1666,5 +1713,6 @@ def hydrobot_config_yaml_init(config_path):
         processing_parameters["check_hts_filename"],
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
+        processing_parameters["inspection_expiry"],
     )
     return data, ann
