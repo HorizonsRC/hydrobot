@@ -16,6 +16,15 @@ from hydrobot.data_structure import parse_xml
 
 ann = Annalist()
 
+DEFAULTS = {
+    "high_clip": 30,
+    "low_clip": 0,
+    "delta": 30,
+    "span": 10,
+    "gap_limit": 12,
+    "max_qc": np.NaN,
+}
+
 SITES = [
     "Slimy Bog at Dirt Road",
     "Mid Stream at Cowtoilet Farm",
@@ -416,6 +425,7 @@ def test_processor_init(
         standard_measurement_name=MEASUREMENTS[0],
         check_measurement_name=CHECK_MEASUREMENTS[0],
         frequency="15min",
+        defaults=DEFAULTS,
     )
 
     captured = capsys.readouterr()
@@ -541,6 +551,7 @@ def test_to_xml_data_structure(
             standard_measurement_name=meas,
             check_measurement_name=check,
             frequency="15min",
+            defaults=DEFAULTS,
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -644,6 +655,7 @@ def test_import_data(
         frequency="15min",
         from_date=from_date,
         to_date=to_date,
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -743,6 +755,7 @@ def test_remove_range(
         frequency="15min",
         from_date=from_date,
         to_date=to_date,
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -849,6 +862,7 @@ def test_clip(
         frequency="15min",
         from_date=from_date,
         to_date=to_date,
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -950,6 +964,7 @@ def test_remove_spikes(
         frequency="15min",
         from_date=from_date,
         to_date=to_date,
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1048,6 +1063,7 @@ def test_remove_flatlined_values(
         frequency="15min",
         from_date=from_date,
         to_date=to_date,
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1149,6 +1165,7 @@ def test_gap_closer(
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1277,6 +1294,7 @@ def test_data_export(
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
+        defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
