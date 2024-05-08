@@ -84,14 +84,14 @@ Inspections = inspections_Survey123 %>%
 
 colnames(Inspections) = c("ID", "Site Name", "Arrival Time", "Departure Time", "InspectionStaff",
                           "Weather", "Notes", "Water level notes", "MeterID", "DO Notes",
-                          "AP Handheld", "AP Logger",
+                          "Value", "AP Logger",
                           "Date", "Time")
 
 Inspections = Inspections %>%
   select("ID", "Site Name", "Date", "Time", "Weather",
          "Arrival Time", "Departure Time", "InspectionStaff",
          "Notes", "Water level notes", "MeterID", "DO Notes",
-         "AP Handheld", "AP Logger") %>%
+         "Value", "AP Logger") %>%
   mutate(`Arrival Time` = as.character(`Arrival Time`),
          `Departure Time` = as.character(`Departure Time`)) %>%
   unique(.)
@@ -125,12 +125,12 @@ if (site %in% sites){
             `Water level notes` = NA,
             `DO Notes` = NA,
             `AP Logger` = NA) %>%
-     rename("AP Handheld" = "Field Baro Pressure (HRC)",
+     rename("Value" = "Field Baro Pressure (HRC)",
             "InspectionStaff" = "SampledBy",
             "Notes" = "Comments") %>%
      select(ID, `Site Name`, Date, Time, Weather, `Arrival Time`, `Departure Time`,
             InspectionStaff, Notes, `Water level notes`, MeterID,
-            `DO Notes`, `AP Handheld`,
+            `DO Notes`, `Value`,
             `AP Logger`) %>%
   #   rbind(., Inspections) %>%
   #   select(-ID) %>%
@@ -212,11 +212,11 @@ write.csv(NCRs, paste0(folder_filepath, "AP_non-conformance_reports.csv"), row.n
 # ------ Keep just check data, format to fit Hilltop and save as csv ------
 
 check_data = full_dat %>%
-  select(Date, Time, `AP Handheld`, `Arrival Time`, Notes) %>%
-  filter(!is.na(`AP Handheld`),
+  select(Date, Time, `Value`, `Arrival Time`, Notes) %>%
+  filter(!is.na(`Value`),
          Date <= endDate) %>%
-  distinct(Date, `AP Handheld`, .keep_all = TRUE) %>%
-  dplyr::rename("Check Pressure" = "AP Handheld",
+  distinct(Date, `Value`, .keep_all = TRUE) %>%
+  dplyr::rename("Check Pressure" = "Value",
          "Recorder Time" = "Arrival Time",
         "Comment" = "Notes") %>%
   mutate(`Check Pressure` = as.numeric(`Check Pressure`)) %>%
