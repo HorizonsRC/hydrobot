@@ -303,7 +303,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -456,7 +456,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -563,7 +563,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -734,8 +734,7 @@ class Processor:
         Examples
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.set_date_range("2022-01-01", "2022-12-31")
-        >>> processor.import_data(standard=True, check=True)
+        >>> processor.import_data("2022-01-01", "2022-12-31",standard=True, check=True)
         False
         """
         if standard:
@@ -757,10 +756,10 @@ class Processor:
 
         Returns
         -------
-        None, but adds data to self.standard_series
+        None, but adds data to self.standard_data
         """
-        combined = utils.merge_series(self.standard_series, extra_standard)
-        self.standard_series = combined
+        combined = utils.merge_series(self.standard_data["Value"], extra_standard)
+        self.standard_data["Value"] = combined
 
     @ClassLogger
     def add_check(self, extra_check):
@@ -776,8 +775,8 @@ class Processor:
         -------
         None, but adds data to self.check_series
         """
-        combined = utils.merge_series(self.check_series, extra_check)
-        self.check_series = combined
+        combined = utils.merge_series(self.check_data["Value"], extra_check)
+        self.check_data["Value"] = combined
 
     @ClassLogger
     def add_quality(self, extra_quality):
@@ -793,8 +792,8 @@ class Processor:
         -------
         None, but adds data to self.quality_series
         """
-        combined = utils.merge_series(self.quality_series, extra_quality)
-        self.quality_series = combined
+        combined = utils.merge_series(self.quality_data["Value"], extra_quality)
+        self.quality_data["Value"] = combined
 
     @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
@@ -825,7 +824,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.gap_closer(gap_limit=5)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <updated standard series with closed gaps>
         """
         warnings.warn(
@@ -883,7 +882,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.quality_encoder(gap_limit=5)
-        >>> processor.quality_series
+        >>> processor.quality_data["Value"]
         <updated quality series with encoded quality flags>
         """
         if gap_limit is None:
@@ -977,9 +976,9 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.clip(low_clip=0, high_clip=100)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <clipped standard series within the specified range>
-        >>> processor.check_series
+        >>> processor.check_data["Value"]
         <clipped check series within the specified range>
         """
         if low_clip is None:
@@ -1044,7 +1043,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.remove_outliers(span=10, delta=2.0)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <standard series with outliers removed>
         """
         if span is None:
@@ -1106,7 +1105,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.remove_spikes(low_clip=10, high_clip=20, span=5, delta=2.0)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <standard series with spikes removed>
         """
         if low_clip is None:
@@ -1168,12 +1167,7 @@ class Processor:
             The start date of the range to delete.
         to_date : str
             The end date of the range to delete.
-        tstype_standard : bool, optional
-            Flag to delete data from the standard series, by default True.
-        tstype_check : bool, optional
-            Flag to delete data from the check series, by default False.
-        tstype_quality : bool, optional
-            Flag to delete data from the quality series, by default False.
+
 
         Returns
         -------
