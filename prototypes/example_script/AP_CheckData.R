@@ -84,14 +84,14 @@ Inspections = inspections_Survey123 %>%
 
 colnames(Inspections) = c("ID", "Site Name", "Arrival Time", "Departure Time", "InspectionStaff",
                           "Weather", "Notes", "Water level notes", "MeterID", "DO Notes",
-                          "Value", "AP Logger",
+                          "Value", "Logger",
                           "Date", "Time")
 
 Inspections = Inspections %>%
   select("ID", "Site Name", "Date", "Time", "Weather",
          "Arrival Time", "Departure Time", "InspectionStaff",
          "Notes", "Water level notes", "MeterID", "DO Notes",
-         "Value", "AP Logger") %>%
+         "Value", "Logger") %>%
   mutate(`Arrival Time` = as.character(`Arrival Time`),
          `Departure Time` = as.character(`Departure Time`)) %>%
   unique(.)
@@ -124,14 +124,14 @@ if (site %in% sites){
             `Departure Time` = NA,
             `Water level notes` = NA,
             `DO Notes` = NA,
-            `AP Logger` = NA) %>%
+            `Logger` = NA) %>%
      rename("Value" = "Field Baro Pressure (HRC)",
             "InspectionStaff" = "SampledBy",
             "Notes" = "Comments") %>%
      select(ID, `Site Name`, Date, Time, Weather, `Arrival Time`, `Departure Time`,
             InspectionStaff, Notes, `Water level notes`, MeterID,
             `DO Notes`, `Value`,
-            `AP Logger`) %>%
+            `Logger`) %>%
   #   rbind(., Inspections) %>%
   #   select(-ID) %>%
      arrange(desc(`Arrival Time`))

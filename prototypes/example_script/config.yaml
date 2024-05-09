@@ -8,14 +8,13 @@ standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "boo.hts"
 
 # Data Source Configuration
-site: "Rangitikei at Mangaweka"
+site: "Manawatu at Teachers College"
 standard_measurement_name: "Atmospheric Pressure"
 check_measurement_name: "Check Pressure"
 frequency: "15min"
 
 # Processing Configuration
 from_date: "2021-04-15 10:30"
-to_date: "2024-05-05 15:30"
 defaults:
   delta: 5
   gap_limit: 12

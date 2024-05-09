@@ -15,6 +15,7 @@ from hydrobot.data_acquisition import (
     import_ncr,
     import_prov_wq,
 )
+from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import hydrobot_config_yaml_init
 from hydrobot.utils import merge_all_comments
@@ -34,13 +35,15 @@ st.header(f"{data.standard_measurement_name}")
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
 
-check_col = "AP Handheld"
-logger_col = "AP Logger"
+check_col = "Value"
+logger_col = "Logger"
 
 inspections = import_inspections(
     "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
-prov_wq = import_prov_wq("AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col)
+prov_wq = import_prov_wq(
+    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+)
 ncrs = import_ncr("AP_non-conformance_reports.csv")
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
@@ -91,6 +94,10 @@ data.remove_spikes()
 # Assign quality codes
 #######################################################################################
 data.quality_encoder()
+data.standard_data["Value"] = trim_series(
+    data.standard_data["Value"],
+    data.check_data["Value"],
+)
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
@@ -114,8 +121,7 @@ fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    data.site,
-    data.standard_data,
+    data,
     all_checks,
 )
 

@@ -570,7 +570,7 @@ def single_downgrade_out_of_validation(
 
     Parameters
     ----------
-    qc_series : pd.Series
+    qc_frame : pd.DataFrame
         Quality series that potentially needs downgrading
     check_series : pd.Series
         Check series to check for frequency of checks
@@ -583,7 +583,7 @@ def single_downgrade_out_of_validation(
 
     Returns
     -------
-    pd.Series
+    pd.DataFrame
         The qc_series with any downgraded QCs added in
     """
     # When they should have their next check by

@@ -93,14 +93,14 @@ colnames(Inspections) = c("ID", "Site Name",
                           "Arrival Time", "Inspection Time", "Departure Time",
                           "InspectionStaff",
                           "Weather", "Notes", "Water level notes", "MeterID", "DO Notes",
-                          "Temp Check", "Temp Logger",
+                          "Value", "Logger",
                           "Date", "Time")
 
 Inspections = Inspections %>%
   select("ID", "Site Name", "Date", "Time", "Weather",
          "Arrival Time", "Inspection Time", "Departure Time", "InspectionStaff",
          "Notes", "Water level notes", "MeterID", "DO Notes",
-         "Temp Check", "Temp Logger") %>%
+         "Value", "Logger") %>%
   mutate(`Arrival Time` = as.character(`Arrival Time`),
          `Inspection Time` = as.character(`Inspection Time`),
          `Departure Time` = as.character(`Departure Time`)) %>%
@@ -139,13 +139,13 @@ if (site %in% sites){
            `Water level notes` = NA,
            `DO Notes` = NA,
            `Temp Logger` = NA) %>%
-    rename("Temp Check" = "Field Temperature (HRC)",
+    rename("Value" = "Field Temperature (HRC)",
            "InspectionStaff" = "SampledBy",
            "Notes" = "Comments") %>%
     select("ID", "Site Name", "Date", "Time", "Weather",
            "Arrival Time", "Inspection Time", "Departure Time", "InspectionStaff",
            "Notes", "Water level notes", "MeterID", "DO Notes",
-           "Temp Check", "Temp Logger") %>%
+           "Value", "Logger") %>%
     #rbind(., Inspections) %>%
     #select(-ID) %>%
     arrange(desc(`Arrival Time`))
@@ -229,7 +229,7 @@ check_data = Inspections %>%
          Date <= endDate) %>%
   mutate(`Recorder Time` = ifelse(!is.na(`Inspection Time`), `Inspection Time`, `Arrival Time`)) %>%
   distinct(Date, `Temp Check`, .keep_all = TRUE) %>%
-  rename("Water Temperature check" = "Temp Check",
+  rename("Water Temperature check" = "Value",
          "Comment" = "Notes") %>%
   mutate(`Water Temperature check` = as.numeric(`Water Temperature check`)) %>%
   select(Date, Time, `Water Temperature check`, `Recorder Time`, Comment) %>%
