@@ -15,6 +15,7 @@ from hydrobot.data_acquisition import (
     import_ncr,
     import_prov_wq,
 )
+from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import hydrobot_config_yaml_init
 from hydrobot.utils import merge_all_comments
@@ -34,8 +35,8 @@ st.header(f"{data.standard_measurement_name}")
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
 
-check_col = "AP Handheld"
-logger_col = "AP Logger"
+check_col = "Value"
+logger_col = "Logger"
 
 inspections = import_inspections(
     "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
@@ -91,6 +92,10 @@ data.remove_spikes()
 # Assign quality codes
 #######################################################################################
 data.quality_encoder()
+data.standard_data["Value"] = trim_series(
+    data.standard_data["Value"],
+    data.check_data["Value"],
+)
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
@@ -111,6 +116,8 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 fig = data.plot_qc_series(show=False)
+
+st.dataframe(data.check_data, use_container_width=True)
 
 fig_subplots = make_processing_dash(
     fig,
