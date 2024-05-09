@@ -196,7 +196,8 @@ def qc_plotter_plotly(
 
     Returns
     -------
-    go.Figure()
+    go.Figure
+
     """
     split_data = splitter(base_series, qc_series, frequency)
     fig = go.Figure()
@@ -300,8 +301,7 @@ def comparison_qc_plotter_plotly(
 
     Returns
     -------
-    None
-        Displays a plot
+    comparison_qc_plotter_plotly
     """
     fig = qc_plotter_plotly(
         base_series, check_series, qc_series, frequency, show=False, **kwargs

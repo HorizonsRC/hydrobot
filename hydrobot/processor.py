@@ -189,8 +189,8 @@ class Processor:
                 "Time",
                 "Raw",
                 "Value",
-                "Changes",
-                "Reason",
+                "Code",
+                "Details",
             ]
         ).set_index("Time")
 

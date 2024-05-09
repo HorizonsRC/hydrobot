@@ -460,8 +460,8 @@ def test_processor_init(
 
     assert pr.quality_data.columns.to_numpy()[0] == "Raw"
     assert pr.quality_data.columns.to_numpy()[1] == "Value"
-    assert pr.quality_data.columns.to_numpy()[2] == "Changes"
-    assert pr.quality_data.columns.to_numpy()[3] == "Reason"
+    assert pr.quality_data.columns.to_numpy()[2] == "Code"
+    assert pr.quality_data.columns.to_numpy()[3] == "Details"
 
     assert pr.check_data.columns.to_numpy()[0] == "Raw"
     assert pr.check_data.columns.to_numpy()[1] == "Value"
