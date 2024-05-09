@@ -320,6 +320,7 @@ def test_flatline_value_remover(raw_data, constant_data):
     ), "Changing data it shouldn't when span is too big"
 
     removed_3 = filters.flatline_value_remover(constant_data, 3)
+    assert len(raw_data) == 5, "Original modified"
     assert len(removed_3) == len(constant_data), "shortened data for removed_3"
     assert math.isclose(
         removed_3["2021-01-01 00:35"], 6.1
