@@ -183,10 +183,11 @@ def remove_range(
     """
     input_series = input_series.copy()
     slice_to_remove = input_series.loc[from_date:to_date]
+
     if len(slice_to_remove) >= min_gap_length:
         if insert_gaps == "all":
-            input_series.loc[from_date:to_date] = np.NaN
-            series_to_return = input_series
+            series_to_return = input_series.copy()
+            series_to_return.loc[from_date:to_date] = np.NaN
         else:
             series_to_return = input_series.drop(slice_to_remove.index)
             if insert_gaps == "start":
