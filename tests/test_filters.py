@@ -174,6 +174,7 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
 
     spike_removed = filters.remove_spikes(raw_data, span, high_clip, low_clip, delta)
     assert math.isnan(spike_removed["2021-01-01 00:10"]), "Spike not removed!"
+    assert not math.isnan(raw_data["2021-01-01 00:10"]), "Original modified!"
 
 
 def test_remove_range(raw_data):
@@ -197,6 +198,7 @@ def test_remove_range(raw_data):
 
     e = filters.remove_range(raw_data, None, None)
     assert e.empty, "double None causes error"
+    assert not raw_data.empty, "Original modified"
 
     f = filters.remove_range(
         raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="all"
@@ -283,6 +285,7 @@ def test_trim_series(raw_data):
     trimmed = filters.trim_series(raw_data, raw_check)
     assert len(trimmed) == 4, "Trimming returned wrong number"
     assert trimmed["2021-01-01 00:15"] == 4.0, "end value changed"
+    assert raw_data["2021-01-01 00:20"] == 5.0, "Original modified"
 
     untrimmed = filters.trim_series(raw_data, pd.Series({}))
     assert raw_data.equals(untrimmed), "empty check series modified the data"
