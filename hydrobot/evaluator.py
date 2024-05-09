@@ -201,9 +201,16 @@ def missing_data_quality_code(std_series, qc_data, gap_limit):
                 prev_qc_data = prev_qc_data[prev_qc_data["Value"] > 100]
                 prev_qc_data = prev_qc_data.sort_index()
                 qc_data.loc[std_series.index[end_idx]] = prev_qc_data.iloc[-1]
-                qc_data.loc[
-                    std_series.index[end_idx], "Details"
-                ] = f"End of gap. Returning to QC code assigned at {prev_qc_data.index[-1]}"
+                if std_series.index[end_idx] in prev_qc_data.index:
+                    qc_data.loc[std_series.index[end_idx], "Details"] = (
+                        qc_data.loc[std_series.index[end_idx], "Details"]
+                        + f" [End of gap which started at {gap[0]}]"
+                    )
+                else:
+                    qc_data.loc[std_series.index[end_idx], "Details"] = (
+                        f"End of gap which started at {gap[0]}. "
+                        f"Returning to QC code first assigned at {prev_qc_data.index[-1]}"
+                    )
                 qc_data = qc_data.sort_index()
 
             # getting rid of any stray QC codes in the middle
@@ -217,9 +224,13 @@ def missing_data_quality_code(std_series, qc_data, gap_limit):
             # start of gap
             qc_data.loc[gap[0], "Value"] = 100
             qc_data.loc[gap[0], "Code"] = "GAP"
+            if end_idx >= len(std_series):
+                gap_end = std_series.index[-1]
+            else:
+                gap_end = std_series.index[end_idx]
             qc_data.loc[
                 gap[0], "Details"
-            ] = f"Missing data amounting to {(std_series.index[end_idx] - gap[0])}"
+            ] = f"Missing data amounting to {(gap_end - gap[0])}"
             qc_data = qc_data.sort_index()
 
     return qc_data.sort_index()
@@ -603,6 +614,6 @@ def single_downgrade_out_of_validation(
     # combine and sort
     if not downgraded_times.empty:
         qc_frame = pd.concat([qc_frame, downgraded_times]).sort_index()
-    qc_frame.loc[qc_frame.index[-1], "Value"] = 0
+    # qc_frame.loc[qc_frame.index[-1], "Value"] = 0
 
     return qc_frame
