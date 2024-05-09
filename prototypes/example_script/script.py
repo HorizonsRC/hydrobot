@@ -114,8 +114,7 @@ fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    data.site,
-    data.standard_data,
+    data,
     all_checks,
 )
 

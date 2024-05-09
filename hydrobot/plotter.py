@@ -196,8 +196,7 @@ def qc_plotter_plotly(
 
     Returns
     -------
-    None
-        Displays a plot
+    go.Figure()
     """
     split_data = splitter(base_series, qc_series, frequency)
     fig = go.Figure()
@@ -322,16 +321,13 @@ def comparison_qc_plotter_plotly(
     return fig
 
 
-def make_processing_dash(
-    fig,
-    title,
-    standard_data,
-    check_data,
-):
+def make_processing_dash(fig, processor, check_data):
     """Make the processing dash.
 
     Sorry about these docs I'm in a rush.
     """
+    standard_data = processor.standard_data
+
     htp_check = check_data[check_data["Source"] == "HTP"]
     srv_check = check_data[check_data["Source"] == "INS"]
     pwq_check = check_data[check_data["Source"] == "SOE"]
@@ -396,7 +392,7 @@ def make_processing_dash(
     for trace in fig.data:
         fig_subplots.add_trace(trace, row=1, col=1)
 
-    fig_subplots.update_layout(title=title)
+    fig_subplots.update_layout(title=processor.site)
 
     def find_nearest_periodic_indices(periodic_series, check_series):
         nearest_periodic_indices = []
@@ -654,8 +650,8 @@ def make_processing_dash(
 
     fig_subplots.update_layout(annotations=arrow_annotations)
 
-    qc400 = 1.2
-    qc500 = 0.8
+    qc400 = processor.quality_code_evaluator.qc_500_limit
+    qc500 = processor.quality_code_evaluator.qc_600_limit
 
     fig_subplots.add_hline(
         y=qc400,
