@@ -109,6 +109,9 @@ def test_clip(raw_data):
         and math.isnan(clipped["2021-01-01 00:05"])
     ), "Border value removed (should not be)!"
 
+    assert not math.isnan(raw_data["2021-01-01 00:00"]), "Original low value changed!"
+    assert not math.isnan(raw_data["2021-01-01 00:20"]), "Original high value changed!"
+
 
 def test_fbewma(raw_data, fbewma_data):
     """Test the FBEWMA function."""
@@ -123,6 +126,10 @@ def test_fbewma(raw_data, fbewma_data):
         fbewma_data.to_numpy()
     ), "FBEWMA failed!"
 
+    assert raw_data.to_numpy() != pytest.approx(
+        fbewma_data.to_numpy()
+    ), "Original values modified!"
+
 
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     """Test the remove outliers function."""
@@ -135,6 +142,7 @@ def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     # This call of remove outliers should call fbewma_mock in the place of fbewma
     no_outliers = filters.remove_outliers(raw_data, span, delta)
     assert math.isnan(no_outliers["2021-01-01 00:10"]), "Outlier not removed!"
+    assert not math.isnan(raw_data["2021-01-01 00:10"]), "Original modified!"
 
 
 def test_remove_spike(raw_data, fbewma_data, mocker):

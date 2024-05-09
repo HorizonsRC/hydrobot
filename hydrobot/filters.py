@@ -181,6 +181,7 @@ def remove_range(
     pd.Series
         The series with relevant slice removed
     """
+    input_series = input_series.copy()
     slice_to_remove = input_series.loc[from_date:to_date]
     if len(slice_to_remove) >= min_gap_length:
         if insert_gaps == "all":
