@@ -41,7 +41,9 @@ logger_col = "Logger"
 inspections = import_inspections(
     "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
-prov_wq = import_prov_wq("AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col)
+prov_wq = import_prov_wq(
+    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+)
 ncrs = import_ncr("AP_non-conformance_reports.csv")
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
@@ -116,8 +118,6 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 fig = data.plot_qc_series(show=False)
-
-st.dataframe(data.check_data, use_container_width=True)
 
 fig_subplots = make_processing_dash(
     fig,

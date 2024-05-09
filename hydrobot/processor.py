@@ -2,6 +2,7 @@
 
 import re
 import warnings
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -1742,7 +1743,7 @@ def hydrobot_config_yaml_init(config_path):
     #######################################################################################
     # Creating a Hydrobot Processor object which contains the data to be processed
     #######################################################################################
-
+    now = datetime.now()
     data = Processor(
         processing_parameters["base_url"],
         processing_parameters["site"],
@@ -1750,7 +1751,9 @@ def hydrobot_config_yaml_init(config_path):
         processing_parameters["standard_measurement_name"],
         processing_parameters["frequency"],
         processing_parameters["from_date"],
-        processing_parameters["to_date"],
+        processing_parameters["to_date"]
+        if "to_date" in processing_parameters
+        else now.strftime("%d-%m-%Y %H:%M:%S"),
         processing_parameters["check_hts_filename"],
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
