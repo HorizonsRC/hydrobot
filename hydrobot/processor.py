@@ -997,6 +997,7 @@ class Processor:
         clipped = filters.clip(
             self._standard_data["Value"].squeeze(), low_clip, high_clip
         )
+
         self._standard_data = self._apply_changes(
             self._standard_data, clipped, "CLP", mark_remove=True
         )
@@ -1008,10 +1009,14 @@ class Processor:
         change_code,
         mark_remove=False,
     ):
-        diffs = dataframe["Value"] != changed_values
+        both_none_mask = pd.isna(dataframe["Value"]) & pd.isna(changed_values)
+
+        # Create a mask for cases where values are different excluding both being None-like
+        diffs_mask = (dataframe["Value"] != changed_values) & ~(both_none_mask)
+
         if mark_remove:
-            dataframe.loc[diffs, "Remove"] = mark_remove
-        dataframe.loc[diffs, "Changes"] = change_code
+            dataframe.loc[diffs_mask, "Remove"] = mark_remove
+        dataframe.loc[diffs_mask, "Changes"] = change_code
         dataframe["Value"] = changed_values
         return dataframe
 
