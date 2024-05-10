@@ -55,6 +55,9 @@ all_checks = all_checks.loc[
     (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
 ]
 
+# For any constant shift in the check data, default 0
+# data.quality_code_evaluator.constant_check_shift = -1.9
+
 data.check_data = pd.concat(
     [data.check_data, inspections_no_dup, prov_wq_no_dup]
 ).sort_index()

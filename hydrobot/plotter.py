@@ -327,6 +327,7 @@ def make_processing_dash(fig, processor, check_data):
     Sorry about these docs I'm in a rush.
     """
     standard_data = processor.standard_data
+    check_data["Value"] += processor.quality_code_evaluator.constant_check_shift
 
     htp_check = check_data[check_data["Source"] == "HTP"]
     srv_check = check_data[check_data["Source"] == "INS"]
