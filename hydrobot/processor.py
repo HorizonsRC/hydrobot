@@ -40,6 +40,7 @@ class Processor:
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
         interval_dict: dict | None = None,
+        constant_check_shift: float = 0,
         **kwargs,
     ):
         """
@@ -158,6 +159,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
+        self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         if interval_dict is None:
             self._interval_dict = {}
@@ -1758,5 +1760,6 @@ def hydrobot_config_yaml_init(config_path):
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
         processing_parameters["inspection_expiry"],
+        constant_check_shift=processing_parameters["constant_check_shift"],
     )
     return data, ann
