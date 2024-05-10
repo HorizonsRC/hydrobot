@@ -73,25 +73,29 @@ class Processor:
             Additional keyword arguments.
         """
         self._defaults = defaults
-        if check_hts is None:
-            check_hts = standard_hts
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
 
         standard_hilltop = Hilltop(base_url, standard_hts, **kwargs)
-        check_hilltop = Hilltop(base_url, check_hts, **kwargs)
-        if (
-            site in standard_hilltop.available_sites
-            and site in check_hilltop.available_sites
-        ):
+        if check_hts is not None:
+            check_hilltop = Hilltop(base_url, check_hts, **kwargs)
+            if site in check_hilltop.available_sites:
+                self._site = site
+            else:
+                raise ValueError(
+                    f"Site '{site}' not found for both base_url and hts combos."
+                    f"Available sites in check_hts are: "
+                    f"{[s for s in check_hilltop.available_sites]}"
+                )
+        else:
+            check_hilltop = None
+        if site in standard_hilltop.available_sites:
             self._site = site
         else:
             raise ValueError(
                 f"Site '{site}' not found for both base_url and hts combos."
                 f"Available sites in standard_hts are: "
                 f"{[s for s in standard_hilltop.available_sites]}"
-                f"Available sites in check_hts are: "
-                f"{[s for s in check_hilltop.available_sites]}"
             )
 
         # standard
@@ -115,24 +119,25 @@ class Processor:
             )
 
         # check
-        available_check_measurements = check_hilltop.get_measurement_list(site)
         self._check_measurement_name = check_measurement_name
         matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
+        if check_hilltop is not None:
+            available_check_measurements = check_hilltop.get_measurement_list(site)
+            if self._check_measurement_name not in list(
+                available_check_measurements.MeasurementName
+            ):
+                raise ValueError(
+                    f"Check measurement name '{self._check_measurement_name}' "
+                    f"not found at site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_check_measurements.MeasurementName)}"
+                )
 
         if matches is not None:
             self.check_item_name = matches.groups()[0].strip(" ")
             self.check_data_source_name = matches.groups()[2]
             if self.check_data_source_name is None:
                 self.check_data_source_name = self.check_item_name
-        if self._check_measurement_name not in list(
-            available_check_measurements.MeasurementName
-        ):
-            raise ValueError(
-                f"Check measurement name '{self._check_measurement_name}' "
-                f"not found at site '{site}'. "
-                "Available measurements are "
-                f"{list(available_check_measurements.MeasurementName)}"
-            )
 
         self.standard_item_info = {
             "ItemName": self.standard_item_name,
@@ -204,8 +209,12 @@ class Processor:
         self.raw_check_blob = None
         self.raw_check_xml = None
 
+        get_check = self._check_hts is not None
+
         # Load data for the first time
-        self.import_data(from_date=self.from_date, to_date=self.to_date)
+        self.import_data(
+            from_date=self.from_date, to_date=self.to_date, check=get_check
+        )
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -546,8 +555,9 @@ class Processor:
                     )
                 else:
                     raw_quality_data.index = pd.to_datetime(raw_quality_data.index)
-
-            raw_quality_data.iloc[:, 0] = raw_quality_data.iloc[:, 0].astype(int)
+            raw_quality_data.iloc[:, 0] = raw_quality_data.iloc[:, 0].astype(
+                int, errors="ignore"
+            )
 
             self.quality_data["Raw"] = raw_quality_data.iloc[:, 0]
             self.quality_data["Value"] = self.quality_data["Raw"]
@@ -1405,6 +1415,8 @@ class Processor:
                 self._quality_data["Value"],
             )
         elif ftype == "xml":
+            if self.check_data.empty:
+                check = False
             blob_list = self.to_xml_data_structure(
                 standard=standard, quality=quality, check=check
             )
@@ -1728,9 +1740,9 @@ def hydrobot_config_yaml_init(config_path):
     """
     processing_parameters = data_acquisition.config_yaml_import(config_path)
 
-    #######################################################################################
+    ###################################################################################
     # Setting up logging with Annalist
-    #######################################################################################
+    ###################################################################################
 
     ann = Annalist()
     ann.configure(
@@ -1740,22 +1752,20 @@ def hydrobot_config_yaml_init(config_path):
         file_format_str=processing_parameters["format"]["file"],
     )
 
-    #######################################################################################
+    ###################################################################################
     # Creating a Hydrobot Processor object which contains the data to be processed
-    #######################################################################################
+    ###################################################################################
     now = datetime.now()
     data = Processor(
         processing_parameters["base_url"],
         processing_parameters["site"],
         processing_parameters["standard_hts_filename"],
         processing_parameters["standard_measurement_name"],
-        processing_parameters["frequency"],
+        processing_parameters.get("frequency", None),
         processing_parameters["from_date"],
-        processing_parameters["to_date"]
-        if "to_date" in processing_parameters
-        else now.strftime("%d-%m-%Y %H:%M:%S"),
-        processing_parameters["check_hts_filename"],
-        processing_parameters["check_measurement_name"],
+        processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+        processing_parameters.get("check_hts_filename", None),
+        processing_parameters.get("check_measurement_name", None),
         processing_parameters["defaults"],
         processing_parameters["inspection_expiry"],
     )

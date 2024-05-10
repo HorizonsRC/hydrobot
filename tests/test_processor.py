@@ -423,6 +423,7 @@ def test_processor_init(
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
+        check_hts="OceansOfEffluent.hts",
         check_measurement_name=CHECK_MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
@@ -1334,7 +1335,7 @@ def test_data_export(
     assert start_idx not in list(read_hilltop_check_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
-
+    print(gap_path_xml.read_text())
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
@@ -1368,6 +1369,7 @@ def test_data_export(
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
+    print(gap_path_xml.read_text())
 
     assert gap_path_xml.read_text().split("\n")[22].strip() == "<Gap />"
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())

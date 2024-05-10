@@ -39,9 +39,8 @@ site = config_yaml$site
 startDate = as.Date(config_yaml$from_date)-1  # choose one day before your batch start date
 if (is.null(config_yaml$to_date)) {
   config_yaml$to_date = format(Sys.time(), "%Y-%m-%d %H:%M:%S")
-} else {
-  endDate = as.Date(config_yaml$to_date)+1  # choose one day after your batch end date
 }
+endDate = as.Date(config_yaml$to_date)+1  # choose one day after your batch end date
 folder_filepath = "./" # here
 
 # -----------------------------------------------------
