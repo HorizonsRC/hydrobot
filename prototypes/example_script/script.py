@@ -131,6 +131,6 @@ fig_subplots = make_processing_dash(
 st.plotly_chart(fig_subplots, use_container_width=True)
 
 st.dataframe(all_comments, use_container_width=True)
-st.dataframe(data.standard_data, use_container_width=True)
+# st.dataframe(data.standard_data, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)
