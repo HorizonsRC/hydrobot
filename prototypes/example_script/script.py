@@ -26,7 +26,7 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = hydrobot_config_yaml_init("config.yaml")
 
-st.set_page_config(page_title="Hydrobot0.5.2", layout="wide", page_icon="💦")
+st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
