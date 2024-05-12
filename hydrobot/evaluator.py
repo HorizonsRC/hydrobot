@@ -92,7 +92,7 @@ def check_data_quality_code(
     check_series: pd.Series,
     qc_evaluator: QualityCodeEvaluator,
     gap_limit=10800,
-) -> pd.Series:
+) -> pd.DataFrame:
     """
     Quality Code Check Data.
 
@@ -120,7 +120,10 @@ def check_data_quality_code(
     if check_series.empty and isinstance(first_data_date, pd.Timestamp):
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
-        return pd.Series({first_data_date: np.NaN})
+        return pd.DataFrame(
+            columns=["Value", "Code", "Details"],
+            index=[first_data_date],
+        )
     first_check_date = check_series.index[0]
     last_check_date = check_series.index[-1]
     if (
@@ -129,7 +132,11 @@ def check_data_quality_code(
         and isinstance(first_check_date, pd.Timestamp)
         and isinstance(last_check_date, pd.Timestamp)
     ):
-        qc_series = pd.Series({first_data_date: np.NaN})
+        # qc_series = pd.Series({first_data_date: np.NaN})
+        qc_frame = pd.DataFrame(
+            columns=["Value", "Code", "Details"],
+            index=[first_data_date],
+        )
         if first_check_date < first_data_date or last_check_date > last_data_date:
             # Can't check something that's not there
             raise KeyError(
@@ -150,27 +157,33 @@ def check_data_quality_code(
                         )
                     else:
                         qc_value = 200
-                    qc_series[check_time] = qc_value
+                    qc_frame.loc[check_time, "Value"] = qc_value
+                    qc_frame.loc[check_time, "Code"] = "CHK"
+                    qc_frame.loc[check_time, "Details"] = (
+                        f"Check value at {check_time} used to validate "
+                        f"data value at {adjusted_time}."
+                    )
                 else:
                     raise KeyError("Series indices should be pandas.Timestamp.")
-            qc_series = qc_series.shift(-1, fill_value=0)
-        return pd.Series(qc_series)
+            qc_frame = qc_frame.shift(periods=-1)
+            qc_frame.loc[qc_frame.index[-1], "Value"] = 0
+        return qc_frame
     else:
         raise KeyError("Series indices should be pandas.Timestamp.")
 
 
-def missing_data_quality_code(series, qc_series, gap_limit):
+def missing_data_quality_code(std_series, qc_data, gap_limit):
     """
     Make sure that missing data is QC100.
 
-    Returns qc_series with QC100 values added where series is NaN
+    Returns qc_data with QC100 values added where std_series is NaN
 
     Parameters
     ----------
-    series : pd.Series
+    std_series : pd.Series
         Base series which may contain NaNs
-    qc_series
-        QC series for base series without QC100 values
+    qc_data
+        QC series for base std_series without QC100 values
     gap_limit
         Maximum size of gaps which will be ignored
 
@@ -179,28 +192,48 @@ def missing_data_quality_code(series, qc_series, gap_limit):
     pd.Series
         The modified QC series, indexed by the start time of the QC period
     """
-    for gap in gap_finder(series):
+    for gap in gap_finder(std_series):
         if gap[1] > gap_limit:
-            end_idx = series.index.get_loc(gap[0]) + gap[1]
+            end_idx = std_series.index.get_loc(gap[0]) + gap[1]
             # end of gap should recover the value from previous
-            if end_idx < len(series):
-                prev_values = qc_series[qc_series.index <= series.index[end_idx]]
-                prev_values = prev_values[prev_values > 100]
-                prev_values = prev_values.sort_index()
-                qc_series[series.index[end_idx]] = prev_values.iloc[-1]
-                qc_series = qc_series.sort_index()
+            if end_idx < len(std_series):
+                prev_qc_data = qc_data[qc_data.index <= std_series.index[end_idx]]
+                prev_qc_data = prev_qc_data[prev_qc_data["Value"] > 100]
+                prev_qc_data = prev_qc_data.sort_index()
+                qc_data.loc[std_series.index[end_idx]] = prev_qc_data.iloc[-1]
+                if std_series.index[end_idx] in prev_qc_data.index:
+                    qc_data.loc[std_series.index[end_idx], "Details"] = (
+                        qc_data.loc[std_series.index[end_idx], "Details"]
+                        + f" [End of gap which started at {gap[0]}]"
+                    )
+                else:
+                    qc_data.loc[std_series.index[end_idx], "Details"] = (
+                        f"End of gap which started at {gap[0]}. "
+                        f"Returning to QC code first assigned at {prev_qc_data.index[-1]}"
+                    )
+                qc_data = qc_data.sort_index()
 
             # getting rid of any stray QC codes in the middle
-
-            drop_series = qc_series
+            drop_series = qc_data["Value"]
             drop_series = drop_series[drop_series.index > gap[0]]
-            drop_series = drop_series[drop_series.index <= series.index[end_idx - 1]]
-            qc_series = qc_series.drop(drop_series.index)
+            drop_series = drop_series[
+                drop_series.index <= std_series.index[end_idx - 1]
+            ]
+            qc_data = qc_data.drop(drop_series.index)
 
             # start of gap
-            qc_series[gap[0]] = 100
+            qc_data.loc[gap[0], "Value"] = 100
+            qc_data.loc[gap[0], "Code"] = "GAP"
+            if end_idx >= len(std_series):
+                gap_end = std_series.index[-1]
+            else:
+                gap_end = std_series.index[end_idx]
+            qc_data.loc[
+                gap[0], "Details"
+            ] = f"Missing data amounting to {(gap_end - gap[0])}"
+            qc_data = qc_data.sort_index()
 
-    return qc_series.sort_index()
+    return qc_data.sort_index()
 
 
 def find_nearest_time(series, dt):
@@ -411,7 +444,7 @@ def splitter(base_series, qc_series, frequency):
     return return_dict
 
 
-def max_qc_limiter(qc_series: pd.Series, max_qc) -> pd.Series:
+def max_qc_limiter(qc_data: pd.DataFrame, max_qc) -> pd.DataFrame:
     """
     Enforce max_qc on a QC series.
 
@@ -429,7 +462,18 @@ def max_qc_limiter(qc_series: pd.Series, max_qc) -> pd.Series:
     pd.Series
         qc_series with too high QCs limited to max_qc
     """
-    return pd.Series(qc_series.clip(np.NaN, max_qc))
+    clipped_data = qc_data["Value"].clip(np.NaN, max_qc)
+
+    diff_idxs = qc_data[qc_data["Value"] != clipped_data].index
+
+    qc_data.loc[diff_idxs, "Code"] = qc_data.loc[diff_idxs, "Code"] + ", LIM"
+    qc_data.loc[diff_idxs, "Details"] = (
+        qc_data.loc[diff_idxs, "Details"]
+        + f" [Site QC limit applies to a maximum of {max_qc}.]"
+    )
+    qc_data["Value"] = clipped_data
+
+    return qc_data
 
 
 def quality_encoder(
@@ -470,6 +514,7 @@ def quality_encoder(
         qc_series, check_series, interval_dict=interval_dict
     )
     qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
+
     qc_series = max_qc_limiter(qc_series, max_qc)
     # qc_series.index.name = "Time"
     # qc_series.name = "Value"
@@ -477,7 +522,7 @@ def quality_encoder(
 
 
 def bulk_downgrade_out_of_validation(
-    qc_series: pd.Series,
+    qc_frame: pd.DataFrame,
     check_series: pd.Series,
     interval_dict: dict,
     day_end_rounding: bool = True,
@@ -505,14 +550,14 @@ def bulk_downgrade_out_of_validation(
 
     """
     for key in interval_dict:
-        qc_series = single_downgrade_out_of_validation(
-            qc_series, check_series, key, interval_dict[key], day_end_rounding
+        qc_frame = single_downgrade_out_of_validation(
+            qc_frame, check_series, key, interval_dict[key], day_end_rounding
         )
-    return qc_series
+    return qc_frame
 
 
 def single_downgrade_out_of_validation(
-    qc_series: pd.Series,
+    qc_frame: pd.DataFrame,
     check_series: pd.Series,
     max_interval: pd.DateOffset,
     downgraded_qc: int = 200,
@@ -525,7 +570,7 @@ def single_downgrade_out_of_validation(
 
     Parameters
     ----------
-    qc_series : pd.Series
+    qc_frame : pd.DataFrame
         Quality series that potentially needs downgrading
     check_series : pd.Series
         Check series to check for frequency of checks
@@ -538,7 +583,7 @@ def single_downgrade_out_of_validation(
 
     Returns
     -------
-    pd.Series
+    pd.DataFrame
         The qc_series with any downgraded QCs added in
     """
     # When they should have their next check by
@@ -548,13 +593,27 @@ def single_downgrade_out_of_validation(
         due_date = due_date.ceil("D")
     # Whether there has been a check since then
     overdue = (due_date < check_series.index[1:]) & (
-        qc_series[check_series.index[:-1]] > downgraded_qc
+        qc_frame.loc[check_series.index[:-1], "Value"] > downgraded_qc
     )
     # Select overdue times
     unvalidated = due_date[overdue]
-    downgraded_times = pd.Series([downgraded_qc for _ in unvalidated], unvalidated)
+    downgraded_times = pd.DataFrame(
+        {
+            "Value": [downgraded_qc for _ in unvalidated],
+            "Code": ["OOV" for _ in unvalidated],
+            "Details": [
+                "Site inspection overdue. Last inspection at "
+                f"{check_series.index[idx]}. Data downgraded to QC{downgraded_qc} "
+                "until next inspection."
+                for idx in range(len(unvalidated))
+            ],
+        },
+        index=unvalidated,
+    )
 
     # combine and sort
     if not downgraded_times.empty:
-        qc_series = pd.concat([qc_series, downgraded_times]).sort_index()
-    return qc_series
+        qc_frame = pd.concat([qc_frame, downgraded_times]).sort_index()
+    # qc_frame.loc[qc_frame.index[-1], "Value"] = 0
+
+    return qc_frame

@@ -76,3 +76,15 @@ History
 
 * Updated from standard plotly to streamlit dash
 * Added to QC encoder: Water Temp downgraded to 200 if last check longer than 2 months ago.
+
+0.6.0 (2024-05-13)
+----------------------------------
+
+* Processor objest now works with pd.Dataframes rather than pd.Series
+* Out of validation range now has adjustable ranges, can support multiple maximum QCs with different time period lengths
+* Changes to data and quality codes now have reason codes associated with any changes
+* Check data can be read from xml directly
+* Any missing xml data is no longer read in as zeroes
+* config.yaml supports 'today' input for to_date
+* Added in a constant shift value in config.yaml
+* Various DevOps improvements

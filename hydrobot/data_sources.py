@@ -9,7 +9,7 @@ import pandas as pd
 class QualityCodeEvaluator:
     """Basic QualityCodeEvaluator only compares magnitude of differences."""
 
-    def __init__(self, qc_500_limit, qc_600_limit, name=""):
+    def __init__(self, qc_500_limit, qc_600_limit, name="", constant_check_shift=0):
         """Initialize QualityCodeEvaluator.
 
         Parameters
@@ -20,24 +20,28 @@ class QualityCodeEvaluator:
             Threshold between QC 500 and QC 600
         name : str
             Name of the data source
+        constant_check_shift : numerical
+            Shifts the check data by a fixed amount
         """
         self.qc_500_limit = qc_500_limit
         self.qc_600_limit = qc_600_limit
         self.name = name
+        self.constant_check_shift = constant_check_shift
 
     def __repr__(self):
         """QualityCodeEvaluator representation."""
         return repr(f"QualityCodeEvaluator '{self.name}'")
 
     def find_qc(self, base_datum, check_datum):
-        """Find the base quality codes.
+        """
+        Find the base quality codes.
 
         Parameters
         ----------
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data
+            The check data to verify the continuous data, shifted by any constant_check_shift
 
         Returns
         -------
@@ -45,6 +49,7 @@ class QualityCodeEvaluator:
             The Quality code
 
         """
+        check_datum = check_datum + self.constant_check_shift
         diff = np.abs(base_datum - check_datum)
         if diff < self.qc_600_limit:
             qc = 600
@@ -52,6 +57,7 @@ class QualityCodeEvaluator:
             qc = 500
         else:
             qc = 400
+
         return qc
 
 
@@ -69,8 +75,10 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         qc_600_percent,
         limit_percent_threshold,
         name="",
+        constant_check_shift=0,
     ):
-        """Initialize TwoLevelQualityCodeEvaluator.
+        """
+        Initialize TwoLevelQualityCodeEvaluator.
 
         Parameters
         ----------
@@ -88,7 +96,9 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         name : str
             Name of the data source
         """
-        QualityCodeEvaluator.__init__(self, qc_500_limit, qc_600_limit, name)
+        QualityCodeEvaluator.__init__(
+            self, qc_500_limit, qc_600_limit, name, constant_check_shift
+        )
         self.qc_500_percent = qc_500_percent
         self.qc_600_percent = qc_600_percent
         self.limit_percent_threshold = limit_percent_threshold
@@ -103,7 +113,7 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data
+            The check data to verify the continuous data, shifted by any constant_check_shift
 
         Returns
         -------
@@ -111,6 +121,7 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
             The Quality code
 
         """
+        check_datum = check_datum + self.constant_check_shift
         if base_datum < self.limit_percent_threshold:
             # flat qc check
             diff = np.abs(base_datum - check_datum)

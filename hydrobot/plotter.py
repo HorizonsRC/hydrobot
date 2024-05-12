@@ -196,8 +196,8 @@ def qc_plotter_plotly(
 
     Returns
     -------
-    None
-        Displays a plot
+    go.Figure
+
     """
     split_data = splitter(base_series, qc_series, frequency)
     fig = go.Figure()
@@ -301,8 +301,7 @@ def comparison_qc_plotter_plotly(
 
     Returns
     -------
-    None
-        Displays a plot
+    comparison_qc_plotter_plotly
     """
     fig = qc_plotter_plotly(
         base_series, check_series, qc_series, frequency, show=False, **kwargs
@@ -322,16 +321,14 @@ def comparison_qc_plotter_plotly(
     return fig
 
 
-def make_processing_dash(
-    fig,
-    title,
-    standard_data,
-    check_data,
-):
+def make_processing_dash(fig, processor, check_data):
     """Make the processing dash.
 
     Sorry about these docs I'm in a rush.
     """
+    standard_data = processor.standard_data
+    check_data["Value"] += processor.quality_code_evaluator.constant_check_shift
+
     htp_check = check_data[check_data["Source"] == "HTP"]
     srv_check = check_data[check_data["Source"] == "INS"]
     pwq_check = check_data[check_data["Source"] == "SOE"]
@@ -375,7 +372,7 @@ def make_processing_dash(
     fig.add_trace(
         go.Scatter(
             x=srv_check.index,
-            y=srv_check["Temp Logger"],
+            y=srv_check["Logger"],
             mode="markers",
             name="S123 Logger",
             marker=dict(color="darkgray", size=10, symbol="x-thin-open"),
@@ -396,7 +393,7 @@ def make_processing_dash(
     for trace in fig.data:
         fig_subplots.add_trace(trace, row=1, col=1)
 
-    fig_subplots.update_layout(title=title)
+    fig_subplots.update_layout(title=processor.site)
 
     def find_nearest_periodic_indices(periodic_series, check_series):
         nearest_periodic_indices = []
@@ -578,7 +575,7 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Logger"]):
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
@@ -600,7 +597,7 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=srv_check.index,
-            y=srv_check["Temp Logger"].to_numpy()
+            y=srv_check["Logger"].to_numpy()
             - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger",
@@ -614,7 +611,7 @@ def make_processing_dash(
     fig_subplots.add_trace(
         go.Scatter(
             x=standard_data["Value"].iloc[nearest_srv_indices].index,
-            y=srv_check["Temp Logger"].to_numpy()
+            y=srv_check["Logger"].to_numpy()
             - standard_data["Value"].iloc[nearest_srv_indices].to_numpy(),
             mode="markers",
             name="S123 Logger Aligned",
@@ -633,13 +630,13 @@ def make_processing_dash(
         strict=True,
     ):
         # If the timestamps are not the same
-        if stand[0] != insp[0] and not pd.isna(insp[1]["Temp Logger"]):
+        if stand[0] != insp[0] and not pd.isna(insp[1]["Logger"]):
             arrow_annotations.append(
                 dict(
                     ax=insp[0],
-                    ay=insp[1]["Temp Logger"] - stand[1],
+                    ay=insp[1]["Logger"] - stand[1],
                     x=stand[0],
-                    y=insp[1]["Temp Logger"] - stand[1],
+                    y=insp[1]["Logger"] - stand[1],
                     axref="x2",
                     ayref="y2",
                     xref="x2",
@@ -654,8 +651,8 @@ def make_processing_dash(
 
     fig_subplots.update_layout(annotations=arrow_annotations)
 
-    qc400 = 1.2
-    qc500 = 0.8
+    qc400 = processor.quality_code_evaluator.qc_500_limit
+    qc500 = processor.quality_code_evaluator.qc_600_limit
 
     fig_subplots.add_hline(
         y=qc400,

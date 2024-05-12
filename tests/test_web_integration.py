@@ -231,8 +231,8 @@ def test_processor_integration(tmp_path):
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
-            "high_clip": 5000,
-            "low_clip": 4500,
+            "high_clip": 100000,
+            "low_clip": 0,
             "delta": 1000,
             "span": 10,
             "gap_limit": 12,
@@ -275,8 +275,8 @@ def test_processor_integration(tmp_path):
     clip_one = "2021-01-15 12:00"
     clip_two = "2021-02-01 00:00"
 
-    data.standard_data.loc[clip_one, "Value"] = 10000
-    data.standard_data.loc[clip_two, "Value"] = 100
+    data.standard_data.loc[clip_one, "Value"] = 100001
+    data.standard_data.loc[clip_two, "Value"] = -5
     data.clip()
 
     assert pd.isna(data.standard_data.loc[clip_one, "Value"])
@@ -297,7 +297,6 @@ def test_processor_integration(tmp_path):
     data.standard_data.loc[flat_one, "Value"] = flat_val
     data.standard_data.loc[flat_two, "Value"] = flat_val
     data.standard_data.loc[flat_three, "Value"] = flat_val
-
     data.remove_flatlined_values()
 
     assert pd.isna(data.standard_data.loc[flat_one, "Value"])
@@ -324,10 +323,12 @@ def test_processor_integration(tmp_path):
 
     assert data.standard_data.loc[spike, "Remove"]
 
-    start_idx = "2021-01-01 12:00"
-    end_idx = "2021-01-01 12:30"
+    start_idx = "2021-01-05 12:00"
+    end_idx = "2021-01-05 12:30"
 
+    print(data.standard_data.loc[start_idx:end_idx])
     data.remove_range(start_idx, end_idx)
+    print(data.standard_data.loc[start_idx:end_idx])
 
     assert pd.isna(
         data.standard_data.loc[start_idx:end_idx, "Value"]

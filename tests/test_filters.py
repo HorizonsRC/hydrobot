@@ -109,6 +109,9 @@ def test_clip(raw_data):
         and math.isnan(clipped["2021-01-01 00:05"])
     ), "Border value removed (should not be)!"
 
+    assert not math.isnan(raw_data["2021-01-01 00:00"]), "Original low value changed!"
+    assert not math.isnan(raw_data["2021-01-01 00:20"]), "Original high value changed!"
+
 
 def test_fbewma(raw_data, fbewma_data):
     """Test the FBEWMA function."""
@@ -123,6 +126,10 @@ def test_fbewma(raw_data, fbewma_data):
         fbewma_data.to_numpy()
     ), "FBEWMA failed!"
 
+    assert raw_data.to_numpy() != pytest.approx(
+        fbewma_data.to_numpy()
+    ), "Original values modified!"
+
 
 def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     """Test the remove outliers function."""
@@ -135,6 +142,7 @@ def test_remove_outliers(raw_data, fbewma_data, mocker, span=2, delta=2):
     # This call of remove outliers should call fbewma_mock in the place of fbewma
     no_outliers = filters.remove_outliers(raw_data, span, delta)
     assert math.isnan(no_outliers["2021-01-01 00:10"]), "Outlier not removed!"
+    assert not math.isnan(raw_data["2021-01-01 00:10"]), "Original modified!"
 
 
 def test_remove_spike(raw_data, fbewma_data, mocker):
@@ -166,6 +174,7 @@ def test_remove_spike(raw_data, fbewma_data, mocker):
 
     spike_removed = filters.remove_spikes(raw_data, span, high_clip, low_clip, delta)
     assert math.isnan(spike_removed["2021-01-01 00:10"]), "Spike not removed!"
+    assert not math.isnan(raw_data["2021-01-01 00:10"]), "Original modified!"
 
 
 def test_remove_range(raw_data):
@@ -189,6 +198,7 @@ def test_remove_range(raw_data):
 
     e = filters.remove_range(raw_data, None, None)
     assert e.empty, "double None causes error"
+    assert not raw_data.empty, "Original modified"
 
     f = filters.remove_range(
         raw_data, "2021-01-01 00:03", "2021-01-01 00:14", insert_gaps="all"
@@ -275,6 +285,7 @@ def test_trim_series(raw_data):
     trimmed = filters.trim_series(raw_data, raw_check)
     assert len(trimmed) == 4, "Trimming returned wrong number"
     assert trimmed["2021-01-01 00:15"] == 4.0, "end value changed"
+    assert raw_data["2021-01-01 00:20"] == 5.0, "Original modified"
 
     untrimmed = filters.trim_series(raw_data, pd.Series({}))
     assert raw_data.equals(untrimmed), "empty check series modified the data"
@@ -309,6 +320,7 @@ def test_flatline_value_remover(raw_data, constant_data):
     ), "Changing data it shouldn't when span is too big"
 
     removed_3 = filters.flatline_value_remover(constant_data, 3)
+    assert len(raw_data) == 5, "Original modified"
     assert len(removed_3) == len(constant_data), "shortened data for removed_3"
     assert math.isclose(
         removed_3["2021-01-01 00:35"], 6.1

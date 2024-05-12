@@ -2,6 +2,7 @@
 
 import re
 import warnings
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -39,6 +40,7 @@ class Processor:
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
         interval_dict: dict | None = None,
+        constant_check_shift: float = 0,
         **kwargs,
     ):
         """
@@ -72,25 +74,29 @@ class Processor:
             Additional keyword arguments.
         """
         self._defaults = defaults
-        if check_hts is None:
-            check_hts = standard_hts
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
 
         standard_hilltop = Hilltop(base_url, standard_hts, **kwargs)
-        check_hilltop = Hilltop(base_url, check_hts, **kwargs)
-        if (
-            site in standard_hilltop.available_sites
-            and site in check_hilltop.available_sites
-        ):
+        if check_hts is not None:
+            check_hilltop = Hilltop(base_url, check_hts, **kwargs)
+            if site in check_hilltop.available_sites:
+                self._site = site
+            else:
+                raise ValueError(
+                    f"Site '{site}' not found for both base_url and hts combos."
+                    f"Available sites in check_hts are: "
+                    f"{[s for s in check_hilltop.available_sites]}"
+                )
+        else:
+            check_hilltop = None
+        if site in standard_hilltop.available_sites:
             self._site = site
         else:
             raise ValueError(
                 f"Site '{site}' not found for both base_url and hts combos."
                 f"Available sites in standard_hts are: "
                 f"{[s for s in standard_hilltop.available_sites]}"
-                f"Available sites in check_hts are: "
-                f"{[s for s in check_hilltop.available_sites]}"
             )
 
         # standard
@@ -114,24 +120,25 @@ class Processor:
             )
 
         # check
-        available_check_measurements = check_hilltop.get_measurement_list(site)
         self._check_measurement_name = check_measurement_name
         matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
+        if check_hilltop is not None:
+            available_check_measurements = check_hilltop.get_measurement_list(site)
+            if self._check_measurement_name not in list(
+                available_check_measurements.MeasurementName
+            ):
+                raise ValueError(
+                    f"Check measurement name '{self._check_measurement_name}' "
+                    f"not found at site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_check_measurements.MeasurementName)}"
+                )
 
         if matches is not None:
             self.check_item_name = matches.groups()[0].strip(" ")
             self.check_data_source_name = matches.groups()[2]
             if self.check_data_source_name is None:
                 self.check_data_source_name = self.check_item_name
-        if self._check_measurement_name not in list(
-            available_check_measurements.MeasurementName
-        ):
-            raise ValueError(
-                f"Check measurement name '{self._check_measurement_name}' "
-                f"not found at site '{site}'. "
-                "Available measurements are "
-                f"{list(available_check_measurements.MeasurementName)}"
-            )
 
         self.standard_item_info = {
             "ItemName": self.standard_item_name,
@@ -157,6 +164,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
+        self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         if interval_dict is None:
             self._interval_dict = {}
@@ -189,8 +197,8 @@ class Processor:
                 "Time",
                 "Raw",
                 "Value",
-                "Changes",
-                "Reason",
+                "Code",
+                "Details",
             ]
         ).set_index("Time")
 
@@ -203,8 +211,12 @@ class Processor:
         self.raw_check_blob = None
         self.raw_check_xml = None
 
+        get_check = self._check_hts is not None
+
         # Load data for the first time
-        self.import_data(from_date=self.from_date, to_date=self.to_date)
+        self.import_data(
+            from_date=self.from_date, to_date=self.to_date, check=get_check
+        )
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -303,7 +315,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -456,7 +468,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -545,8 +557,9 @@ class Processor:
                     )
                 else:
                     raw_quality_data.index = pd.to_datetime(raw_quality_data.index)
-
-            raw_quality_data.iloc[:, 0] = raw_quality_data.iloc[:, 0].astype(int)
+            raw_quality_data.iloc[:, 0] = raw_quality_data.iloc[:, 0].astype(
+                int, errors="ignore"
+            )
 
             self.quality_data["Raw"] = raw_quality_data.iloc[:, 0]
             self.quality_data["Value"] = self.quality_data["Raw"]
@@ -563,7 +576,7 @@ class Processor:
         Parameters
         ----------
         from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to earliest available
+            The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
@@ -734,8 +747,7 @@ class Processor:
         Examples
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.set_date_range("2022-01-01", "2022-12-31")
-        >>> processor.import_data(standard=True, check=True)
+        >>> processor.import_data("2022-01-01", "2022-12-31",standard=True, check=True)
         False
         """
         if standard:
@@ -757,10 +769,10 @@ class Processor:
 
         Returns
         -------
-        None, but adds data to self.standard_series
+        None, but adds data to self.standard_data
         """
-        combined = utils.merge_series(self.standard_series, extra_standard)
-        self.standard_series = combined
+        combined = utils.merge_series(self.standard_data["Value"], extra_standard)
+        self.standard_data["Value"] = combined
 
     @ClassLogger
     def add_check(self, extra_check):
@@ -776,8 +788,8 @@ class Processor:
         -------
         None, but adds data to self.check_series
         """
-        combined = utils.merge_series(self.check_series, extra_check)
-        self.check_series = combined
+        combined = utils.merge_series(self.check_data["Value"], extra_check)
+        self.check_data["Value"] = combined
 
     @ClassLogger
     def add_quality(self, extra_quality):
@@ -793,8 +805,8 @@ class Processor:
         -------
         None, but adds data to self.quality_series
         """
-        combined = utils.merge_series(self.quality_series, extra_quality)
-        self.quality_series = combined
+        combined = utils.merge_series(self.quality_data["Value"], extra_quality)
+        self.quality_data["Value"] = combined
 
     @ClassLogger
     def gap_closer(self, gap_limit: int | None = None):
@@ -825,7 +837,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.gap_closer(gap_limit=5)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <updated standard series with closed gaps>
         """
         warnings.warn(
@@ -883,7 +895,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.quality_encoder(gap_limit=5)
-        >>> processor.quality_series
+        >>> processor.quality_data["Value"]
         <updated quality series with encoded quality flags>
         """
         if gap_limit is None:
@@ -898,16 +910,58 @@ class Processor:
             interval_dict = self._interval_dict
 
         qc_checks = self.check_data[self.check_data["QC"]]
-        self.quality_data["Value"] = evaluator.quality_encoder(
-            self._standard_data["Value"],
+
+        chk_frame = evaluator.check_data_quality_code(
+            self.standard_data["Value"],
             qc_checks["Value"],
             self._quality_code_evaluator,
-            gap_limit=gap_limit,
-            max_qc=max_qc,
-            interval_dict=interval_dict,
         )
+        self._apply_quality(chk_frame, replace=True)
 
-    @ClassLogger
+        oov_frame = evaluator.bulk_downgrade_out_of_validation(
+            self.quality_data, qc_checks["Value"], self._interval_dict
+        )
+        self._apply_quality(oov_frame)
+
+        msg_frame = evaluator.missing_data_quality_code(
+            self.standard_data["Value"],
+            self.quality_data,
+            gap_limit=gap_limit,
+        )
+        self._apply_quality(msg_frame)
+
+        lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
+        self._apply_quality(lim_frame)
+
+    def _apply_quality(
+        self,
+        changed_data,
+        replace=False,
+    ):
+        if replace:
+            self.quality_data = changed_data
+        else:
+            # Step 1: Merge the dataframes using an outer join
+            merged_df = self.quality_data.merge(
+                changed_data,
+                how="outer",
+                left_index=True,
+                right_index=True,
+                suffixes=("_old", "_new"),
+            )
+
+            # Step 2: Replace NaN values in df1 with corresponding values from df2
+            merged_df["Value"] = merged_df["Value_old"].fillna(merged_df["Value_new"])
+            merged_df["Code"] = merged_df["Code_old"].fillna(merged_df["Code_new"])
+            merged_df["Details"] = merged_df["Details_old"].fillna(
+                merged_df["Details_new"]
+            )
+
+            # Step 3: Combine the two dataframes, prioritizing non-null values from df2
+            self.quality_data = merged_df[["Value", "Code", "Details"]].combine_first(
+                self.quality_data
+            )
+
     def clip(self, low_clip: float | None = None, high_clip: float | None = None):
         """
         Clip data within specified low and high values.
@@ -935,9 +989,9 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.clip(low_clip=0, high_clip=100)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <clipped standard series within the specified range>
-        >>> processor.check_series
+        >>> processor.check_data["Value"]
         <clipped check series within the specified range>
         """
         if low_clip is None:
@@ -956,6 +1010,7 @@ class Processor:
         clipped = filters.clip(
             self._standard_data["Value"].squeeze(), low_clip, high_clip
         )
+
         self._standard_data = self._apply_changes(
             self._standard_data, clipped, "CLP", mark_remove=True
         )
@@ -967,10 +1022,14 @@ class Processor:
         change_code,
         mark_remove=False,
     ):
-        diffs = dataframe["Value"] != changed_values
+        both_none_mask = pd.isna(dataframe["Value"]) & pd.isna(changed_values)
+
+        # Create a mask for cases where values are different excluding both being None-like
+        diffs_mask = (dataframe["Value"] != changed_values) & ~(both_none_mask)
+
         if mark_remove:
-            dataframe.loc[diffs, "Remove"] = mark_remove
-        dataframe.loc[diffs, "Changes"] = change_code
+            dataframe.loc[diffs_mask, "Remove"] = mark_remove
+        dataframe.loc[diffs_mask, "Changes"] = change_code
         dataframe["Value"] = changed_values
         return dataframe
 
@@ -1002,7 +1061,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.remove_outliers(span=10, delta=2.0)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <standard series with outliers removed>
         """
         if span is None:
@@ -1064,7 +1123,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.remove_spikes(low_clip=10, high_clip=20, span=5, delta=2.0)
-        >>> processor.standard_series
+        >>> processor.standard_data["Value"]
         <standard series with spikes removed>
         """
         if low_clip is None:
@@ -1126,12 +1185,7 @@ class Processor:
             The start date of the range to delete.
         to_date : str
             The end date of the range to delete.
-        tstype_standard : bool, optional
-            Flag to delete data from the standard series, by default True.
-        tstype_check : bool, optional
-            Flag to delete data from the check series, by default False.
-        tstype_quality : bool, optional
-            Flag to delete data from the quality series, by default False.
+
 
         Returns
         -------
@@ -1363,6 +1417,8 @@ class Processor:
                 self._quality_data["Value"],
             )
         elif ftype == "xml":
+            if self.check_data.empty:
+                check = False
             blob_list = self.to_xml_data_structure(
                 standard=standard, quality=quality, check=check
             )
@@ -1686,9 +1742,9 @@ def hydrobot_config_yaml_init(config_path):
     """
     processing_parameters = data_acquisition.config_yaml_import(config_path)
 
-    #######################################################################################
+    ###################################################################################
     # Setting up logging with Annalist
-    #######################################################################################
+    ###################################################################################
 
     ann = Annalist()
     ann.configure(
@@ -1698,21 +1754,22 @@ def hydrobot_config_yaml_init(config_path):
         file_format_str=processing_parameters["format"]["file"],
     )
 
-    #######################################################################################
+    ###################################################################################
     # Creating a Hydrobot Processor object which contains the data to be processed
-    #######################################################################################
-
+    ###################################################################################
+    now = datetime.now()
     data = Processor(
         processing_parameters["base_url"],
         processing_parameters["site"],
         processing_parameters["standard_hts_filename"],
         processing_parameters["standard_measurement_name"],
-        processing_parameters["frequency"],
+        processing_parameters.get("frequency", None),
         processing_parameters["from_date"],
-        processing_parameters["to_date"],
-        processing_parameters["check_hts_filename"],
-        processing_parameters["check_measurement_name"],
+        processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+        processing_parameters.get("check_hts_filename", None),
+        processing_parameters.get("check_measurement_name", None),
         processing_parameters["defaults"],
         processing_parameters["inspection_expiry"],
+        constant_check_shift=processing_parameters["constant_check_shift"],
     )
     return data, ann

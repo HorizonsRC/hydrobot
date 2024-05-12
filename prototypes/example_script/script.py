@@ -15,6 +15,7 @@ from hydrobot.data_acquisition import (
     import_ncr,
     import_prov_wq,
 )
+from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import hydrobot_config_yaml_init
 from hydrobot.utils import merge_all_comments
@@ -25,19 +26,41 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = hydrobot_config_yaml_init("config.yaml")
 
+st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
+st.title(f"{data.site}")
+st.header(f"{data.standard_measurement_name}")
+
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
 
-inspections = import_inspections("WaterTemp_Inspections.csv")
-prov_wq = import_prov_wq("WaterTemp_ProvWQ.csv")
-ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
+check_col = "Value"
+logger_col = "Logger"
 
-# inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-# prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+inspections = import_inspections(
+    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
+)
+prov_wq = import_prov_wq(
+    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+)
+ncrs = import_ncr("AP_non-conformance_reports.csv")
 
-data.check_data = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
+prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+
+all_checks = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+
+all_checks = all_checks.loc[
+    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+]
+
+# For any constant shift in the check data, default 0
+# data.quality_code_evaluator.constant_check_shift = -1.9
+
+data.check_data = pd.concat(
+    [data.check_data, inspections_no_dup, prov_wq_no_dup]
+).sort_index()
 
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
@@ -48,6 +71,7 @@ all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
+
 
 data.insert_missing_nans()
 
@@ -73,6 +97,10 @@ data.remove_spikes()
 # Assign quality codes
 #######################################################################################
 data.quality_encoder()
+data.standard_data["Value"] = trim_series(
+    data.standard_data["Value"],
+    data.check_data["Value"],
+)
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
@@ -92,19 +120,17 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-st.set_page_config(page_title="Hydrobot0.5.1", layout="wide", page_icon="💦")
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
-    data.site,
-    data.standard_data,
-    data.check_data,
+    data,
+    all_checks,
 )
 
 st.plotly_chart(fig_subplots, use_container_width=True)
 
 st.dataframe(all_comments, use_container_width=True)
+# st.dataframe(data.standard_data, use_container_width=True)
+st.dataframe(data.check_data, use_container_width=True)
+st.dataframe(data.quality_data, use_container_width=True)
