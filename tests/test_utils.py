@@ -92,3 +92,38 @@ def test_datetime_index_to_mowsecs(mowsecs_data, datetime_data):
     dt_to_ms = utils.datetime_index_to_mowsecs(datetime_data.index)
 
     assert dt_to_ms.equals(mowsecs_data.index.astype(np.int64))
+
+
+def test_compare_two_qc_take_min():
+    """Test compare_two_qc_take_min utility."""
+    a = pd.Series(
+        {
+            "2021-01-01 01:00": 5,
+            "2021-01-01 03:00": 6,
+            "2021-01-01 09:00": 5,
+        }
+    )
+
+    b = pd.Series(
+        {
+            "2021-01-01 01:00": 6,
+            "2021-01-01 02:00": 4,
+            "2021-01-01 05:00": 5,
+            "2021-01-01 06:00": 6,
+        }
+    )
+
+    c = pd.Series(
+        {
+            "2021-01-01 01:00": 5,
+            "2021-01-01 02:00": 4,
+            "2021-01-01 05:00": 5,
+            "2021-01-01 06:00": 6,
+            "2021-01-01 09:00": 5,
+        }
+    )
+
+    print(utils.compare_two_qc_take_min(a, b))
+
+    assert utils.compare_two_qc_take_min(a, b).equals(c)
+    assert utils.compare_qc_list_take_min([a, b, c]).equals(c)

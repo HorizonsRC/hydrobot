@@ -203,9 +203,6 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         diff = np.abs(base_datum - check_datum)
         threshold_500 = self.qc_500_limit + self.qc_500_percent * base_datum
         threshold_600 = self.qc_600_limit + self.qc_600_percent * base_datum
-        print(diff)
-        print(threshold_500)
-        print(threshold_600)
         if diff < threshold_600:
             qc = 600
         elif diff < threshold_500:
