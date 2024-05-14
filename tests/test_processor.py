@@ -155,7 +155,6 @@ def mock_get_data():
     ):
         _ = base_url, hts, site
         data_blobs = parse_xml(xml_string)
-
         keep_blobs = []
 
         type_map = {
@@ -181,6 +180,7 @@ def mock_get_data():
                     )
                     blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
                     keep_blobs += [blob]
+                    break
         else:
             return None
 
@@ -980,7 +980,6 @@ def test_remove_spikes(
     assert pr.standard_data.loc["2023-01-01 00:10:00", "Changes"] == "SPK"
 
     assert pr.standard_data.loc["2023-01-01 00:10:00", "Remove"]
-    print(pr.standard_data)
 
 
 def test_remove_flatlined_values(
@@ -1076,7 +1075,6 @@ def test_remove_flatlined_values(
     pr.standard_data.loc["2023-01-01 00:45:00", "Value"] = flatty
 
     pr.remove_flatlined_values()
-    print(pr.standard_data.head())
 
     assert pd.isna(pr.standard_data.loc["2023-01-01 00:30:00", "Value"])
 
@@ -1293,13 +1291,17 @@ def test_data_export(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
         standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        check_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
+        check_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
+
+    check_data_indices = pr.check_data.index
 
     # Checking that the data points I want to delete actually exist:
     start_idx = "2023-01-01 00:15:00"
@@ -1335,7 +1337,6 @@ def test_data_export(
     assert start_idx not in list(read_hilltop_check_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
-    print(gap_path_xml.read_text())
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
     gap_path_blob = data_structure.parse_xml(gap_path_xml_tree)
 
@@ -1369,7 +1370,6 @@ def test_data_export(
     # assert start_idx not in list(read_hilltop_std_qc_csv_df.index)
 
     pr.data_exporter(gap_path_xml, ftype="xml")
-    print(gap_path_xml.read_text())
 
     assert gap_path_xml.read_text().split("\n")[22].strip() == "<Gap />"
     gap_path_xml_tree = DefusedElementTree.fromstring(gap_path_xml.read_text())
@@ -1377,4 +1377,10 @@ def test_data_export(
 
     assert gap_path_blob is not None
     std_indices = gap_path_blob[0].data.timeseries.index
-    assert start_idx not in list(std_indices)
+
+    import_check_indices = gap_path_blob[1].data.timeseries.index
+
+    for check_idx, import_idx in zip(
+        check_data_indices, import_check_indices, strict=True
+    ):
+        assert check_idx == pd.Timestamp(import_idx)
