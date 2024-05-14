@@ -278,7 +278,7 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[
-        minimised_qc_series_with_dup.shift(-1) != minimised_qc_series_with_dup
+        minimised_qc_series_with_dup.shift() != minimised_qc_series_with_dup
     ]
     return minimised_qc_series
 
