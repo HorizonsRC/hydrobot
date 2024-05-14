@@ -254,3 +254,53 @@ def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
     all_comments = all_comments.sort_values(by="Time")
 
     return all_comments
+
+
+def compare_two_qc_take_min(qc_series_1, qc_series_2):
+    """
+    Takes two QC series and takes the lowest QC in the list for each time period.
+
+    Parameters
+    ----------
+    qc_series_1 : pd.Series
+        One series
+    qc_series_2 : pd.Series
+        Other series
+
+    Returns
+    -------
+    pd.Series
+        Combined series
+    """
+    combined_index = qc_series_1.index.union(qc_series_2.index)
+    full_index_1 = qc_series_1.reindex(combined_index, method="ffill")
+    full_index_2 = qc_series_2.reindex(combined_index, method="ffill")
+
+    minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
+    minimised_qc_series = minimised_qc_series_with_dup.loc[
+        minimised_qc_series_with_dup.shift(-1) != minimised_qc_series_with_dup
+    ]
+    return minimised_qc_series
+
+
+def compare_qc_list_take_min(list_of_qc_series):
+    """
+    Takes a list of QC series and takes the lowest QC in the list for each time period.
+
+    Parameters
+    ----------
+    list_of_qc_series : list of pd.Series
+        Each element of this list is a QC_series to combine (via min)
+
+    Returns
+    -------
+    pd.Series
+        The combined series
+    """
+    if len(list_of_qc_series) == 0:
+        raise ValueError("Can't be empty mate")
+    else:
+        qc_series = list_of_qc_series[0]
+        for q in list_of_qc_series[1:]:
+            qc_series = compare_two_qc_take_min(qc_series, q)
+        return qc_series
