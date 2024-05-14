@@ -200,9 +200,12 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         """
         check_datum = check_datum + self.constant_check_shift
 
-        diff = np.abs(base_datum / check_datum - 1) * 100
+        diff = np.abs(base_datum - check_datum)
         threshold_500 = self.qc_500_limit + self.qc_500_percent * base_datum
         threshold_600 = self.qc_600_limit + self.qc_600_percent * base_datum
+        print(diff)
+        print(threshold_500)
+        print(threshold_600)
         if diff < threshold_600:
             qc = 600
         elif diff < threshold_500:
@@ -251,6 +254,24 @@ def get_qc_evaluator_dict():
                 row[0],
             )
         csv_file.close()
+
+    # DO QualityCodeEvaluator
+    template_path = (
+        script_dir / "config/DissolvedOxygenQualityCodeEvaluator_QC_config.csv"
+    ).resolve()
+    with open(template_path) as csv_file:
+        reader = csv.reader(csv_file)
+
+        for row in reader:
+            qc_evaluator_dict[row[0]] = DissolvedOxygenQualityCodeEvaluator(
+                float(row[1]),
+                float(row[2]),
+                float(row[3]),
+                float(row[4]),
+                row[0],
+            )
+        csv_file.close()
+
     return qc_evaluator_dict
 
 
