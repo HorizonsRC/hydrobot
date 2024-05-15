@@ -143,12 +143,15 @@ class Processor:
         if standard_measurement_name not in list(
             available_standard_measurements.MeasurementName
         ):
-            raise ValueError(
-                f"Standard measurement name '{standard_measurement_name}' not found at"
-                f" site '{site}'. "
-                "Available measurements are "
-                f"{list(available_standard_measurements.MeasurementName)}"
-            )
+            pass
+            """
+                raise ValueError(
+                    f"Standard measurement name '{standard_measurement_name}' not found at"
+                    f" site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_standard_measurements.MeasurementName)}"
+                )
+            """
 
         # check
         self._check_measurement_name = check_measurement_name
@@ -461,6 +464,8 @@ class Processor:
             )
         else:
             for blob in blob_list:
+                print(blob)
+                print("ds_name", standard_data_source_name)
                 data_source_list += [blob.data_source.name]
                 if (blob.data_source.name == standard_data_source_name) and (
                     blob.data_source.ts_type == "StdSeries"
@@ -1101,16 +1106,17 @@ class Processor:
             interval_dict = self._interval_dict
 
         qc_checks = self.check_data[self.check_data["QC"]]
+        qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
 
         chk_frame = evaluator.check_data_quality_code(
             self.standard_data["Value"],
-            qc_checks["Value"],
+            qc_series,
             self._quality_code_evaluator,
         )
         self._apply_quality(chk_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
-            self.quality_data, qc_checks["Value"], self._interval_dict
+            self.quality_data, qc_series, self._interval_dict
         )
         self._apply_quality(oov_frame)
 
