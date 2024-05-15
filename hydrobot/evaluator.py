@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
 
+import hydrobot.utils as utils
 from hydrobot.data_sources import QualityCodeEvaluator
 
 annalizer = Annalist()
@@ -617,3 +618,27 @@ def single_downgrade_out_of_validation(
     # qc_frame.loc[qc_frame.index[-1], "Value"] = 0
 
     return qc_frame
+
+
+def cap_qc_where_std_high(std_series, qc_series, cap_qc, cap_threshold):
+    """
+    Cap the quality code of data where the standard series exceeds some value.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+    qc_series : pd.Series
+    cap_qc : numeric
+    cap_threshold : numeric
+
+
+    Returns
+    -------
+    pd.Series
+        the qc series to return
+    """
+    capped_data = std_series > cap_threshold
+    capped_qc_changes = capped_data.loc[capped_data.shift() != capped_data]  # noqa
+    potential_new_qc = capped_qc_changes.replace(True, cap_qc).replace(False, np.NaN)
+    new_qc = utils.compare_two_qc_take_min(potential_new_qc, qc_series)
+    return new_qc

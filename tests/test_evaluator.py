@@ -432,3 +432,36 @@ def test_single_downgrade_out_of_validation(gap_data):
         downgraded_data.loc["2021-01-01 01:20", "Details"]
         == "Site inspection overdue. Last inspection at 2021-01-01 01:00:00. Data downgraded to QC200 until next inspection."
     )
+
+
+def test_cap_qc_where_std_high():
+    """Test cap_qc_where_std_high."""
+    std = pd.Series(
+        {
+            "2021-01-01 01:00": 99,
+            "2021-01-01 02:00": 101,
+            "2021-01-01 03:00": 103,
+            "2021-01-01 04:00": 101,
+            "2021-01-01 05:00": 99,
+            "2021-01-01 06:00": 98,
+            "2021-01-01 07:00": 101,
+            "2021-01-01 08:00": 99,
+            "2021-01-01 09:00": 97,
+        }
+    )
+    qc = pd.Series(
+        {
+            "2021-01-01 00:00": 600,
+        }
+    )
+    fin = pd.Series(
+        {
+            "2021-01-01 00:00": 600,
+            "2021-01-01 02:00": 500,
+            "2021-01-01 05:00": 600,
+            "2021-01-01 07:00": 500,
+            "2021-01-01 08:00": 600,
+        }
+    )
+
+    assert fin.equals(evaluator.cap_qc_where_std_high(std, qc, 500, 100))

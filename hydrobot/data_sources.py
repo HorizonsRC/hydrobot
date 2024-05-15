@@ -95,6 +95,8 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
             QC comparison
         name : str
             Name of the data source
+        constant_check_shift : numerical
+            Shifts the check data by a fixed amount
         """
         QualityCodeEvaluator.__init__(
             self, qc_500_limit, qc_600_limit, name, constant_check_shift
@@ -143,6 +145,73 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         return qc
 
 
+class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
+    """QualityCodeEvaluator for DO NEMS.
+
+    Constant error plus percentage error.
+    """
+
+    def __init__(
+        self,
+        qc_500_limit,
+        qc_600_limit,
+        qc_500_percent,
+        qc_600_percent,
+        name="",
+        constant_check_shift=0,
+    ):
+        """
+        Initialize TwoLevelQualityCodeEvaluator.
+
+        Parameters
+        ----------
+        qc_500_limit : numerical
+            Constant contribution to QC 500 limit
+        qc_600_limit : numerical
+            Constant contribution to QC 600 limit
+        qc_500_percent : numerical
+            Variable contribution to QC 500 limit
+        qc_600_percent : numerical
+            Variable contribution to QC 600 limit
+        name : str
+            Name of the data source
+        """
+        QualityCodeEvaluator.__init__(
+            self, qc_500_limit, qc_600_limit, name, constant_check_shift
+        )
+        self.qc_500_percent = qc_500_percent
+        self.qc_600_percent = qc_600_percent
+
+    def find_qc(self, base_datum, check_datum):
+        """Find the base quality codes for DO.
+
+        Parameters
+        ----------
+        base_datum : numerical
+            Closest continuum datum point to the check
+        check_datum : numerical
+            The check data to verify the continuous data, shifted by any constant_check_shift
+
+        Returns
+        -------
+        int
+            The Quality code
+
+        """
+        check_datum = check_datum + self.constant_check_shift
+
+        diff = np.abs(base_datum - check_datum)
+        threshold_500 = self.qc_500_limit + self.qc_500_percent * base_datum
+        threshold_600 = self.qc_600_limit + self.qc_600_percent * base_datum
+        if diff < threshold_600:
+            qc = 600
+        elif diff < threshold_500:
+            qc = 500
+        else:
+            qc = 400
+        return qc
+
+
 def get_qc_evaluator_dict():
     """Return all qc_evaluators in a dictionary.
 
@@ -182,6 +251,24 @@ def get_qc_evaluator_dict():
                 row[0],
             )
         csv_file.close()
+
+    # DO QualityCodeEvaluator
+    template_path = (
+        script_dir / "config/DissolvedOxygenQualityCodeEvaluator_QC_config.csv"
+    ).resolve()
+    with open(template_path) as csv_file:
+        reader = csv.reader(csv_file)
+
+        for row in reader:
+            qc_evaluator_dict[row[0]] = DissolvedOxygenQualityCodeEvaluator(
+                float(row[1]),
+                float(row[2]),
+                float(row[3]),
+                float(row[4]),
+                row[0],
+            )
+        csv_file.close()
+
     return qc_evaluator_dict
 
 
