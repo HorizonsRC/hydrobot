@@ -1,9 +1,12 @@
 """Dissolved Oxygen Processor Class."""
 
 import re
+from datetime import datetime
 
+from annalist.annalist import Annalist
 from hilltoppy import Hilltop
 
+from hydrobot.data_acquisition import config_yaml_import
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
@@ -199,4 +202,64 @@ class DOProcessor(Processor):
             quality_data=self.wt_quality_data,
             from_date=self.from_date,
             to_date=self.to_date,
+        )
+
+    @classmethod
+    def from_config_yaml(cls, config_path):
+        """
+        Initialises a Processor class given a config file.
+
+        Parameters
+        ----------
+        config_path : string
+            Path to config.yaml.
+
+        Returns
+        -------
+        Processor, Annalist
+        """
+        processing_parameters = config_yaml_import(config_path)
+
+        ###################################################################################
+        # Setting up logging with Annalist
+        ###################################################################################
+
+        ann = Annalist()
+        ann.configure(
+            logfile=processing_parameters["logfile"],
+            analyst_name=processing_parameters["analyst_name"],
+            stream_format_str=processing_parameters["format"]["stream"],
+            file_format_str=processing_parameters["format"]["file"],
+        )
+
+        ###################################################################################
+        # Creating a Hydrobot Processor object which contains the data to be processed
+        ###################################################################################
+        now = datetime.now()
+        return (
+            cls(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters.get("frequency", None),
+                processing_parameters["water_temperature_site"],
+                processing_parameters["atmospheric_pressure_site"],
+                processing_parameters["water_temperature_hts"],
+                processing_parameters["atmospheric_pressure_hts"],
+                processing_parameters["atmospheric_pressure_frequency"],
+                processing_parameters["water_temperature_frequency"],
+                processing_parameters.get("water_temperature_measurement_name", None),
+                processing_parameters.get(
+                    "atmospheric_pressure_measurement_name", None
+                ),
+                processing_parameters["from_date"],
+                processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+                processing_parameters.get("check_hts_filename", None),
+                processing_parameters.get("check_measurement_name", None),
+                processing_parameters["defaults"],
+                processing_parameters["inspection_expiry"],
+                constant_check_shift=processing_parameters["constant_check_shift"],
+            ),
+            ann,
         )

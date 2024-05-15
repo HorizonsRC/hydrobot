@@ -1394,3 +1394,87 @@ def test_data_export(
         check_data_indices, import_check_indices, strict=True
     ):
         assert check_idx == pd.Timestamp(import_idx)
+
+
+def test_from_yaml_config(
+    capsys,
+    monkeypatch,
+    mock_site_list,
+    mock_measurement_list,
+    mock_xml_data,
+    mock_qc_evaluator_dict,
+):
+    """Test the initialization of the Processor class from a config yaml file."""
+
+    def get_mock_site_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_site_list
+
+    def get_mock_measurement_list(*args, **kwargs):
+        _ = args, kwargs
+        return mock_measurement_list
+
+    def get_mock_xml_data(*args, **kwargs):
+        _ = args, kwargs
+        return mock_xml_data
+
+    def get_mock_qc_evaluator_dict(*args, **kwargs):
+        _ = args, kwargs
+        return mock_qc_evaluator_dict
+
+    # Here we patch the Hilltop Class
+    monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
+    monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
+    monkeypatch.setattr(
+        data_sources,
+        "get_qc_evaluator_dict",
+        get_mock_qc_evaluator_dict,
+    )
+
+    # However, in these cases, we need to patch the INSTANCE as imported in
+    # data_acquisition. Not sure if this makes sense to me, but it works.
+    monkeypatch.setattr("hydrobot.data_acquisition.get_hilltop_xml", get_mock_xml_data)
+
+    pr, ann = processor.Processor.from_config_yaml("tests/test_data/test_config.yaml")
+
+    captured = capsys.readouterr()
+    ann_output = captured.err.split("\n")
+    correct = [
+        "import_standard | Mid Stream at Cowtoilet Farm",
+        "import_quality | Mid Stream at Cowtoilet Farm",
+        "import_check | Mid Stream at Cowtoilet Farm",
+        "__init__ | Mid Stream at Cowtoilet Farm",
+    ]
+
+    for i, out in enumerate(ann_output[0:-1]):
+        assert out == correct[i], f"Failed on log number {i} with output {out}"
+
+    assert isinstance(pr.standard_data, pd.DataFrame)
+    assert isinstance(pr.quality_data, pd.DataFrame)
+    assert isinstance(pr.check_data, pd.DataFrame)
+
+    assert pr.raw_standard_blob is not None
+    assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
+    assert float(pr.standard_data.loc["2023-01-01 00:45:00", "Value"]) == pytest.approx(
+        17.8
+    )
+    assert pr.standard_data.index.dtype == np.dtype("datetime64[ns]")
+    assert pr.quality_data.index.dtype == np.dtype("datetime64[ns]")
+    assert pr.check_data.index.dtype == np.dtype("datetime64[ns]")
+
+    assert pr.standard_data.columns.to_numpy()[0] == "Raw"
+    assert pr.standard_data.columns.to_numpy()[1] == "Value"
+    assert pr.standard_data.columns.to_numpy()[2] == "Changes"
+    assert pr.standard_data.columns.to_numpy()[3] == "Remove"
+
+    assert pr.quality_data.columns.to_numpy()[0] == "Raw"
+    assert pr.quality_data.columns.to_numpy()[1] == "Value"
+    assert pr.quality_data.columns.to_numpy()[2] == "Code"
+    assert pr.quality_data.columns.to_numpy()[3] == "Details"
+
+    assert pr.check_data.columns.to_numpy()[0] == "Raw"
+    assert pr.check_data.columns.to_numpy()[1] == "Value"
+    assert pr.check_data.columns.to_numpy()[2] == "Changes"
+    assert pr.check_data.columns.to_numpy()[3] == "Recorder Time"
+    assert pr.check_data.columns.to_numpy()[4] == "Comment"
+    assert pr.check_data.columns.to_numpy()[5] == "Source"

@@ -213,12 +213,60 @@ class Processor:
         self.raw_check_xml = None
 
         get_check = self._check_hts is not None
-        print(self.from_date)
-        print(self.to_date)
 
         # Load data for the first time
         self.import_data(
             from_date=self.from_date, to_date=self.to_date, check=get_check
+        )
+
+    @classmethod
+    def from_config_yaml(cls, config_path):
+        """
+        Initialises a Processor class given a config file.
+
+        Parameters
+        ----------
+        config_path : string
+            Path to config.yaml.
+
+        Returns
+        -------
+        Processor, Annalist
+        """
+        processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+        ###################################################################################
+        # Setting up logging with Annalist
+        ###################################################################################
+
+        ann = Annalist()
+        ann.configure(
+            logfile=processing_parameters.get("logfile", None),
+            analyst_name=processing_parameters["analyst_name"],
+            stream_format_str=processing_parameters["format"].get("stream", None),
+            file_format_str=processing_parameters["format"].get("file", None),
+        )
+
+        ###################################################################################
+        # Creating a Hydrobot Processor object which contains the data to be processed
+        ###################################################################################
+        now = datetime.now()
+        return (
+            cls(
+                processing_parameters["base_url"],
+                processing_parameters["site"],
+                processing_parameters["standard_hts_filename"],
+                processing_parameters["standard_measurement_name"],
+                processing_parameters.get("frequency", None),
+                processing_parameters.get("from_date", None),
+                processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+                processing_parameters.get("check_hts_filename", None),
+                processing_parameters.get("check_measurement_name", None),
+                processing_parameters["defaults"],
+                processing_parameters["inspection_expiry"],
+                constant_check_shift=processing_parameters["constant_check_shift"],
+            ),
+            ann,
         )
 
     @property
@@ -1868,51 +1916,3 @@ class Processor:
             )
             data_blob_list += [quality_data_blob]
         return data_blob_list
-
-
-def hydrobot_config_yaml_init(config_path):
-    """
-    Initialises a Processor class given a config file.
-
-    Parameters
-    ----------
-    config_path : string
-        Path to config.yaml.
-
-    Returns
-    -------
-    Processor, Annalist
-    """
-    processing_parameters = data_acquisition.config_yaml_import(config_path)
-
-    ###################################################################################
-    # Setting up logging with Annalist
-    ###################################################################################
-
-    ann = Annalist()
-    ann.configure(
-        logfile=processing_parameters["logfile"],
-        analyst_name=processing_parameters["analyst_name"],
-        stream_format_str=processing_parameters["format"]["stream"],
-        file_format_str=processing_parameters["format"]["file"],
-    )
-
-    ###################################################################################
-    # Creating a Hydrobot Processor object which contains the data to be processed
-    ###################################################################################
-    now = datetime.now()
-    data = Processor(
-        processing_parameters["base_url"],
-        processing_parameters["site"],
-        processing_parameters["standard_hts_filename"],
-        processing_parameters["standard_measurement_name"],
-        processing_parameters.get("frequency", None),
-        processing_parameters["from_date"],
-        processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
-        processing_parameters.get("check_hts_filename", None),
-        processing_parameters.get("check_measurement_name", None),
-        processing_parameters["defaults"],
-        processing_parameters["inspection_expiry"],
-        constant_check_shift=processing_parameters["constant_check_shift"],
-    )
-    return data, ann
