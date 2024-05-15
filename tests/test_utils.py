@@ -103,7 +103,6 @@ def test_compare_two_qc_take_min():
             "2021-01-01 09:00": 5,
         }
     )
-
     b = pd.Series(
         {
             "2021-01-01 01:00": 6,
@@ -112,7 +111,6 @@ def test_compare_two_qc_take_min():
             "2021-01-01 06:00": 6,
         }
     )
-
     c = pd.Series(
         {
             "2021-01-01 01:00": 5,
@@ -123,7 +121,57 @@ def test_compare_two_qc_take_min():
         }
     )
 
-    print(utils.compare_two_qc_take_min(a, b))
+    assert utils.compare_two_qc_take_min(a, b).equals(c), "1"
+    assert utils.compare_qc_list_take_min([a, b, c]).equals(c), "2"
 
-    assert utils.compare_two_qc_take_min(a, b).equals(c)
-    assert utils.compare_qc_list_take_min([a, b, c]).equals(c)
+    d = pd.Series(
+        {
+            "2021-01-01 01:00": 5,
+            "2021-01-01 03:00": 6,
+            "2021-01-01 09:00": 5,
+        }
+    )
+    e = pd.Series(
+        {
+            "2021-01-01 01:30": 6,
+            "2021-01-01 02:00": 4,
+            "2021-01-01 05:00": 5,
+            "2021-01-01 06:00": 6,
+        }
+    )
+
+    print(utils.compare_two_qc_take_min(d, e))
+
+    assert utils.compare_two_qc_take_min(d, e).equals(
+        c
+    ), "unequal start times breaks it"
+
+    f = pd.Series(
+        {
+            "2021-01-01 01:30": 5,
+            "2021-01-01 03:00": 6,
+            "2021-01-01 09:00": 5,
+        }
+    )
+    g = pd.Series(
+        {
+            "2021-01-01 01:00": 6,
+            "2021-01-01 02:00": 4,
+            "2021-01-01 05:00": 5,
+            "2021-01-01 06:00": 6,
+        }
+    )
+    h = pd.Series(
+        {
+            "2021-01-01 01:00": 6,
+            "2021-01-01 01:30": 5,
+            "2021-01-01 02:00": 4,
+            "2021-01-01 05:00": 5,
+            "2021-01-01 06:00": 6,
+            "2021-01-01 09:00": 5,
+        }
+    )
+
+    assert utils.compare_two_qc_take_min(f, g).equals(
+        h
+    ), "unequal start times aren't accounted for"

@@ -273,14 +273,18 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
         Combined series
     """
     combined_index = qc_series_1.index.union(qc_series_2.index)
-    full_index_1 = qc_series_1.reindex(combined_index, method="ffill")
-    full_index_2 = qc_series_2.reindex(combined_index, method="ffill")
+    full_index_1 = qc_series_1.reindex(combined_index, method="ffill").replace(
+        np.NaN, np.Inf
+    )
+    full_index_2 = qc_series_2.reindex(combined_index, method="ffill").replace(
+        np.NaN, np.Inf
+    )
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[
         minimised_qc_series_with_dup.shift() != minimised_qc_series_with_dup
     ]
-    return minimised_qc_series
+    return minimised_qc_series.astype(np.int64)
 
 
 def compare_qc_list_take_min(list_of_qc_series):
