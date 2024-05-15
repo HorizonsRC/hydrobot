@@ -75,7 +75,7 @@ def test_get_measurement():
         stage_meas.find_qc(0, 2) == 600
     ), "good data not given good qc, low static perc"
 
-    do_meas = data_sources.get_qc_evaluator("Dissolved Oxygen")
+    do_meas = data_sources.get_qc_evaluator("DO Saturation")
     assert do_meas.find_qc(100, 107.9) == 600, "data at 100, should be qc600"
     assert do_meas.find_qc(100, 108.1) == 500, "data at 100, should be qc500 not 600"
     assert do_meas.find_qc(100, 115.9) == 500, "data at 100, should be qc500 not 400"
