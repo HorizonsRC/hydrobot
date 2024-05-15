@@ -442,7 +442,6 @@ class Processor:
             to_date,
             tstype="Standard",
         )
-        print(blob_list)
 
         blob_found = False
 
@@ -450,8 +449,6 @@ class Processor:
         data_source_list = []
         raw_standard_data = EMPTY_STANDARD_DATA.copy()
 
-        print("RAW", raw_standard_data)
-        print("STD", standard_data)
         raw_standard_blob = None
         raw_standard_xml = None
         if blob_list is None or len(blob_list) == 0:
@@ -539,8 +536,6 @@ class Processor:
 
             standard_data["Raw"] = raw_standard_data.iloc[:, 0]
             standard_data["Value"] = standard_data["Raw"]
-        print("Just before returning from import_standard")
-        print(standard_data)
 
         return (
             standard_data,
@@ -913,8 +908,6 @@ class Processor:
                 to_date=to_date,
                 frequency=self._frequency,
             )
-            print("After Import Standard")
-            print(self._standard_data)
         if quality:
             (
                 self._quality_data,
