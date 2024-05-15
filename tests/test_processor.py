@@ -43,6 +43,8 @@ CHECK_MEASUREMENTS = [
     "Dead Cow Concentration",
 ]
 
+MOCK_COUNTER = 0
+
 
 @pytest.fixture(autouse=True)
 def _no_requests(monkeypatch):
@@ -153,9 +155,12 @@ def mock_get_data():
         to_date,
         tstype,
     ):
+        global MOCK_COUNTER
         _ = base_url, hts, site
         data_blobs = parse_xml(xml_string)
         keep_blobs = []
+
+        MOCK_COUNTER += 1
 
         type_map = {
             "Standard": "StdSeries",
@@ -178,9 +183,11 @@ def mock_get_data():
                     mask = (conv_timestamps >= pd.to_datetime(from_date)) & (
                         conv_timestamps <= pd.to_datetime(to_date)
                     )
+                    print(mask)
                     blob.data.timeseries = blob.data.timeseries[mask]  # type: ignore
+                    print(blob.data.timeseries)
+
                     keep_blobs += [blob]
-                    break
         else:
             return None
 
@@ -658,21 +665,24 @@ def test_import_data(
         to_date=to_date,
         defaults=DEFAULTS,
     )
+    print(pr.standard_data)
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
     for idx in pr.standard_data.index:
-        assert idx >= pd.to_datetime(from_date)
-        assert idx <= pd.to_datetime(to_date)
+        print("IDX", idx)
+        print("TO_DATE", pd.to_datetime(to_date))
+        assert idx >= pd.to_datetime(from_date), "Standard Data imported too early"
+        assert idx <= pd.to_datetime(to_date), "Standard Data imported too late"
 
     for idx in pr.quality_data.index:
-        assert idx >= pd.to_datetime(from_date)
-        assert idx <= pd.to_datetime(to_date)
+        assert idx >= pd.to_datetime(from_date), "Quality data imported too early"
+        assert idx <= pd.to_datetime(to_date), "Quality data imported too late"
 
     for idx in pr.check_data.index:
-        assert idx >= pd.to_datetime(from_date)
-        assert idx <= pd.to_datetime(to_date)
+        assert idx >= pd.to_datetime(from_date), "Check data imported too early"
+        assert idx <= pd.to_datetime(to_date), "Check data imported too late"
 
 
 def test_remove_range(
