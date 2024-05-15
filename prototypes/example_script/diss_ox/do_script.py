@@ -24,7 +24,7 @@ from hydrobot.utils import merge_all_comments
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = Processor.from_config_yaml("config.yaml")
+data, ann = Processor.from_config_yaml("DO_config.yaml")
 
 st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
