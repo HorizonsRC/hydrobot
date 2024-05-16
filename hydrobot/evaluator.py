@@ -177,7 +177,7 @@ def missing_data_quality_code(std_series, qc_data, gap_limit):
     """
     Make sure that missing data is QC100.
 
-    Returns qc_data with QC100 values added where std_series is NaN
+    Returns qc_frame with QC100 values added where std_series is NaN
 
     Parameters
     ----------
@@ -305,7 +305,7 @@ def find_nearest_valid_time(series, dt) -> pd.Timestamp:
     return series.index[output_index][0]
 
 
-def base_data_qc_filter(base_series, qc_filter):
+def base_data_qc_filter(std_series, qc_filter):
     """
     Filter out data based on quality code filter.
 
@@ -314,7 +314,7 @@ def base_data_qc_filter(base_series, qc_filter):
 
     Parameters
     ----------
-    base_series : pandas.Series
+    std_series : pandas.Series
         Data to be filtered
     qc_filter : pandas.Series of booleans
         Dates for which some condition is met or not
@@ -325,11 +325,11 @@ def base_data_qc_filter(base_series, qc_filter):
         The filtered data
 
     """
-    base_filter = qc_filter.reindex(base_series.index, method="ffill").fillna(False)
-    return base_series[base_filter]
+    base_filter = qc_filter.reindex(std_series.index, method="ffill").fillna(False)
+    return std_series[base_filter]
 
 
-def base_data_meets_qc(base_series, qc_series, target_qc):
+def base_data_meets_qc(std_series, qc_series, target_qc):
     """
     Find all data where QC targets are met.
 
@@ -338,7 +338,7 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
 
     Parameters
     ----------
-    base_series: pandas.Series
+    std_series: pandas.Series
         Data to be filtered
     qc_series: pandas.Series
         quality code data series, some of which are presumably target_qc
@@ -350,10 +350,10 @@ def base_data_meets_qc(base_series, qc_series, target_qc):
     pandas.Series
         Filtered data
     """
-    return base_data_qc_filter(base_series, qc_series == target_qc)
+    return base_data_qc_filter(std_series, qc_series == target_qc)
 
 
-def diagnose_data(base_series, check_series, qc_series, frequency):
+def diagnose_data(std_series, check_series, qc_series, frequency):
     """
     Return description of how much missing data, how much for each QC, etc.
 
@@ -363,9 +363,7 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
 
     Parameters
     ----------
-    raw_data : pandas.Series
-        unprocessed base time series data
-    base_series : pandas.Series
+    std_series : pandas.Series
         processed base time series data
     check_series : pandas.Series
         Check datatime series
@@ -380,8 +378,8 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
         Prints statements that describe the state of the data
     """
     # total time
-    first_timestamp = base_series.index[0]
-    last_timestamp = base_series.index[-1]
+    first_timestamp = std_series.index[0]
+    last_timestamp = std_series.index[-1]
     total_time = last_timestamp - first_timestamp
     print(f"Time examined is {total_time} from {first_timestamp} to {last_timestamp}")
     print(
@@ -391,22 +389,22 @@ def diagnose_data(base_series, check_series, qc_series, frequency):
 
     # periods
     ave_period = pd.to_timedelta(frequency)  # total_time / (len(raw_data) - 1)
-    gap_time = ave_period * (len(base_series) - len(base_series.dropna()) + 1)
+    gap_time = ave_period * (len(std_series) - len(std_series.dropna()) + 1)
     print(f"Missing {gap_time} of data, that's {gap_time/total_time*100}%")
 
     # QCs
-    split_data = splitter(base_series, qc_series, frequency)
+    split_data = splitter(std_series, qc_series, frequency)
     for qc in split_data:
         print(
             f"Data that is QC{qc} makes up "
-            f"{len(split_data[qc].dropna()) / len(base_series.dropna()) * 100:.2f}% "
+            f"{len(split_data[qc].dropna()) / len(std_series.dropna()) * 100:.2f}% "
             "of the workable data and "
-            f"{len(split_data[qc].dropna()) / len(base_series) * 100:.2f}% "
+            f"{len(split_data[qc].dropna()) / len(std_series) * 100:.2f}% "
             "of the time period"
         )
 
 
-def splitter(base_series, qc_series, frequency):
+def splitter(std_series, qc_series, frequency):
     """
     Split the data up by QC code.
 
@@ -415,7 +413,7 @@ def splitter(base_series, qc_series, frequency):
 
     Parameters
     ----------
-    base_series
+    std_series : pd.Series
         Time series data to be split up
     qc_series : pd.Series
         QC values to split the data by
@@ -433,19 +431,19 @@ def splitter(base_series, qc_series, frequency):
     for qc in qc_list:
         if qc == 100:
             return_dict[qc] = (
-                base_data_meets_qc(base_series, qc_series, qc)
-                .fillna(base_series.median())
+                base_data_meets_qc(std_series, qc_series, qc)
+                .fillna(std_series.median())
                 .asfreq(frequency)
             )
         else:
-            return_dict[qc] = base_data_meets_qc(base_series, qc_series, qc).asfreq(
+            return_dict[qc] = base_data_meets_qc(std_series, qc_series, qc).asfreq(
                 frequency
             )
 
     return return_dict
 
 
-def max_qc_limiter(qc_data: pd.DataFrame, max_qc) -> pd.DataFrame:
+def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
     """
     Enforce max_qc on a QC series.
 
@@ -453,28 +451,28 @@ def max_qc_limiter(qc_data: pd.DataFrame, max_qc) -> pd.DataFrame:
 
     Parameters
     ----------
-    qc_series : pd.Series
+    qc_frame : pd.DataFrame
         The series to be limited.
     max_qc : numerical
         maximum allowed value. None imposes no limit.
 
     Returns
     -------
-    pd.Series
-        qc_series with too high QCs limited to max_qc
+    pd.DataFrame
+        qc_frame with too high QCs limited to max_qc
     """
-    clipped_data = qc_data["Value"].clip(np.NaN, max_qc)
+    clipped_data = qc_frame["Value"].clip(np.NaN, max_qc)
 
-    diff_idxs = qc_data[qc_data["Value"] != clipped_data].index
+    diff_idxs = qc_frame[qc_frame["Value"] != clipped_data].index
 
-    qc_data.loc[diff_idxs, "Code"] = qc_data.loc[diff_idxs, "Code"] + ", LIM"
-    qc_data.loc[diff_idxs, "Details"] = (
-        qc_data.loc[diff_idxs, "Details"]
+    qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
+    qc_frame.loc[diff_idxs, "Details"] = (
+        qc_frame.loc[diff_idxs, "Details"]
         + f" [Site QC limit applies to a maximum of {max_qc}.]"
     )
-    qc_data["Value"] = clipped_data
+    qc_frame["Value"] = clipped_data
 
-    return qc_data
+    return qc_frame
 
 
 def quality_encoder(
@@ -547,7 +545,7 @@ def bulk_downgrade_out_of_validation(
     Returns
     -------
     pd.DataFrame
-        The qc_series with any downgraded QCs added in
+        The qc_frame with any downgraded QCs added in
 
     """
     if not qc_frame.empty:
@@ -586,7 +584,7 @@ def single_downgrade_out_of_validation(
     Returns
     -------
     pd.DataFrame
-        The qc_series with any downgraded QCs added in
+        The qc_frame with any downgraded QCs added in
     """
     if qc_frame.empty or check_series.empty:
         raise ValueError(
