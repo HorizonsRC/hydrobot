@@ -4,6 +4,7 @@ import re
 from datetime import datetime
 
 from annalist.annalist import Annalist
+from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 from hydrobot.data_acquisition import config_yaml_import
@@ -12,6 +13,7 @@ from hydrobot.processor import (
     EMPTY_STANDARD_DATA,
     Processor,
 )
+from hydrobot.utils import correct_dissolved_oxygen
 
 
 class DOProcessor(Processor):
@@ -173,6 +175,7 @@ class DOProcessor(Processor):
             to_date=self.to_date,
             frequency=self.atmospheric_pressure_frequency,
         )
+
         self.ap_quality_data, _, _, _ = self.import_quality(
             standard_hts=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
@@ -202,6 +205,36 @@ class DOProcessor(Processor):
             quality_data=self.wt_quality_data,
             from_date=self.from_date,
             to_date=self.to_date,
+        )
+
+    @ClassLogger
+    def correct_do(
+        self, diss_ox=None, atm_pres=None, ap_altitude=None, do_altitude=None
+    ):
+        """
+        Correcting for atmospheric pressure.
+
+        Parameters
+        ----------
+        diss_ox
+        atm_pres
+        ap_altitude
+        do_altitude
+
+        Returns
+        -------
+        None, modifies standard_data
+        """
+        if diss_ox is None:
+            diss_ox = self.standard_data
+        if atm_pres is None:
+            atm_pres = self.ap_standard_data
+        if ap_altitude is None:
+            ap_altitude = self.ap_site_altitude
+        if do_altitude is None:
+            do_altitude = self.site_altitude
+        self.standard_data = correct_dissolved_oxygen(
+            diss_ox, atm_pres, ap_altitude, do_altitude
         )
 
     @classmethod
