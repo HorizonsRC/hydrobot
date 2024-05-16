@@ -17,14 +17,14 @@ from hydrobot.data_acquisition import (
 )
 from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
-from hydrobot.processor import hydrobot_config_yaml_init
+from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = hydrobot_config_yaml_init("config.yaml")
+data, ann = Processor.from_config_yaml("config.yaml")
 
 st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
