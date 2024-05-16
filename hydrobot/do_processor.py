@@ -8,6 +8,7 @@ from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 from hydrobot.data_acquisition import config_yaml_import
+from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
@@ -235,12 +236,40 @@ class DOProcessor(Processor):
         if atm_pres is None:
             atm_pres = self.ap_standard_data
         if ap_altitude is None:
-            ap_altitude = self.ap_site_altitude
+            ap_altitude = self.atmospheric_pressure_site_altitude
         if do_altitude is None:
             do_altitude = self.site_altitude
         self.standard_data = correct_dissolved_oxygen(
             diss_ox, atm_pres, ap_altitude, do_altitude
         )
+
+    @ClassLogger
+    def quality_encoder(
+        self,
+        gap_limit: int | None = None,
+        max_qc: int | float | None = None,
+        interval_dict: dict | None = None,
+    ):
+        """
+        DO verison of quality encoder.
+
+        Parameters
+        ----------
+        gap_limit
+        max_qc
+        interval_dict
+
+        Returns
+        -------
+        None
+        """
+        super().quality_encoder(
+            gap_limit=gap_limit, max_qc=max_qc, interval_dict=interval_dict
+        )
+        cap_frame = cap_qc_where_std_high(
+            self.standard_data, self.quality_data, 500, 100
+        )
+        self._apply_quality(cap_frame)
 
     @classmethod
     def from_config_yaml(cls, config_path):
