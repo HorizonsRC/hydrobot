@@ -24,12 +24,14 @@ class DOProcessor(Processor):
         standard_hts: str,
         standard_measurement_name: str,
         frequency: str,
+        site_altitude: float,
         water_temperature_site: str,
         atmospheric_pressure_site: str,
         water_temperature_hts: str,
         atmospheric_pressure_hts: str,
         atmospheric_pressure_frequency: str,
         water_temperature_frequency: str,
+        atmospheric_pressure_site_altitude: float,
         water_temperature_measurement_name: str = "Water Temperature",
         atmospheric_pressure_measurement_name: str = "Atmospheric Pressure",
         from_date: str | None = None,
@@ -141,6 +143,9 @@ class DOProcessor(Processor):
         self.water_temperature_frequency = water_temperature_frequency
         self.atmospheric_pressure_frequency = atmospheric_pressure_frequency
 
+        self.site_altitude = site_altitude
+        self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
+
         self.ap_standard_item_info = {
             "ItemName": self.ap_item_name,
             "ItemFormat": "F",
@@ -243,12 +248,14 @@ class DOProcessor(Processor):
                 processing_parameters["standard_hts_filename"],
                 processing_parameters["standard_measurement_name"],
                 processing_parameters.get("frequency", None),
+                processing_parameters["site_altitude"],
                 processing_parameters["water_temperature_site"],
                 processing_parameters["atmospheric_pressure_site"],
                 processing_parameters["water_temperature_hts"],
                 processing_parameters["atmospheric_pressure_hts"],
                 processing_parameters["atmospheric_pressure_frequency"],
                 processing_parameters["water_temperature_frequency"],
+                processing_parameters["atmospheric_pressure_site_altitude"],
                 processing_parameters.get("water_temperature_measurement_name", None),
                 processing_parameters.get(
                     "atmospheric_pressure_measurement_name", None
