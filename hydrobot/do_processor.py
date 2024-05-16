@@ -14,7 +14,7 @@ from hydrobot.processor import (
     EMPTY_STANDARD_DATA,
     Processor,
 )
-from hydrobot.utils import correct_dissolved_oxygen
+from hydrobot.utils import compare_two_qc_take_min, correct_dissolved_oxygen
 
 
 class DOProcessor(Processor):
@@ -74,18 +74,14 @@ class DOProcessor(Processor):
         else:
             self.atmospheric_pressure_site = atmospheric_pressure_site
 
-        if site not in wt_hilltop.available_sites:
-            self._site = site
-        else:
+        if self.water_temperature_site not in wt_hilltop.available_sites:
             raise ValueError(
-                f"Water Temperature site '{site}' not found for both base_url and hts combos."
+                f"Water Temperature site '{self.water_temperature_site}' not found for both base_url and hts combos."
                 f"Available sites in {water_temperature_hts} are: "
                 f"{[s for s in wt_hilltop.available_sites]}"
             )
 
-        if site not in ap_hilltop.available_sites:
-            self._site = site
-        else:
+        if self.atmospheric_pressure_site not in ap_hilltop.available_sites:
             raise ValueError(
                 f"Atmospheric Pressure site '{site}' not found for both base_url and hts combos."
                 f"Available sites in {atmospheric_pressure_hts} are: "
@@ -239,8 +235,8 @@ class DOProcessor(Processor):
             ap_altitude = self.atmospheric_pressure_site_altitude
         if do_altitude is None:
             do_altitude = self.site_altitude
-        self.standard_data = correct_dissolved_oxygen(
-            diss_ox, atm_pres, ap_altitude, do_altitude
+        self.standard_data["Value"] = correct_dissolved_oxygen(
+            diss_ox["Value"], atm_pres["Value"], ap_altitude, do_altitude
         )
 
     @ClassLogger
@@ -266,10 +262,45 @@ class DOProcessor(Processor):
         super().quality_encoder(
             gap_limit=gap_limit, max_qc=max_qc, interval_dict=interval_dict
         )
+
         cap_frame = cap_qc_where_std_high(
             self.standard_data, self.quality_data, 500, 100
         )
         self._apply_quality(cap_frame)
+
+        # Atmospheric Pressure
+        qc_frame = self.quality_data
+        qc_data = compare_two_qc_take_min(
+            self.quality_data["Value"], self.ap_quality_data["Value"]
+        )
+
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+
+        diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
+
+        qc_frame.loc[diff_idxs, "Code"] = "APD"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"] + " [DO QC lowered by AP QC]"
+        )
+        qc_frame["Value"] = qc_data
+        self.quality_data = qc_frame
+
+        # Water temperature
+        qc_frame = self.quality_data
+        qc_data = compare_two_qc_take_min(
+            self.quality_data["Value"], self.wt_quality_data["Value"]
+        )
+
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+
+        diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
+
+        qc_frame.loc[diff_idxs, "Code"] = "WTD"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"] + " [DO QC lowered by WT QC]"
+        )
+        qc_frame["Value"] = qc_data
+        self.quality_data = qc_frame
 
     @classmethod
     def from_config_yaml(cls, config_path):

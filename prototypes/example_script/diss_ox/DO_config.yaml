@@ -22,7 +22,7 @@ atmospheric_pressure_measurement_name: "Atmospheric Pressure"
 atmospheric_pressure_site_altitude: 143
 
 # Processing Configuration
-from_date: "2021-12-21 11:15"
+from_date: "2022-12-21 11:15"
 to_date: "2024-04-02 10:00"
 defaults:
   delta: 5
