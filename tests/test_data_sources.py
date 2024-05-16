@@ -74,3 +74,14 @@ def test_get_measurement():
     assert (
         stage_meas.find_qc(0, 2) == 600
     ), "good data not given good qc, low static perc"
+
+    do_meas = data_sources.get_qc_evaluator("DO Saturation")
+    assert do_meas.find_qc(100, 107.9) == 600, "data at 100, should be qc600"
+    assert do_meas.find_qc(100, 108.1) == 500, "data at 100, should be qc500 not 600"
+    assert do_meas.find_qc(100, 115.9) == 500, "data at 100, should be qc500 not 400"
+    assert do_meas.find_qc(100, 116.1) == 400, "data at 100, should be qc400"
+
+    assert do_meas.find_qc(0, 2.9) == 600, "data at 0, should be qc600"
+    assert do_meas.find_qc(0, 3.1) == 500, "data at 0, should be qc500 not 600"
+    assert do_meas.find_qc(0, 5.9) == 500, "data at 0, should be qc500 not 400"
+    assert do_meas.find_qc(0, 6.1) == 400, "data at 0, should be qc400"

@@ -24,7 +24,7 @@ from hydrobot.utils import merge_all_comments
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = Processor.from_config_yaml("config.yaml")
+data, ann = Processor.from_config_yaml("DO_config.yaml")
 
 st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
@@ -39,12 +39,12 @@ check_col = "Value"
 logger_col = "Logger"
 
 inspections = import_inspections(
-    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
+    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
 prov_wq = import_prov_wq(
-    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
 )
-ncrs = import_ncr("AP_non-conformance_reports.csv")
+ncrs = import_ncr("DO_non-conformance_reports.csv")
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
@@ -65,6 +65,9 @@ data.check_data = pd.concat(
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
 ]
+
+for i in [data.check_data, prov_wq, inspections, ncrs]:
+    print(i.empty)
 
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 
@@ -96,6 +99,8 @@ data.remove_spikes()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+print(data.check_data)
+print("qweqwe")
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
