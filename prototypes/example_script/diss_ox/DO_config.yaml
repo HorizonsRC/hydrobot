@@ -5,7 +5,8 @@ check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
 site: "Manawatu at Teachers College"
-standard_measurement_name: "DO Saturation"
+# standard_measurement_name: "DO Saturation"
+standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 frequency: "15min"
 

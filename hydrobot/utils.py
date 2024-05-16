@@ -249,9 +249,10 @@ def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
     )
     all_comments = all_comments.dropna(axis=1, how="all")
 
-    all_comments["Time"] = all_comments["Time"].dt.strftime("%Y-%m-%d %H:%M:%S")
+    if not all_comments.empty:
+        all_comments["Time"] = all_comments["Time"].dt.strftime("%Y-%m-%d %H:%M:%S")
 
-    all_comments = all_comments.sort_values(by="Time")
+        all_comments = all_comments.sort_values(by="Time")
 
     return all_comments
 

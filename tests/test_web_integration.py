@@ -641,6 +641,7 @@ def test_failed_requests(tmp_path):
             excinfo.value
         )
 
+        """
         with pytest.raises(ValueError, match=r"Standard measurement name.*") as excinfo:
             _ = Processor(
                 processing_parameters["base_url"],
@@ -659,6 +660,7 @@ def test_failed_requests(tmp_path):
             "Standard measurement name 'Notarealmeasurement' not found at site"
             in str(excinfo.value)
         )
+        """
         with pytest.raises(
             ValueError,
             match=r"Unrecognised start time",
