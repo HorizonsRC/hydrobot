@@ -80,11 +80,21 @@ History
 0.6.0 (2024-05-13)
 ----------------------------------
 
-* Processor objest now works with pd.Dataframes rather than pd.Series
+* Processor object now works with pd.Dataframes rather than pd.Series
 * Out of validation range now has adjustable ranges, can support multiple maximum QCs with different time period lengths
 * Changes to data and quality codes now have reason codes associated with any changes
 * Check data can be read from xml directly
 * Any missing xml data is no longer read in as zeroes
-* config.yaml supports 'today' input for to_date
 * Added in a constant shift value in config.yaml
 * Various DevOps improvements
+
+0.6.1 (2024-05-16)
+----------------------------------
+
+* DO semi-supported, but things are a little hairy rn
+* Gonna officially support DO next minor release with more testing
+* DO evaluator supported
+* 100% 500 qc cap supported
+* Support WT + AP QCs
+* AP VM adjustment supported
+* Nic promises the check data hilltop import thing is fixed this time
