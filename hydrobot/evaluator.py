@@ -535,7 +535,7 @@ def bulk_downgrade_out_of_validation(
 
     Parameters
     ----------
-    qc_series : pd.Series
+    qc_frame : pd.DataFrame
         Quality series that potentially needs downgrading
     check_series : pd.Series
         Check series to check for frequency of checks
@@ -546,14 +546,15 @@ def bulk_downgrade_out_of_validation(
 
     Returns
     -------
-    pd.Series
+    pd.DataFrame
         The qc_series with any downgraded QCs added in
 
     """
-    for key in interval_dict:
-        qc_frame = single_downgrade_out_of_validation(
-            qc_frame, check_series, key, interval_dict[key], day_end_rounding
-        )
+    if not qc_frame.empty:
+        for key in interval_dict:
+            qc_frame = single_downgrade_out_of_validation(
+                qc_frame, check_series, key, interval_dict[key], day_end_rounding
+            )
     return qc_frame
 
 
@@ -587,6 +588,12 @@ def single_downgrade_out_of_validation(
     pd.DataFrame
         The qc_series with any downgraded QCs added in
     """
+    if qc_frame.empty or check_series.empty:
+        raise ValueError(
+            "Cannot have empty qc series or check series. qc.empty = {}, check.empty = {}".format(
+                qc_frame.empty, check_series.empty
+            )
+        )
     # When they should have their next check by
     due_date = check_series.index + max_interval
     due_date = due_date[:-1]

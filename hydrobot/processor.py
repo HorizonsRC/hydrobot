@@ -1116,7 +1116,7 @@ class Processor:
         self._apply_quality(chk_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
-            self.quality_data, qc_series, self._interval_dict
+            self.quality_data, qc_series, interval_dict
         )
         self._apply_quality(oov_frame)
 
