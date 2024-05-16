@@ -548,7 +548,7 @@ def bulk_downgrade_out_of_validation(
         The qc_frame with any downgraded QCs added in
 
     """
-    if not qc_frame.empty:
+    if not qc_frame.empty and not check_series.empty:
         for key in interval_dict:
             qc_frame = single_downgrade_out_of_validation(
                 qc_frame, check_series, key, interval_dict[key], day_end_rounding
