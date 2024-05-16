@@ -66,6 +66,9 @@ data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
 ]
 
+for i in [data.check_data, prov_wq, inspections, ncrs]:
+    print(i.empty)
+
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 
 #######################################################################################
