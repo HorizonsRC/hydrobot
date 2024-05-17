@@ -263,11 +263,6 @@ class DOProcessor(Processor):
             gap_limit=gap_limit, max_qc=max_qc, interval_dict=interval_dict
         )
 
-        cap_frame = cap_qc_where_std_high(
-            self.standard_data, self.quality_data, 500, 100
-        )
-        self._apply_quality(cap_frame)
-
         # Atmospheric Pressure
         qc_frame = self.quality_data
         qc_data = compare_two_qc_take_min(
@@ -301,6 +296,12 @@ class DOProcessor(Processor):
         )
         qc_frame["Value"] = qc_data
         self.quality_data = qc_frame
+
+        # DO above 100
+        cap_frame = cap_qc_where_std_high(
+            self.standard_data, self.quality_data, 500, 100
+        )
+        self._apply_quality(cap_frame)
 
     @classmethod
     def from_config_yaml(cls, config_path):
