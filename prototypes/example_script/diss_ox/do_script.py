@@ -99,6 +99,8 @@ data.remove_spikes()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+print(data.check_data)
+print("qweqwe")
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],

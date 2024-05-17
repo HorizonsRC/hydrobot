@@ -461,8 +461,6 @@ class Processor:
             )
         else:
             for blob in blob_list:
-                print(blob)
-                print("ds_name", standard_data_source_name)
                 data_source_list += [blob.data_source.name]
                 if (blob.data_source.name == standard_data_source_name) and (
                     blob.data_source.ts_type == "StdSeries"
