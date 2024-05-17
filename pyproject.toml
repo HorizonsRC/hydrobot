@@ -5,7 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "hydrobot"
 description = "A suite of processing tools for Hilltop hydrological data."
-version = "0.6.0"
+version = "0.6.1"
 authors = [
     { name = "Nic Mostert", email = "nicolas.mostert@horizons.govt.nz" },
     { name = "Sam Irvine", email = "sam.irvine@horizons.govt.nz" }
@@ -102,7 +102,7 @@ convention = "numpy"
 "prototypes" = ["D"]
 
 [tool.bumpversion]
-current_version = "0.6.0"
+current_version = "0.6.1"
 commit = true
 tag = true
 tag_name = "{new_version}"
