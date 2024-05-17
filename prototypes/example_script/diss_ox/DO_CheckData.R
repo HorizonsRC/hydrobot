@@ -87,14 +87,14 @@ Inspections = inspections_Survey123 %>%
 
 colnames(Inspections) = c("ID", "Site Name", "Arrival Time", "Departure Time", "InspectionStaff",
                           "Weather", "Notes", "Water level notes", "MeterID", "DO Notes",
-                          "DO% Handheld", "DO% Logger",
+                          "Value", "Logger",
                           "DO_ug/L Handheld", "Date", "Time")
 
 Inspections = Inspections %>%
   select("ID", "Site Name", "Date", "Time", "Weather",
          "Arrival Time", "Departure Time", "InspectionStaff",
          "Notes", "Water level notes", "MeterID", "DO Notes",
-         "DO% Handheld", "DO% Logger",
+         "Value", "Logger",
          "DO_ug/L Handheld") %>%
   mutate(`Arrival Time` = as.character(`Arrival Time`),
          `Departure Time` = as.character(`Departure Time`)) %>%
@@ -138,13 +138,14 @@ full_dat = provisWQ_dat %>%
          `Water level notes` = NA,
          `DO Notes` = NA,
          `DO% Logger` = NA) %>%
-  rename("DO% Handheld" = "Field DO Saturation (HRC)",
+  rename("Value" = "Field DO Saturation (HRC)",
+         "Logger" = "DO% Logger",
          "InspectionStaff" = "SampledBy",
          "Notes" = "Comments") %>%
   select(ID, `Site Name`, Date, Time, Weather, `Arrival Time`, `Departure Time`,
          InspectionStaff, Notes, `Water level notes`, MeterID,
          `DO Notes`, `DO_ug/L Handheld`,
-         `DO% Handheld`, `DO% Logger`) %>%
+         `Value`, `Logger`) %>%
   rbind(., Inspections) %>%
   select(-ID) %>%
   arrange(desc(`Arrival Time`))
@@ -219,11 +220,11 @@ write.csv(NCRs, paste0(folder_filepath, "DO_non-conformance_reports.csv"), row.n
 # ------ Keep just check data, format to fit Hilltop and save as csv ------
 
 check_data = full_dat %>%
-  select(Date, Time, `DO_ug/L Handheld`, `DO% Handheld`, `Arrival Time`, Notes) %>%
-  filter(!is.na(`DO% Handheld`),
+  select(Date, Time, `DO_ug/L Handheld`, `Value`, `Arrival Time`, Notes) %>%
+  filter(!is.na(`Value`),
          Date <= endDate) %>%
   distinct(Date, `DO_ug/L Handheld`, .keep_all = TRUE) %>%
-  rename("DO saturation check" = "DO% Handheld",
+  rename("DO saturation check" = "Value",
          "Recorder Time" = "Arrival Time",
          "Comment" = "Notes") %>%
   mutate(`DO saturation check` = as.numeric(`DO saturation check`)) %>%
@@ -236,10 +237,10 @@ write.csv(check_data, paste0(folder_filepath, "DO_check_data.csv"), row.names = 
 
 #Same thing as check data, but includes non-measurement inspections for visual data inspection
 working_check_data = full_dat %>%
-  select(Date, Time, `DO_ug/L Handheld`, `DO% Handheld`, `Arrival Time`, Notes) %>%
+  select(Date, Time, `DO_ug/L Handheld`, `Value`, `Arrival Time`, Notes) %>%
   filter(Date <= endDate) %>%
   distinct(Date, `DO_ug/L Handheld`, .keep_all = TRUE) %>%
-  rename("DO saturation check" = "DO% Handheld",
+  rename("DO saturation check" = "Value",
          "Recorder Time" = "Arrival Time",
          "Comment" = "Notes") %>%
   mutate(`DO saturation check` = as.numeric(`DO saturation check`)) %>%

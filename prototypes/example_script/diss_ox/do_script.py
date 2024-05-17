@@ -39,12 +39,12 @@ check_col = "Value"
 logger_col = "Logger"
 
 inspections = import_inspections(
-    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
+    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
 prov_wq = import_prov_wq(
-    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
 )
-ncrs = import_ncr("AP_non-conformance_reports.csv")
+ncrs = import_ncr("DO_non-conformance_reports.csv")
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
