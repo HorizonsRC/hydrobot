@@ -137,8 +137,9 @@ full_dat = provisWQ_dat %>%
          `Departure Time` = NA,
          `Water level notes` = NA,
          `DO Notes` = NA,
-         `Logger` = NA) %>%
+         `DO% Logger` = NA) %>%
   rename("Value" = "Field DO Saturation (HRC)",
+         "Logger" = "DO% Logger",
          "InspectionStaff" = "SampledBy",
          "Notes" = "Comments") %>%
   select(ID, `Site Name`, Date, Time, Weather, `Arrival Time`, `Departure Time`,

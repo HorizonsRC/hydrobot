@@ -4,14 +4,17 @@ import re
 from datetime import datetime
 
 from annalist.annalist import Annalist
+from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 from hydrobot.data_acquisition import config_yaml_import
+from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
     Processor,
 )
+from hydrobot.utils import compare_two_qc_take_min, correct_dissolved_oxygen
 
 
 class DOProcessor(Processor):
@@ -24,12 +27,14 @@ class DOProcessor(Processor):
         standard_hts: str,
         standard_measurement_name: str,
         frequency: str,
+        site_altitude: float,
         water_temperature_site: str,
         atmospheric_pressure_site: str,
         water_temperature_hts: str,
         atmospheric_pressure_hts: str,
         atmospheric_pressure_frequency: str,
         water_temperature_frequency: str,
+        atmospheric_pressure_site_altitude: float | None,
         water_temperature_measurement_name: str = "Water Temperature",
         atmospheric_pressure_measurement_name: str = "Atmospheric Pressure",
         from_date: str | None = None,
@@ -69,18 +74,14 @@ class DOProcessor(Processor):
         else:
             self.atmospheric_pressure_site = atmospheric_pressure_site
 
-        if site not in wt_hilltop.available_sites:
-            self._site = site
-        else:
+        if self.water_temperature_site not in wt_hilltop.available_sites:
             raise ValueError(
-                f"Water Temperature site '{site}' not found for both base_url and hts combos."
+                f"Water Temperature site '{self.water_temperature_site}' not found for both base_url and hts combos."
                 f"Available sites in {water_temperature_hts} are: "
                 f"{[s for s in wt_hilltop.available_sites]}"
             )
 
-        if site not in ap_hilltop.available_sites:
-            self._site = site
-        else:
+        if self.atmospheric_pressure_site not in ap_hilltop.available_sites:
             raise ValueError(
                 f"Atmospheric Pressure site '{site}' not found for both base_url and hts combos."
                 f"Available sites in {atmospheric_pressure_hts} are: "
@@ -141,6 +142,12 @@ class DOProcessor(Processor):
         self.water_temperature_frequency = water_temperature_frequency
         self.atmospheric_pressure_frequency = atmospheric_pressure_frequency
 
+        self.site_altitude = site_altitude
+        if atmospheric_pressure_site_altitude is None:
+            self.atmospheric_pressure_site_altitude = self.site_altitude
+        else:
+            self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
+
         self.ap_standard_item_info = {
             "ItemName": self.ap_item_name,
             "ItemFormat": "F",
@@ -173,6 +180,7 @@ class DOProcessor(Processor):
             to_date=self.to_date,
             frequency=self.atmospheric_pressure_frequency,
         )
+
         self.ap_quality_data, _, _, _ = self.import_quality(
             standard_hts=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
@@ -203,6 +211,101 @@ class DOProcessor(Processor):
             from_date=self.from_date,
             to_date=self.to_date,
         )
+
+    @ClassLogger
+    def correct_do(
+        self, diss_ox=None, atm_pres=None, ap_altitude=None, do_altitude=None
+    ):
+        """
+        Correcting for atmospheric pressure.
+
+        Parameters
+        ----------
+        diss_ox
+        atm_pres
+        ap_altitude
+        do_altitude
+
+        Returns
+        -------
+        None, modifies standard_data
+        """
+        if diss_ox is None:
+            diss_ox = self.standard_data
+        if atm_pres is None:
+            atm_pres = self.ap_standard_data
+        if ap_altitude is None:
+            ap_altitude = self.atmospheric_pressure_site_altitude
+        if do_altitude is None:
+            do_altitude = self.site_altitude
+        self.standard_data["Value"] = correct_dissolved_oxygen(
+            diss_ox["Value"], atm_pres["Value"], ap_altitude, do_altitude
+        )
+
+    @ClassLogger
+    def quality_encoder(
+        self,
+        gap_limit: int | None = None,
+        max_qc: int | float | None = None,
+        interval_dict: dict | None = None,
+    ):
+        """
+        DO verison of quality encoder.
+
+        Parameters
+        ----------
+        gap_limit
+        max_qc
+        interval_dict
+
+        Returns
+        -------
+        None
+        """
+        super().quality_encoder(
+            gap_limit=gap_limit, max_qc=max_qc, interval_dict=interval_dict
+        )
+
+        # Atmospheric Pressure
+        qc_frame = self.quality_data
+        qc_data = compare_two_qc_take_min(
+            self.quality_data["Value"], self.ap_quality_data["Value"]
+        )
+
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+
+        diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
+
+        qc_frame.loc[diff_idxs, "Code"] = "APD"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"] + " [DO QC lowered by AP QC]"
+        )
+        qc_frame["Value"] = qc_data
+        self.quality_data = qc_frame
+
+        # Water temperature
+        qc_frame = self.quality_data
+        qc_data = compare_two_qc_take_min(
+            self.quality_data["Value"], self.wt_quality_data["Value"]
+        )
+
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+
+        diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
+
+        qc_frame.loc[diff_idxs, "Code"] = "WTD"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"] + " [DO QC lowered by WT QC]"
+        )
+        qc_frame["Value"] = qc_data
+        self.quality_data = qc_frame
+
+        # DO above 100
+        cap_frame = cap_qc_where_std_high(
+            self.standard_data, self.quality_data, 500, 100
+        )
+        self.quality_data = cap_frame
+        # self._apply_quality(cap_frame)
 
     @classmethod
     def from_config_yaml(cls, config_path):
@@ -243,12 +346,14 @@ class DOProcessor(Processor):
                 processing_parameters["standard_hts_filename"],
                 processing_parameters["standard_measurement_name"],
                 processing_parameters.get("frequency", None),
-                processing_parameters["water_temperature_site"],
-                processing_parameters["atmospheric_pressure_site"],
-                processing_parameters["water_temperature_hts"],
-                processing_parameters["atmospheric_pressure_hts"],
+                processing_parameters["site_altitude"],
+                processing_parameters.get("water_temperature_site", None),
+                processing_parameters.get("atmospheric_pressure_site", None),
+                processing_parameters.get("water_temperature_hts", None),
+                processing_parameters.get("atmospheric_pressure_hts", None),
                 processing_parameters["atmospheric_pressure_frequency"],
                 processing_parameters["water_temperature_frequency"],
+                processing_parameters.get("atmospheric_pressure_site_altitude", None),
                 processing_parameters.get("water_temperature_measurement_name", None),
                 processing_parameters.get(
                     "atmospheric_pressure_measurement_name", None
