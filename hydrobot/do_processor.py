@@ -34,7 +34,7 @@ class DOProcessor(Processor):
         atmospheric_pressure_hts: str,
         atmospheric_pressure_frequency: str,
         water_temperature_frequency: str,
-        atmospheric_pressure_site_altitude: float,
+        atmospheric_pressure_site_altitude: float | None,
         water_temperature_measurement_name: str = "Water Temperature",
         atmospheric_pressure_measurement_name: str = "Atmospheric Pressure",
         from_date: str | None = None,
@@ -143,7 +143,10 @@ class DOProcessor(Processor):
         self.atmospheric_pressure_frequency = atmospheric_pressure_frequency
 
         self.site_altitude = site_altitude
-        self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
+        if atmospheric_pressure_site_altitude is None:
+            self.atmospheric_pressure_site_altitude = self.site_altitude
+        else:
+            self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
 
         self.ap_standard_item_info = {
             "ItemName": self.ap_item_name,
@@ -301,7 +304,8 @@ class DOProcessor(Processor):
         cap_frame = cap_qc_where_std_high(
             self.standard_data, self.quality_data, 500, 100
         )
-        self._apply_quality(cap_frame)
+        self.quality_data = cap_frame
+        # self._apply_quality(cap_frame)
 
     @classmethod
     def from_config_yaml(cls, config_path):
@@ -349,7 +353,7 @@ class DOProcessor(Processor):
                 processing_parameters.get("atmospheric_pressure_hts", None),
                 processing_parameters["atmospheric_pressure_frequency"],
                 processing_parameters["water_temperature_frequency"],
-                processing_parameters["atmospheric_pressure_site_altitude"],
+                processing_parameters.get("atmospheric_pressure_site_altitude", None),
                 processing_parameters.get("water_temperature_measurement_name", None),
                 processing_parameters.get(
                     "atmospheric_pressure_measurement_name", None
