@@ -10,14 +10,13 @@ check_measurement_name: "DO saturation check"
 frequency: "15min"
 site_altitude: 156
 
-# water_temperature_site: "Rangitikei at McKelvies"
-
+water_temperature_site: "Rangitikei at McKelvies"
 water_temperature_hts: "ProvisionalAuto.hts"
 water_temperature_frequency: "15min"
 water_temperature_measurement_name: "Water Temperature"
 
 
-# atmospheric_pressure_site: "Rangitikei at McKelvies"
+atmospheric_pressure_site: "Rangitikei at McKelvies"
 atmospheric_pressure_hts: "ProvisionalAuto.hts"
 atmospheric_pressure_frequency: "15min"
 atmospheric_pressure_measurement_name: "Atmospheric Pressure"
