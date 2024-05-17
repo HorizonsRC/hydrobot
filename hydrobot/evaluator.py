@@ -647,7 +647,6 @@ def cap_qc_where_std_high(std_frame, qc_frame, cap_qc, cap_threshold):
     std_series = std_frame["Value"]
     capped_data = std_series > cap_threshold
     capped_qc_changes = capped_data.loc[capped_data.shift() != capped_data]  # noqa
-    print(capped_qc_changes.to_string())
     potential_new_qc = capped_qc_changes.replace(True, cap_qc).replace(False, np.NaN)
     new_qc = utils.compare_two_qc_take_min(potential_new_qc, qc_frame["Value"])
 
