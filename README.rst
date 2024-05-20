@@ -43,19 +43,19 @@ Usage (Alpha)
 
 The Alpha release of Hydrobot supports a "hybrid" workflow. This means that some external tools are still required to do a full processing. Importantly, the hybrid workflow relies on some R scripts to obtain check data from sources other than Hilltop. Further processing using Hilltop manager is also supported.
 
-NOTE: Hydrobot 0.6.0 supports only Water Temperature processing at the moment, but more measurements will be supported in patches as the processing progresses.
+NOTE: Hydrobot 0.6.1 supports only Water Temperature processing at the moment, but more measurements will be supported in patches as the processing progresses.
 
 Initial Setup (Repeat for each release)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 #. Install a Python 3.11 interpreter. Note that 3.12 is not supported just yet.
-#. In your favourite shell, create a new virtual environment using this python interpreter and name it "hydrobot0.6.0". It's important that this is stored somewhere locally. I suggest creating a folder for virtual environments in your home folder::
+#. In your favourite shell, create a new virtual environment using this python interpreter and name it "hydrobot0.6.1". It's important that this is stored somewhere locally. I suggest creating a folder for virtual environments in your home folder::
 
-    python -m venv path/to/venv/hydrobot0.6.0/
+    python -m venv path/to/venv/hydrobot0.6.1/
 
 #. Activate this virtual environment. In powershell this should be something like::
 
-    ./path/to/venv/hydrobot0.6.0/Scripts/Activate.ps1
+    ./path/to/venv/hydrobot0.6.1/Scripts/Activate.ps1
 
 #. If you're sure your venv is active (ensure with `which python` and confirm that you're using the interpreter in your venv folder), install the latest version of Hydrobot using pip::
 
@@ -78,9 +78,9 @@ Processing Steps
 #. Navigate to the data source and site folder, and create your processing folder.
 #. Copy all the processing files in this folder into your processing folder::
 
-    \\ares\Environmental Data Validation\Water Temperature\Documents\Hydrobot_0.6.0_Files\
+    \\ares\Environmental Data Validation\Water Temperature\Documents\Hydrobot_0.6.1_Files\
 
-    //ares/Environmental\ Data\ Validation/Water\ Temperature/Documents/Hydrobot_0.6.0_Files/
+    //ares/Environmental\ Data\ Validation/Water\ Temperature/Documents/Hydrobot_0.6.1_Files/
 
 #. In your processing folder, open the `config.yaml` file and change the fields `site`, `from_date`, `to_date`, `analyst_name`. Feel free to mess with the other values once you get the hang of it. No one will die.
 
