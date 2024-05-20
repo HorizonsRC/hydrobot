@@ -89,7 +89,9 @@ class DOProcessor(Processor):
             )
 
         # Atmospheric Pressure
-        available_ap_measurements = ap_hilltop.get_measurement_list(site)
+        available_ap_measurements = ap_hilltop.get_measurement_list(
+            atmospheric_pressure_site
+        )
         self.atmospheric_pressure_measurement_name = (
             atmospheric_pressure_measurement_name
         )
@@ -114,7 +116,9 @@ class DOProcessor(Processor):
             )
 
         # Water Temperature
-        available_wt_measurements = wt_hilltop.get_measurement_list(site)
+        available_wt_measurements = wt_hilltop.get_measurement_list(
+            water_temperature_site
+        )
         self.water_temperature_measurement_name = water_temperature_measurement_name
         matches = re.search(
             r"([^\[\n]+)(\[(.+)\])?", water_temperature_measurement_name
