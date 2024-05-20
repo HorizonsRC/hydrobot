@@ -4,7 +4,7 @@ standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-site: "Oroura at Almadale Slackline"
+site: "Oroua at Almadale Slackline"
 standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 frequency: "15min"
@@ -23,7 +23,7 @@ atmospheric_pressure_measurement_name: "Atmospheric Pressure"
 atmospheric_pressure_site_altitude: 143
 
 # Processing Configuration
-from_date: "2022-12-21 11:15"
+from_date: "2023-06-15 14:45:00"
 to_date: "2024-04-02 10:00"
 defaults:
   delta: 5
