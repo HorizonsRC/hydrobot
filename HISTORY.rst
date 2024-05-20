@@ -98,3 +98,8 @@ History
 * Support WT + AP QCs
 * AP VM adjustment supported
 * Nic promises the check data hilltop import thing is fixed this time
+
+0.6.2 (2024-05-20)
+----------------------------------
+
+* Fixed bug that meant that different data sources would not

@@ -4,7 +4,7 @@ standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-site: "Rangitikei at Mangaweka"
+site: "Oroura at Almadale Slackline"
 standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 frequency: "15min"
@@ -16,7 +16,7 @@ water_temperature_frequency: "15min"
 water_temperature_measurement_name: "Water Temperature"
 
 
-# atmospheric_pressure_site: "Rangitikei at McKelvies"
+atmospheric_pressure_site: "Manawatu at Teachers College"
 atmospheric_pressure_hts: "ProvisionalAuto.hts"
 atmospheric_pressure_frequency: "15min"
 atmospheric_pressure_measurement_name: "Atmospheric Pressure"
