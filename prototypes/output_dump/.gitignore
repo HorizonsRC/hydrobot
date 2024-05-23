@@ -1,3 +1,0 @@
-# Git does not allow empty directories, so this file keeps the folder structure while also making sure outputs don't get uploaded
-*
-!.gitignore
