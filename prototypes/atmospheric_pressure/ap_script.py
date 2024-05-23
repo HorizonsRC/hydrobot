@@ -15,18 +15,18 @@ from hydrobot.data_acquisition import (
     import_ncr,
     import_prov_wq,
 )
-from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
+from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = DOProcessor.from_config_yaml("DO_config.yaml")
+data, ann = Processor.from_config_yaml("ap_config.yaml")
 
-st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
+st.set_page_config(page_title="Hydrobot0.6.2", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
@@ -39,12 +39,12 @@ check_col = "Value"
 logger_col = "Logger"
 
 inspections = import_inspections(
-    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
+    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
 prov_wq = import_prov_wq(
-    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
 )
-ncrs = import_ncr("DO_non-conformance_reports.csv")
+ncrs = import_ncr("AP_non-conformance_reports.csv")
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
@@ -80,12 +80,6 @@ data.clip()
 
 # Remove obvious spikes using FBEWMA algorithm
 data.remove_spikes()
-
-#######################################################################################
-# DO specific operation
-#######################################################################################
-
-data.correct_do()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
