@@ -46,10 +46,13 @@ prov_wq = import_prov_wq(
 )
 ncrs = import_ncr("AP_non-conformance_reports.csv")
 
+
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
 
-all_checks = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+all_check_list = [data.check_data, inspections, prov_wq]
+all_check_list = [c for c in all_check_list if not c.empty]
+all_checks = pd.concat(all_check_list).sort_index()
 
 all_checks = all_checks.loc[
     (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
@@ -58,9 +61,10 @@ all_checks = all_checks.loc[
 # For any constant shift in the check data, default 0
 # data.quality_code_evaluator.constant_check_shift = -1.9
 
-data.check_data = pd.concat(
-    [data.check_data, inspections_no_dup, prov_wq_no_dup]
-).sort_index()
+check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
+check_data_list = [c for c in check_data_list if not c.empty]
+if check_data_list:
+    data.check_data = pd.concat(check_data_list).sort_index()
 
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)

@@ -237,13 +237,16 @@ def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
     s123_checks["Source"] = "Survey123 Inspections"
     ncrs["Source"] = "Non-conformance Reports"
 
+    all_comments_list = [
+        hill_checks[["Time", "Comment", "Source"]],
+        pwq_checks[["Time", "Comment", "Source"]],
+        s123_checks[["Time", "Comment", "Source"]],
+        ncrs[["Time", "Comment", "Source"]],
+    ]
+    all_comments_list = [i for i in all_comments_list if not i.empty]
+
     all_comments = pd.concat(
-        [
-            hill_checks[["Time", "Comment", "Source"]],
-            pwq_checks[["Time", "Comment", "Source"]],
-            s123_checks[["Time", "Comment", "Source"]],
-            ncrs[["Time", "Comment", "Source"]],
-        ],
+        all_comments_list,
         ignore_index=True,
         sort=False,
     )
@@ -274,12 +277,17 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
         Combined series
     """
     combined_index = qc_series_1.index.union(qc_series_2.index)
-    full_index_1 = qc_series_1.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
-    full_index_2 = qc_series_2.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
+    with pd.option_context("future.no_silent_downcasting", True):
+        full_index_1 = (
+            qc_series_1.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
+        full_index_2 = (
+            qc_series_2.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[

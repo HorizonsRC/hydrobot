@@ -49,7 +49,9 @@ ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
 
-all_checks = pd.concat([data.check_data, inspections, prov_wq]).sort_index()
+all_checks_list = [data.check_data, inspections, prov_wq]
+all_checks_list = [i for i in all_checks_list if not i.empty]
+all_checks = pd.concat(all_checks_list).sort_index()
 
 all_checks = all_checks.loc[
     (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
@@ -58,9 +60,9 @@ all_checks = all_checks.loc[
 # For any constant shift in the check data, default 0
 # data.quality_code_evaluator.constant_check_shift = -1.9
 
-data.check_data = pd.concat(
-    [data.check_data, inspections_no_dup, prov_wq_no_dup]
-).sort_index()
+data_check_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
+data_check_list = [i for i in data_check_list if not i.empty]
+data.check_data = pd.concat(data_check_list).sort_index()
 
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
