@@ -237,13 +237,16 @@ def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
     s123_checks["Source"] = "Survey123 Inspections"
     ncrs["Source"] = "Non-conformance Reports"
 
+    all_comments_list = [
+        hill_checks[["Time", "Comment", "Source"]],
+        pwq_checks[["Time", "Comment", "Source"]],
+        s123_checks[["Time", "Comment", "Source"]],
+        ncrs[["Time", "Comment", "Source"]],
+    ]
+    all_comments_list = [i for i in all_comments_list if not i.empty]
+
     all_comments = pd.concat(
-        [
-            hill_checks[["Time", "Comment", "Source"]],
-            pwq_checks[["Time", "Comment", "Source"]],
-            s123_checks[["Time", "Comment", "Source"]],
-            ncrs[["Time", "Comment", "Source"]],
-        ],
+        all_comments_list,
         ignore_index=True,
         sort=False,
     )

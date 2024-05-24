@@ -1139,11 +1139,24 @@ class Processor:
             )
 
             # Step 2: Replace NaN values in df1 with corresponding values from df2
-            merged_df["Value"] = merged_df["Value_old"].fillna(merged_df["Value_new"])
-            merged_df["Code"] = merged_df["Code_old"].fillna(merged_df["Code_new"])
-            merged_df["Details"] = merged_df["Details_old"].fillna(
-                merged_df["Details_new"]
-            )
+            with pd.option_context("future.no_silent_downcasting", True):
+                # This context + infer_objects protects against pandas deprecation + warning
+                merged_df["Value"] = (
+                    merged_df["Value_old"]
+                    .fillna(merged_df["Value_new"])
+                    .infer_objects(copy=False)
+                )
+                merged_df["Code"] = (
+                    merged_df["Code_old"]
+                    .fillna(merged_df["Code_new"])
+                    .infer_objects(copy=False)
+                )
+
+                merged_df["Details"] = (
+                    merged_df["Details_old"]
+                    .fillna(merged_df["Details_new"])
+                    .infer_objects(copy=False)
+                )
 
             # Step 3: Combine the two dataframes, prioritizing non-null values from df2
             self.quality_data = merged_df[["Value", "Code", "Details"]].combine_first(
@@ -1877,10 +1890,12 @@ class Processor:
                         :, "Value"
                     ].map(lambda x, f=float_format: f.format(x))
 
+            check_data = self.check_data.copy()
+            check_data["Recorder Time"] = check_data.index
             check_data = data_structure.Data(
                 date_format="Calendar",
                 num_items=3,
-                timeseries=self.check_data[["Value", "Recorder Time", "Comment"]],
+                timeseries=check_data[["Value", "Recorder Time", "Comment"]],
             )
 
             check_data_blob = data_structure.DataSourceBlob(
