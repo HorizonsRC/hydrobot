@@ -3,6 +3,7 @@
 import re
 from datetime import datetime
 
+import pandas as pd
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -276,7 +277,10 @@ class DOProcessor(Processor):
             self.quality_data["Value"], self.ap_quality_data["Value"]
         )
 
-        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+        with pd.option_context("future.no_silent_downcasting", True):
+            qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects(
+                copy=False
+            )
 
         diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
 
@@ -293,7 +297,10 @@ class DOProcessor(Processor):
             self.quality_data["Value"], self.wt_quality_data["Value"]
         )
 
-        qc_frame = qc_frame.reindex(qc_data.index, method="ffill")
+        with pd.option_context("future.no_silent_downcasting", True):
+            qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects(
+                copy=False
+            )
 
         diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
 

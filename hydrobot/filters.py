@@ -28,8 +28,10 @@ def clip(unclipped: pd.Series, low_clip: float, high_clip: float):
     """
     unclipped_arr = unclipped.to_numpy()
 
-    # Create a boolean condition for values that need to be clipped
-    clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
+    # np.NaN gives warning
+    with np.errstate(invalid="ignore"):
+        # Create a boolean condition for values that need to be clipped
+        clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
 
     # Use pandas' where function to clip values to NaN where the condition is
     # True

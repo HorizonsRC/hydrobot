@@ -277,12 +277,17 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
         Combined series
     """
     combined_index = qc_series_1.index.union(qc_series_2.index)
-    full_index_1 = qc_series_1.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
-    full_index_2 = qc_series_2.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
+    with pd.option_context("future.no_silent_downcasting", True):
+        full_index_1 = (
+            qc_series_1.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
+        full_index_2 = (
+            qc_series_2.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[

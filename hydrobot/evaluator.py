@@ -647,18 +647,39 @@ def cap_qc_where_std_high(std_frame, qc_frame, cap_qc, cap_threshold):
     std_series = std_frame["Value"]
     capped_data = std_series > cap_threshold
     capped_qc_changes = capped_data.loc[capped_data.shift() != capped_data]  # noqa
-    potential_new_qc = capped_qc_changes.replace(True, cap_qc).replace(False, np.NaN)
+
+    with pd.option_context("future.no_silent_downcasting", True):
+        potential_new_qc = (
+            capped_qc_changes.replace(True, cap_qc)
+            .replace(False, np.NaN)
+            .infer_objects(copy=False)
+        )
     new_qc = utils.compare_two_qc_take_min(potential_new_qc, qc_frame["Value"])
 
-    qc_frame = qc_frame.reindex(new_qc.index, method="ffill")
+    with pd.option_context("future.no_silent_downcasting", True):
+        qc_frame = qc_frame.reindex(new_qc.index, method="ffill").infer_objects(
+            copy=False
+        )
 
     diff_idxs = qc_frame[qc_frame["Value"] != new_qc].index
 
-    qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", CAP"
-    qc_frame.loc[diff_idxs, "Details"] = (
-        qc_frame.loc[diff_idxs, "Details"]
-        + f" [DO above {cap_qc} means apply a maximum qc of {cap_threshold}.]"
-    )
+    # replacing this code with a wordier version to avoid a pandas error
+    # qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", CAP"
+    code_series = qc_frame["Code"].copy()
+    code_series[diff_idxs] += ", CAP"
+    qc_frame["Code"] = code_series
+
+    # replacing this
+    # qc_frame.loc[diff_idxs, "Details"] = (
+    #     qc_frame.loc[diff_idxs, "Details"]
+    #     + f" [DO above {cap_qc} means apply a maximum qc of {cap_threshold}.]"
+    # )
+    detail_series = qc_frame["Code"].copy()
+    detail_series[
+        diff_idxs
+    ] += f" [DO above {cap_qc} means apply a maximum qc of {cap_threshold}.]"
+    qc_frame["Details"] = detail_series
+
     qc_frame["Value"] = new_qc
 
     return qc_frame
