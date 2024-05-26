@@ -433,6 +433,7 @@ def splitter(std_series, qc_series, frequency):
             return_dict[qc] = (
                 base_data_meets_qc(std_series, qc_series, qc)
                 .fillna(std_series.median())
+                .infer_objects(copy=False)
                 .asfreq(frequency)
             )
         else:
