@@ -1,0 +1,13 @@
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+hts_filename: "Archive.hts"
+
+# Data Source Configuration
+site: "Oroua at Almadale Slackline"
+standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
+check_measurement_name: "DO saturation check"
+quality_measurement_name: "DO Saturation"
+
+# Processing Configuration
+from_date: "2023-06-15 14:45:00"
+to_date: "2024-04-02 10:00"
