@@ -1,5 +1,7 @@
 """Test the filters module."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -175,3 +177,46 @@ def test_compare_two_qc_take_min():
     assert utils.compare_two_qc_take_min(f, g).equals(
         h
     ), "unequal start times aren't accounted for"
+
+
+def test_series_rounder():
+    """Test series_rounder()."""
+    a = pd.Series(
+        {
+            "2021-01-01 01:03": 5,
+            "2021-01-01 01:09": 4,
+            "2021-01-01 01:15": 5,
+            "2021-01-01 01:21": 6,
+            "2021-01-01 01:27": 5,
+            "2021-01-01 01:33": 5,
+            "2021-01-01 01:39": 4,
+            "2021-01-01 01:45": 5,
+            "2021-01-01 01:51": 6,
+            "2021-01-01 01:57": 5,
+        }
+    )
+    a_copy = a.copy()
+
+    b = pd.Series(
+        {
+            "2021-01-01 01:06": 5,
+            "2021-01-01 01:12": 4,
+            "2021-01-01 01:18": 5,
+            "2021-01-01 01:24": 6,
+            "2021-01-01 01:30": 5,
+            "2021-01-01 01:36": 5,
+            "2021-01-01 01:42": 4,
+            "2021-01-01 01:48": 5,
+            "2021-01-01 01:54": 6,
+            "2021-01-01 02:00": 5,
+        }
+    )
+    b.index = pd.DatetimeIndex(b.index)
+
+    with warnings.catch_warnings(record=True) as w:
+        c = utils.series_rounder(a, "6min")
+        assert len(w) == 1
+        assert "INPUT_WARNING" in str(w[0].message)
+
+    assert c.equals(b), "Function doesn't work"
+    assert a.equals(a_copy), "Original modified"
