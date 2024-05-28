@@ -1,5 +1,7 @@
 """General utilities."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -347,3 +349,31 @@ def correct_dissolved_oxygen(diss_ox, atm_pres, ap_altitude, do_altitude):
     # sea level atm pressure is 1013.25
     corr_diss_ox = diss_ox * 1013.25 / atm_pres
     return corr_diss_ox
+
+
+def series_rounder(series: pd.Series, round_frequency: str = "6min"):
+    """
+    Rounds series to be on the 6-minute mark (or other interval).
+
+    Parameters
+    ----------
+    series : pd.Series
+        The series to have index rounded. Gives warning if index is not a DatetimeIndex
+    round_frequency : str
+        Frequency alias, default is 6 minutes. See:
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+
+    Returns
+    -------
+    pd.Series
+        The series with index rounded
+    """
+    rounded_series = series.copy()
+    if not isinstance(rounded_series.index, pd.core.indexes.datetimes.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+    series_index = pd.DatetimeIndex(rounded_series.index) + pd.Timedelta(nanoseconds=1)
+    rounded_series.index = series_index.round(round_frequency)
+    return rounded_series
