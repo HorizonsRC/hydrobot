@@ -220,3 +220,109 @@ def test_series_rounder():
 
     assert c.equals(b), "Function doesn't work"
     assert a.equals(a_copy), "Original modified"
+
+
+def test_rainfall_six_minute_repacker():
+    """Test rainfall_six_minute_repacker."""
+    series = pd.Series(
+        {
+            "2021-01-01 01:57": 100,
+        }
+    )
+    original = series.copy()
+
+    with warnings.catch_warnings(record=True) as w:
+        repacked = utils.rainfall_six_minute_repacker(series)
+        assert len(w) == 1, "Incorrect number of warnings"
+        assert "INPUT_WARNING" in str(w[0].message), "Wrong kind of warning"
+    assert original.equals(series), "Original modified"
+
+    expected = pd.Series(
+        {
+            "2021-01-01 01:54": 50,
+            "2021-01-01 02:00": 50,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+    assert expected.equals(repacked), "First case broken"
+
+    ###########################################################################
+    series = pd.Series(
+        {
+            "2021-01-01 01:56": 100,
+        }
+    )
+    series.index = pd.DatetimeIndex(series.index)
+
+    repacked = utils.rainfall_six_minute_repacker(series)
+    expected = pd.Series(
+        {
+            "2021-01-01 01:54": 67,
+            "2021-01-01 02:00": 33,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+
+    assert expected.equals(repacked), "Rounding broken"
+
+    ###########################################################################
+    series = pd.Series(
+        {
+            "2021-01-01 01:54": 0,
+            "2021-01-01 01:56": 100,
+        }
+    )
+    series.index = pd.DatetimeIndex(series.index)
+
+    repacked = utils.rainfall_six_minute_repacker(series)
+    expected = pd.Series(
+        {
+            "2021-01-01 01:54": 0,
+            "2021-01-01 02:00": 100,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+
+    assert expected.equals(repacked), "Second case broken"
+
+    ###########################################################################
+    series = pd.Series(
+        {
+            "2021-01-01 01:53": 0,
+            "2021-01-01 01:57": 100,
+        }
+    )
+    series.index = pd.DatetimeIndex(series.index)
+
+    repacked = utils.rainfall_six_minute_repacker(series)
+    expected = pd.Series(
+        {
+            "2021-01-01 01:48": 0,
+            "2021-01-01 01:54": 25,
+            "2021-01-01 02:00": 75,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+
+    assert expected.equals(repacked), "Third case broken"
+
+    ###########################################################################
+    series = pd.Series(
+        {
+            "2021-01-01 01:50": 100,
+            "2021-01-01 01:58": 100,
+        }
+    )
+    series.index = pd.DatetimeIndex(series.index)
+
+    repacked = utils.rainfall_six_minute_repacker(series)
+    expected = pd.Series(
+        {
+            "2021-01-01 01:48": 67,
+            "2021-01-01 01:54": 66,
+            "2021-01-01 02:00": 67,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+
+    assert expected.equals(repacked), "Summing/rounding broken"

@@ -377,3 +377,79 @@ def series_rounder(series: pd.Series, round_frequency: str = "6min"):
     series_index = pd.DatetimeIndex(rounded_series.index) + pd.Timedelta(nanoseconds=1)
     rounded_series.index = series_index.round(round_frequency)
     return rounded_series
+
+
+def rainfall_six_minute_repacker(series: pd.Series):
+    """
+    Repacks SCADA rainfall (rainfall bucket events) as 6 minute totals.
+
+    Parameters
+    ----------
+    series : pd.Series
+        SCADA rainfall series to be repacked as a 6 minute totals series
+        expects a datetime index, will throw warning if it is not while it converts
+
+    Returns
+    -------
+    pd.Series
+        Repacked series with datetime index
+    """
+    series = series.copy()
+
+    if not isinstance(series.index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        series.index = pd.DatetimeIndex(series.index)
+
+    scada_index = series.index
+    floor_index = scada_index.floor("6min")
+    ceil_index = scada_index.ceil("6min")
+
+    diff_filter = scada_index.diff() < pd.Timedelta(minutes=6)
+    dup_filter = floor_index.duplicated()
+
+    # Case 1, diff > 6
+
+    time_delta_index_case1 = (scada_index - floor_index) / pd.Timedelta(minutes=6)
+
+    floor_series = series[~diff_filter] * (1 - time_delta_index_case1[~diff_filter])
+    floor_series.index = floor_index[~diff_filter]
+
+    ceil_series = series[~diff_filter] * time_delta_index_case1[~diff_filter]
+    ceil_series.index = ceil_index[~diff_filter]
+
+    case1 = pd.concat([ceil_series, floor_series]).round()
+    case1 = case1.groupby(case1.index).sum()
+
+    # Case 2, diff < 6 & last scada within timespan
+
+    case2 = series[diff_filter & dup_filter]
+    case2.index = ceil_index[diff_filter & dup_filter]
+    case2 = case2.groupby(case2.index).sum()
+
+    # Case 3, diff < 6 & last scada in other timespan
+
+    time_delta_index_case3 = (scada_index - floor_index) / (scada_index.diff())
+
+    floor_series = series[diff_filter & ~dup_filter] * (
+        1 - time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    floor_series.index = floor_index[diff_filter & ~dup_filter]
+
+    ceil_series = (
+        series[diff_filter & ~dup_filter]
+        * time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    ceil_series.index = ceil_index[diff_filter & ~dup_filter]
+
+    case3 = pd.concat([ceil_series, floor_series]).round()
+    case3 = case3.groupby(case3.index).sum()
+
+    # Putting it together
+
+    rainfall_series = pd.concat([case1, case2, case3])
+    rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
+
+    return rainfall_series.astype(np.int64)
