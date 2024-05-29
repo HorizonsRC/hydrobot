@@ -1208,7 +1208,9 @@ def test_gap_closer(
     ), "processor.insert_missing_nans appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
-    pr.gap_closer()
+
+    with pytest.warns(UserWarning):
+        pr.gap_closer()
 
     # Check that gap was closed
     assert (

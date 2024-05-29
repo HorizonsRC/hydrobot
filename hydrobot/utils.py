@@ -1,5 +1,7 @@
 """General utilities."""
 
+import warnings
+
 import numpy as np
 import pandas as pd
 
@@ -237,13 +239,16 @@ def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
     s123_checks["Source"] = "Survey123 Inspections"
     ncrs["Source"] = "Non-conformance Reports"
 
+    all_comments_list = [
+        hill_checks[["Time", "Comment", "Source"]],
+        pwq_checks[["Time", "Comment", "Source"]],
+        s123_checks[["Time", "Comment", "Source"]],
+        ncrs[["Time", "Comment", "Source"]],
+    ]
+    all_comments_list = [i for i in all_comments_list if not i.empty]
+
     all_comments = pd.concat(
-        [
-            hill_checks[["Time", "Comment", "Source"]],
-            pwq_checks[["Time", "Comment", "Source"]],
-            s123_checks[["Time", "Comment", "Source"]],
-            ncrs[["Time", "Comment", "Source"]],
-        ],
+        all_comments_list,
         ignore_index=True,
         sort=False,
     )
@@ -274,12 +279,17 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
         Combined series
     """
     combined_index = qc_series_1.index.union(qc_series_2.index)
-    full_index_1 = qc_series_1.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
-    full_index_2 = qc_series_2.reindex(combined_index, method="ffill").replace(
-        np.NaN, np.Inf
-    )
+    with pd.option_context("future.no_silent_downcasting", True):
+        full_index_1 = (
+            qc_series_1.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
+        full_index_2 = (
+            qc_series_2.reindex(combined_index, method="ffill")
+            .replace(np.NaN, np.Inf)
+            .infer_objects(copy=False)
+        )
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[
@@ -339,3 +349,107 @@ def correct_dissolved_oxygen(diss_ox, atm_pres, ap_altitude, do_altitude):
     # sea level atm pressure is 1013.25
     corr_diss_ox = diss_ox * 1013.25 / atm_pres
     return corr_diss_ox
+
+
+def series_rounder(series: pd.Series, round_frequency: str = "6min"):
+    """
+    Rounds series to be on the 6-minute mark (or other interval).
+
+    Parameters
+    ----------
+    series : pd.Series
+        The series to have index rounded. Gives warning if index is not a DatetimeIndex
+    round_frequency : str
+        Frequency alias, default is 6 minutes. See:
+        https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
+
+    Returns
+    -------
+    pd.Series
+        The series with index rounded
+    """
+    rounded_series = series.copy()
+    if not isinstance(rounded_series.index, pd.core.indexes.datetimes.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+    series_index = pd.DatetimeIndex(rounded_series.index) + pd.Timedelta(nanoseconds=1)
+    rounded_series.index = series_index.round(round_frequency)
+    return rounded_series
+
+
+def rainfall_six_minute_repacker(series: pd.Series):
+    """
+    Repacks SCADA rainfall (rainfall bucket events) as 6 minute totals.
+
+    Parameters
+    ----------
+    series : pd.Series
+        SCADA rainfall series to be repacked as a 6 minute totals series
+        expects a datetime index, will throw warning if it is not while it converts
+
+    Returns
+    -------
+    pd.Series
+        Repacked series with datetime index
+    """
+    series = series.copy()
+
+    if not isinstance(series.index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        series.index = pd.DatetimeIndex(series.index)
+
+    scada_index = series.index
+    floor_index = scada_index.floor("6min")
+    ceil_index = scada_index.ceil("6min")
+
+    diff_filter = scada_index.diff() < pd.Timedelta(minutes=6)
+    dup_filter = floor_index.duplicated()
+
+    # Case 1, diff > 6
+
+    time_delta_index_case1 = (scada_index - floor_index) / pd.Timedelta(minutes=6)
+
+    floor_series = series[~diff_filter] * (1 - time_delta_index_case1[~diff_filter])
+    floor_series.index = floor_index[~diff_filter]
+
+    ceil_series = series[~diff_filter] * time_delta_index_case1[~diff_filter]
+    ceil_series.index = ceil_index[~diff_filter]
+
+    case1 = pd.concat([ceil_series, floor_series]).round()
+    case1 = case1.groupby(case1.index).sum()
+
+    # Case 2, diff < 6 & last scada within timespan
+
+    case2 = series[diff_filter & dup_filter]
+    case2.index = ceil_index[diff_filter & dup_filter]
+    case2 = case2.groupby(case2.index).sum()
+
+    # Case 3, diff < 6 & last scada in other timespan
+
+    time_delta_index_case3 = (scada_index - floor_index) / (scada_index.diff())
+
+    floor_series = series[diff_filter & ~dup_filter] * (
+        1 - time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    floor_series.index = floor_index[diff_filter & ~dup_filter]
+
+    ceil_series = (
+        series[diff_filter & ~dup_filter]
+        * time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    ceil_series.index = ceil_index[diff_filter & ~dup_filter]
+
+    case3 = pd.concat([ceil_series, floor_series]).round()
+    case3 = case3.groupby(case3.index).sum()
+
+    # Putting it together
+
+    rainfall_series = pd.concat([case1, case2, case3])
+    rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
+
+    return rainfall_series.astype(np.int64)
