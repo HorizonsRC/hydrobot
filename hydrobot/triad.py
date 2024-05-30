@@ -48,138 +48,180 @@ class Triad:
 
     def __init__(
         self,
-        std_measurement_name,
         base_url,
-        std_hts,
         site,
         from_date,
         to_date,
         frequency,
-        check_hts,
-        check_measurement_name,
+        std_measurement_name=None,
+        std_hts=None,
+        check_hts=None,
+        check_measurement_name=None,
+        quality_hts=None,
+        quality_measurement_name=None,
         **kwargs,
     ):
         """Constructs the triad."""
         self.base_url = base_url
-        self.std_hilltop = Hilltop(base_url, std_hts, **kwargs)
-        self.check_hilltop = Hilltop(base_url, check_hts, **kwargs)
-
-        self.std_measurement_name = std_measurement_name
-        self.std_hts = std_hts
-        self.check_hts = check_hts
-        self.check_measurement_name = check_measurement_name
         self.site = site
         self.from_date = from_date
         self.to_date = to_date
         self.frequency = frequency
 
-        self.raw_standard_blob = None
+        self.std_measurement_name = std_measurement_name
+        self.std_hts = std_hts
 
-        if site not in self.std_hilltop.available_sites:
-            raise ValueError(
-                f"{self.std_measurement_name} site '{self.site}' not found for both base_url and hts combos."
-                f"Available sites in {self.std_hts} are: "
-                f"{[s for s in self.std_hilltop.available_sites]}"
-            )
-        if site not in self.check_hilltop.available_sites:
-            raise ValueError(
-                f"{self.check_measurement_name} site '{self.check_hts}' not found for both base_url and hts combos."
-                f"Available sites in {self.check_hts} are: "
-                f"{[s for s in self.std_hilltop.available_sites]}"
-            )
+        if self.std_measurement_name is not None and self.std_hts is not None:
+            self.std_hilltop = Hilltop(base_url, std_hts, **kwargs)
+            if site not in self.std_hilltop.available_sites:
+                raise ValueError(
+                    f"{self.std_measurement_name} site '{self.site}' not found for both base_url and hts combos."
+                    f"Available sites in {self.std_hts} are: "
+                    f"{[s for s in self.std_hilltop.available_sites]}"
+                )
 
-        # Standard
-        available_std_measurements = self.std_hilltop.get_measurement_list(site)
-
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", std_measurement_name)
-
-        if matches is not None:
-            self.std_item_name = matches.groups()[0].strip(" ")
-            self.std_data_source_name = matches.groups()[2]
-            if self.std_data_source_name is None:
-                self.std_data_source_name = self.std_item_name
-        if std_measurement_name not in list(available_std_measurements.MeasurementName):
-            raise ValueError(
-                f"'{std_measurement_name}' not found at"
-                f" site '{site}'. "
-                "Available measurements are "
-                f"{list(available_std_measurements.MeasurementName)}"
-            )
-
-        # Check
-        available_check_measurements = self.check_hilltop.get_measurement_list(
-            self.site
-        )
-
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", self.std_measurement_name)
-
-        if matches is not None:
-            self.check_item_name = matches.groups()[0].strip(" ")
-            self.check_data_source_name = matches.groups()[2]
-            if self.check_data_source_name is None:
-                self.check_data_source_name = self.check_item_name
-        if check_measurement_name not in list(
-            available_check_measurements.MeasurementName
-        ):
-            raise ValueError(
-                f"'{std_measurement_name}' not found at"
-                f" site '{site}'. "
-                "Available measurements are "
-                f"{list(available_check_measurements.MeasurementName)}"
+            available_std_measurements = self.std_hilltop.get_measurement_list(site)
+            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", std_measurement_name)
+            if matches is not None:
+                self.std_item_name = matches.groups()[0].strip(" ")
+                self.std_data_source_name = matches.groups()[2]
+                if self.std_data_source_name is None:
+                    self.std_data_source_name = self.std_item_name
+            if std_measurement_name not in list(
+                available_std_measurements.MeasurementName
+            ):
+                raise ValueError(
+                    f"'{std_measurement_name}' not found at"
+                    f" site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_std_measurements.MeasurementName)}"
+                )
+            self.standard_item_info = {
+                "ItemName": self.std_item_name,
+                "ItemFormat": "F",
+                "Divisor": 1,
+                "Units": "",
+                "Format": "###.##",
+            }
+            self.standard_data = EMPTY_STANDARD_DATA.copy()
+            self.standard_data, _, _, _ = self.import_standard(
+                standard_hts=self.std_hts,
+                site=self.site,
+                standard_measurement_name=self.std_measurement_name,
+                standard_data_source_name=self.std_data_source_name,
+                standard_item_info=self.standard_item_info,
+                standard_data=self.standard_data,
+                from_date=self.from_date,
+                to_date=self.to_date,
+                frequency=self.frequency,
             )
 
-        self.standard_item_info = {
-            "ItemName": self.std_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
-        }
-        self.check_item_info = {
-            "ItemName": self.check_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "$$$",
-        }
+        self.check_hts = check_hts
+        self.check_measurement_name = check_measurement_name
+        if self.check_hts is not None and self.check_measurement_name is not None:
+            self.check_hilltop = Hilltop(base_url, check_hts, **kwargs)
 
-        self.standard_data = EMPTY_STANDARD_DATA.copy()
-        self.check_data = EMPTY_CHECK_DATA.copy()
-        self.quality_data = EMPTY_QUALITY_DATA.copy()
+            if site not in self.check_hilltop.available_sites:
+                raise ValueError(
+                    f"{self.check_measurement_name} site '{self.check_hts}' not found for both base_url and hts combos."
+                    f"Available sites in {self.check_hts} are: "
+                    f"{[s for s in self.check_hilltop.available_sites]}"
+                )
 
-        self.standard_data, _, _, _ = self.import_standard(
-            standard_hts=self.std_hts,
-            site=self.site,
-            standard_measurement_name=self.std_measurement_name,
-            standard_data_source_name=self.std_data_source_name,
-            standard_item_info=self.standard_item_info,
-            standard_data=self.standard_data,
-            from_date=self.from_date,
-            to_date=self.to_date,
-            frequency=self.frequency,
-        )
+            available_check_measurements = self.check_hilltop.get_measurement_list(
+                self.site
+            )
 
-        self.check_data = self.import_check(
-            check_hts=self.check_hts,
-            site=self.site,
-            check_measurement_name=self.check_measurement_name,
-            check_data_source_name=self.check_data_source_name,
-            check_item_info=self.check_item_info,
-            check_item_name=self.check_item_name,
-            check_data=self.check_data,
-            from_date=from_date,
-            to_date=to_date,
-        )
+            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", self.check_measurement_name)
 
-        self.quality_data, _, _, _ = self.import_quality(
-            standard_hts=self.std_hts,
-            site=self.site,
-            standard_measurement_name=self.std_measurement_name,
-            standard_data_source_name=self.std_data_source_name,
-            quality_data=self.quality_data,
-            from_date=self.from_date,
-            to_date=self.to_date,
-        )
+            if matches is not None:
+                self.check_item_name = matches.groups()[0].strip(" ")
+                self.check_data_source_name = matches.groups()[2]
+                if self.check_data_source_name is None:
+                    self.check_data_source_name = self.check_item_name
+            if check_measurement_name not in list(
+                available_check_measurements.MeasurementName
+            ):
+                raise ValueError(
+                    f"'{check_measurement_name}' not found at"
+                    f" site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_check_measurements.MeasurementName)}"
+                )
+
+            self.check_item_info = {
+                "ItemName": self.check_item_name,
+                "ItemFormat": "F",
+                "Divisor": 1,
+                "Units": "",
+                "Format": "$$$",
+            }
+            self.check_data = EMPTY_CHECK_DATA.copy()
+
+            self.check_data = self.import_check(
+                check_hts=self.check_hts,
+                site=self.site,
+                check_measurement_name=self.check_measurement_name,
+                check_data_source_name=self.check_data_source_name,
+                check_item_info=self.check_item_info,
+                check_item_name=self.check_item_name,
+                check_data=self.check_data,
+                from_date=from_date,
+                to_date=to_date,
+            )
+
+        self.quality_hts = quality_hts
+        self.quality_measurement_name = quality_measurement_name
+        if self.quality_hts is not None and self.quality_measurement_name is not None:
+            self.quality_hilltop = Hilltop(base_url, quality_hts, **kwargs)
+
+            if site not in self.quality_hilltop.available_sites:
+                raise ValueError(
+                    f"{self.quality_measurement_name} site '{self.quality_hts}' not found for both base_url and hts combos."
+                    f"Available sites in {self.quality_hts} are: "
+                    f"{[s for s in self.quality_hilltop.available_sites]}"
+                )
+
+            available_quality_measurements = self.quality_hilltop.get_measurement_list(
+                self.site
+            )
+
+            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", self.quality_measurement_name)
+
+            if matches is not None:
+                self.quality_item_name = matches.groups()[0].strip(" ")
+                self.quality_data_source_name = matches.groups()[2]
+                if self.quality_data_source_name is None:
+                    self.quality_data_source_name = self.quality_item_name
+            if quality_measurement_name not in list(
+                available_quality_measurements.MeasurementName
+            ):
+                raise ValueError(
+                    f"'{quality_measurement_name}' not found at"
+                    f" site '{site}'. "
+                    "Available measurements are "
+                    f"{list(available_quality_measurements.MeasurementName)}"
+                )
+
+            self.quality_item_info = {
+                "ItemName": self.quality_item_name,
+                "ItemFormat": "F",
+                "Divisor": 1,
+                "Units": "",
+                "Format": "###.##",
+            }
+
+            self.quality_data = EMPTY_QUALITY_DATA.copy()
+
+            self.quality_data, _, _, _ = self.import_quality(
+                standard_hts=self.quality_hts,
+                site=self.site,
+                standard_measurement_name=self.quality_measurement_name,
+                standard_data_source_name=self.quality_data_source_name,
+                quality_data=self.quality_data,
+                from_date=self.from_date,
+                to_date=self.to_date,
+            )
 
     @ClassLogger
     def import_standard(
@@ -327,7 +369,7 @@ class Triad:
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.NaN
                 )
-            if self.raw_standard_blob is not None:
+            if raw_standard_blob is not None:
                 fmt = standard_item_info["ItemFormat"]
                 div = standard_item_info["Divisor"]
             else:
