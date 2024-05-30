@@ -48,55 +48,99 @@ class Triad:
 
     def __init__(
         self,
-        measurement_name,
+        std_measurement_name,
         base_url,
-        hts,
+        std_hts,
         site,
         from_date,
         to_date,
         frequency,
+        check_hts,
+        check_measurement_name,
         **kwargs,
     ):
         """Constructs the triad."""
-        hilltop = Hilltop(base_url, hts, **kwargs)
-        self.measurement_name = measurement_name
-        self.hts = hts
+        self.base_url = base_url
+        self.std_hilltop = Hilltop(base_url, std_hts, **kwargs)
+        self.check_hilltop = Hilltop(base_url, check_hts, **kwargs)
+
+        self.std_measurement_name = std_measurement_name
+        self.std_hts = std_hts
+        self.check_hts = check_hts
+        self.check_measurement_name = check_measurement_name
         self.site = site
         self.from_date = from_date
         self.to_date = to_date
         self.frequency = frequency
 
-        if site not in hilltop.available_sites:
+        self.raw_standard_blob = None
+
+        if site not in self.std_hilltop.available_sites:
             raise ValueError(
-                f"{measurement_name} site '{site}' not found for both base_url and hts combos."
-                f"Available sites in {hts} are: "
-                f"{[s for s in hilltop.available_sites]}"
+                f"{self.std_measurement_name} site '{self.site}' not found for both base_url and hts combos."
+                f"Available sites in {self.std_hts} are: "
+                f"{[s for s in self.std_hilltop.available_sites]}"
+            )
+        if site not in self.check_hilltop.available_sites:
+            raise ValueError(
+                f"{self.check_measurement_name} site '{self.check_hts}' not found for both base_url and hts combos."
+                f"Available sites in {self.check_hts} are: "
+                f"{[s for s in self.std_hilltop.available_sites]}"
             )
 
-        # Atmospheric Pressure
-        available_measurements = hilltop.get_measurement_list(site)
+        # Standard
+        available_std_measurements = self.std_hilltop.get_measurement_list(site)
 
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", measurement_name)
+        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", std_measurement_name)
 
         if matches is not None:
-            self.item_name = matches.groups()[0].strip(" ")
-            self.data_source_name = matches.groups()[2]
-            if self.data_source_name is None:
-                self.data_source_name = self.item_name
-        if measurement_name not in list(available_measurements.MeasurementName):
+            self.std_item_name = matches.groups()[0].strip(" ")
+            self.std_data_source_name = matches.groups()[2]
+            if self.std_data_source_name is None:
+                self.std_data_source_name = self.std_item_name
+        if std_measurement_name not in list(available_std_measurements.MeasurementName):
             raise ValueError(
-                f"'{measurement_name}' not found at"
+                f"'{std_measurement_name}' not found at"
                 f" site '{site}'. "
                 "Available measurements are "
-                f"{list(available_measurements.MeasurementName)}"
+                f"{list(available_std_measurements.MeasurementName)}"
+            )
+
+        # Check
+        available_check_measurements = self.check_hilltop.get_measurement_list(
+            self.site
+        )
+
+        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", self.std_measurement_name)
+
+        if matches is not None:
+            self.check_item_name = matches.groups()[0].strip(" ")
+            self.check_data_source_name = matches.groups()[2]
+            if self.check_data_source_name is None:
+                self.check_data_source_name = self.check_item_name
+        if check_measurement_name not in list(
+            available_check_measurements.MeasurementName
+        ):
+            raise ValueError(
+                f"'{std_measurement_name}' not found at"
+                f" site '{site}'. "
+                "Available measurements are "
+                f"{list(available_check_measurements.MeasurementName)}"
             )
 
         self.standard_item_info = {
-            "ItemName": self.item_name,
+            "ItemName": self.std_item_name,
             "ItemFormat": "F",
             "Divisor": 1,
             "Units": "",
             "Format": "###.##",
+        }
+        self.check_item_info = {
+            "ItemName": self.check_item_name,
+            "ItemFormat": "F",
+            "Divisor": 1,
+            "Units": "",
+            "Format": "$$$",
         }
 
         self.standard_data = EMPTY_STANDARD_DATA.copy()
@@ -104,10 +148,10 @@ class Triad:
         self.quality_data = EMPTY_QUALITY_DATA.copy()
 
         self.standard_data, _, _, _ = self.import_standard(
-            standard_hts=self.hts,
+            standard_hts=self.std_hts,
             site=self.site,
-            standard_measurement_name=self.measurement_name,
-            standard_data_source_name=self.data_source_name,
+            standard_measurement_name=self.std_measurement_name,
+            standard_data_source_name=self.std_data_source_name,
             standard_item_info=self.standard_item_info,
             standard_data=self.standard_data,
             from_date=self.from_date,
@@ -128,10 +172,10 @@ class Triad:
         )
 
         self.quality_data, _, _, _ = self.import_quality(
-            standard_hts=self.hts,
+            standard_hts=self.std_hts,
             site=self.site,
-            standard_measurement_name=self.measurement_name,
-            standard_data_source_name=self.data_source_name,
+            standard_measurement_name=self.std_measurement_name,
+            standard_data_source_name=self.std_data_source_name,
             quality_data=self.quality_data,
             from_date=self.from_date,
             to_date=self.to_date,
@@ -189,21 +233,15 @@ class Triad:
         the Standard Series in the instance.
         The data is parsed and formatted according to the item_info in the data source.
 
-        Examples
-        --------
-        >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_standard(
-        ...     from_date='2022-01-01', to_date='2022-01-10'
-        ... )
         """
         if standard_hts is None:
-            standard_hts = self._standard_hts
+            standard_hts = self.std_hts
         if site is None:
-            site = self._site
+            site = self.site
         if standard_measurement_name is None:
-            standard_measurement_name = self._standard_measurement_name
+            standard_measurement_name = self.std_measurement_name
         if standard_data_source_name is None:
-            standard_data_source_name = self.standard_data_source_name
+            standard_data_source_name = self.std_data_source_name
         if standard_item_info is None:
             standard_item_info = self.standard_item_info
         if from_date is None:
@@ -211,13 +249,13 @@ class Triad:
         if to_date is None:
             to_date = self.to_date
         if frequency is None:
-            frequency = self._frequency
+            frequency = self.frequency
 
         if standard_data is None:
-            standard_data = self._standard_data
+            standard_data = self.standard_data
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            self.base_url,
             standard_hts,
             site,
             standard_measurement_name,
@@ -254,7 +292,7 @@ class Triad:
                         raw_standard_xml = xml_tree
                         standard_item_info["ItemName"] = blob.data_source.item_info[
                             0
-                        ].item_name
+                        ].std_item_name
                         standard_item_info["ItemFormat"] = blob.data_source.item_info[
                             0
                         ].item_format
@@ -373,32 +411,25 @@ class Triad:
         provided parameters. It retrieves data using the `data_acquisition.get_data`
         function and updates the Quality Series in the instance. The data is parsed and
         formatted according to the item_info in the data source.
-
-        Examples
-        --------
-        >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_quality(
-        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
-        ... )
         """
         if standard_hts is None:
-            standard_hts = self._standard_hts
+            standard_hts = self.std_hts
         if site is None:
             site = self.site
         if standard_measurement_name is None:
-            standard_measurement_name = self._standard_measurement_name
+            standard_measurement_name = self.std_measurement_name
         if standard_data_source_name is None:
-            standard_data_source_name = self.standard_data_source_name
+            standard_data_source_name = self.std_data_source_name
         if from_date is None:
             from_date = self.from_date
         if to_date is None:
             to_date = self.to_date
 
         if quality_data is None:
-            quality_data = self._quality_data
+            quality_data = self.quality_data
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            self.base_url,
             standard_hts,
             site,
             standard_measurement_name,
@@ -511,20 +542,13 @@ class Triad:
         This method imports Check data from the specified server based on the provided
         parameters. It retrieves data using the `data_acquisition.get_data` function.
         The data is parsed and formatted according to the item_info in the data source.
-
-        Examples
-        --------
-        >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_check(
-        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
-        ... )
         """
         if check_hts is None:
-            check_hts = self._check_hts
+            check_hts = self.check_hts
         if site is None:
-            site = self._site
+            site = self.site
         if check_measurement_name is None:
-            check_measurement_name = self._check_measurement_name
+            check_measurement_name = self.check_measurement_name
         if check_data_source_name is None:
             check_data_source_name = self.check_data_source_name
         if check_item_info is None:
@@ -532,14 +556,14 @@ class Triad:
         if check_item_name is None:
             check_item_name = self.check_item_name
         if check_data is None:
-            check_data = self._check_data
+            check_data = self.check_data
         if from_date is None:
-            from_date = self._from_date
+            from_date = self.from_date
         if to_date is None:
-            to_date = self._to_date
+            to_date = self.to_date
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            self.base_url,
             check_hts,
             site,
             check_measurement_name,
@@ -578,7 +602,7 @@ class Triad:
                         raw_check_data = import_data
                         check_item_info["ItemName"] = blob.data_source.item_info[
                             0
-                        ].item_name
+                        ].std_item_name
                         check_item_info["ItemFormat"] = blob.data_source.item_info[
                             0
                         ].item_format
