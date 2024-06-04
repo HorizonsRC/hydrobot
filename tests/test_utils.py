@@ -326,3 +326,128 @@ def test_rainfall_six_minute_repacker():
     expected.index = pd.DatetimeIndex(expected.index)
 
     assert expected.equals(repacked), "Summing/rounding broken"
+
+
+def test_check_data_ramp_and_quality():
+    """Test check_data_ramp()."""
+    start_std = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:05": 100,
+            "2021-01-01 01:10": 100,
+        }
+    )
+    start_std.index = pd.DatetimeIndex(start_std.index)
+    start_check = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:10": 300,
+        }
+    )
+    start_check.index = pd.DatetimeIndex(start_check.index)
+
+    original_std = start_std.copy()
+    original_check = start_check.copy()
+
+    expected_std = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:05": 150,
+            "2021-01-01 01:10": 150,
+        }
+    )
+    expected_std.index = pd.DatetimeIndex(expected_std.index)
+    expected_std = expected_std.astype(np.float64)
+    expected_quality = pd.Series(
+        {
+            "2021-01-01 01:00": 400,
+            "2021-01-01 01:10": 0,
+        }
+    )
+    expected_quality.index = pd.DatetimeIndex(expected_quality.index)
+
+    actual_std, actual_quality = utils.check_data_ramp_and_quality(
+        start_std, start_check
+    )
+
+    assert start_std.equals(original_std), "original std modified"
+    assert start_check.equals(original_check), "original check modified"
+
+    assert np.allclose(
+        actual_std, expected_std, rtol=1e-05, atol=1e-08, equal_nan=False
+    ), "Standard data incorrect after single check"
+    assert np.allclose(
+        actual_quality, expected_quality, rtol=1e-05, atol=1e-08, equal_nan=False
+    ), "Quality data incorrect after single check"
+
+    ###########################################################################
+
+    start_std = pd.Series(
+        {
+            "2021-01-01 01:00:00": 0,
+            "2021-01-01 01:00:01": 100,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:04": 100,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:05": 100,
+        }
+    )
+    start_std.index = pd.DatetimeIndex(start_std.index)
+    start_check = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:04": 460,
+            "2021-01-01 01:05": 735,
+        }
+    )
+    start_check.index = pd.DatetimeIndex(start_check.index)
+
+    original_std = start_std.copy()
+    original_check = start_check.copy()
+
+    expected_std = pd.Series(
+        {
+            "2021-01-01 01:00:00": 0,
+            "2021-01-01 01:00:01": 115,
+            "2021-01-01 01:00:02": 115,
+            "2021-01-01 01:00:03": 115,
+            "2021-01-01 01:00:04": 115,
+            "2021-01-01 01:00:05": 105,
+            "2021-01-01 01:01:06": 105,
+            "2021-01-01 01:01:07": 105,
+            "2021-01-01 01:03:08": 105,
+            "2021-01-01 01:04:09": 105,
+            "2021-01-01 01:04:10": 105,
+            "2021-01-01 01:05": 105,
+        }
+    )
+    expected_std.index = pd.DatetimeIndex(expected_std.index)
+    expected_std = expected_std.astype(np.float64)
+    expected_quality = pd.Series(
+        {
+            "2021-01-01 01:00": 400,
+            "2021-01-01 01:00:04": 600,
+            "2021-01-01 01:05": 0,
+        }
+    )
+    expected_quality.index = pd.DatetimeIndex(expected_quality.index)
+
+    actual_std, actual_quality = utils.check_data_ramp_and_quality(
+        start_std, start_check
+    )
+
+    assert start_std.equals(original_std), "original std modified 2"
+    assert start_check.equals(original_check), "original check modified 2"
+
+    assert np.allclose(
+        actual_std, expected_std, rtol=1e-05, atol=1e-08, equal_nan=False
+    ), "Standard data incorrect after double check + different time scales"
+    assert np.allclose(
+        actual_quality, expected_quality, rtol=1e-05, atol=1e-08, equal_nan=False
+    ), "Quality data incorrect after double check + different time scales"

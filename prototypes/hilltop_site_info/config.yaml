@@ -3,7 +3,7 @@ base_url: "http://hilltopdev.horizons.govt.nz/"
 hts_filename: "Archive.hts"
 
 # Data Source Configuration
-site: "Oroua at Almadale Slackline"
+site: "Ahuahu at Te Tuhi Junction"
 standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 quality_measurement_name: "DO Saturation"
