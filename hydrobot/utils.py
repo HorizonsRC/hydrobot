@@ -453,3 +453,85 @@ def rainfall_six_minute_repacker(series: pd.Series):
     rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
 
     return rainfall_series.astype(np.int64)
+
+
+def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
+    """
+    Ramps standard data to fit the check data.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be ramped. Values are required at each check value (can be zero)
+    check_series : pd.Series
+        The data to ramp it to
+
+    Returns
+    -------
+    (pd.Series, pd.Series)
+        First element is std_series but ramped
+        Second element is quality_series
+    """
+    # Avoid side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # How much rainfall has occurred according to scada
+    incremental_series = std_series.cumsum()
+
+    # Filter to when checks occur
+    try:
+        recorded_totals = incremental_series[check_series.index]
+    except KeyError as e:
+        raise KeyError("Check data times not found in the standard series") from e
+
+    # Multiplier of difference between check and scada
+    scada_difference = check_series / recorded_totals.diff()
+    # Fill out to all scada events
+    multiplier = scada_difference.reindex(std_series.index, method="bfill")
+
+    # Multiply to find std_data
+    std_series = std_series * multiplier.fillna(0)
+
+    # Boolean whether it meets qc 600 standard
+    qc_600 = (scada_difference > 0.9) & (scada_difference < 1.1)
+
+    # Either QC 600 or 400
+    quality_code = qc_600.astype(np.float64) * 200 + 400
+    # Shift quality codes for hilltop convention
+    quality_code = quality_code.shift(periods=-1)
+    quality_code = quality_code.fillna(0).astype(np.int64)
+
+    return std_series, quality_code
+
+
+def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
+    """
+    Add zeroes to the std_series where checks happen (if no SCADA event then).
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series which might be missing the zeroes
+    check_series : pd.Series
+        Where to add the zeroes if they don't exist
+
+    Returns
+    -------
+    pd.Series
+        std_series with zeroes added
+
+    """
+    # Prevent side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # Find places for new zeroes
+    additional_index_values = check_series.index.difference(std_series.index)
+    additional_series = pd.Series(0, additional_index_values)
+
+    if not additional_series.empty:
+        std_series = pd.concat([std_series, additional_series])
+    std_series = std_series.sort_index()
+
+    return std_series
