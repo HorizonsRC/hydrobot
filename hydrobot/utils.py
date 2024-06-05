@@ -462,7 +462,7 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     Parameters
     ----------
     std_series : pd.Series
-        The series to be ramped
+        The series to be ramped. Values are required at each check value (can be zero)
     check_series : pd.Series
         The data to ramp it to
 
@@ -522,4 +522,16 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
         std_series with zeroes added
 
     """
-    pass
+    # Prevent side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # Find places for new zeroes
+    additional_index_values = check_series.index.difference(std_series.index)
+    additional_series = pd.Series(0, additional_index_values)
+
+    if not additional_series.empty:
+        std_series = pd.concat([std_series, additional_series])
+    std_series = std_series.sort_index()
+
+    return std_series

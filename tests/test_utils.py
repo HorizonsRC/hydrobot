@@ -451,3 +451,176 @@ def test_check_data_ramp_and_quality():
     assert np.allclose(
         actual_quality, expected_quality, rtol=1e-05, atol=1e-08, equal_nan=False
     ), "Quality data incorrect after double check + different time scales"
+
+    ###########################################################################
+
+    start_std = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:05": 100,
+        }
+    )
+    start_std.index = pd.DatetimeIndex(start_std.index)
+    start_check1 = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:05": 460,
+            "2021-01-01 01:05": 735,
+        }
+    )
+    start_check1.index = pd.DatetimeIndex(start_check1.index)
+    start_check2 = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:04": 460,
+            "2021-01-01 01:05": 735,
+        }
+    )
+    start_check2.index = pd.DatetimeIndex(start_check2.index)
+    start_check3 = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:05": 460,
+            "2021-01-01 01:04:59": 735,
+        }
+    )
+    start_check3.index = pd.DatetimeIndex(start_check3.index)
+
+    with pytest.raises(KeyError):
+        (
+            utils.check_data_ramp_and_quality(start_std, start_check1),
+            "First check missing breaks it",
+        )
+    with pytest.raises(KeyError):
+        (
+            utils.check_data_ramp_and_quality(start_std, start_check2),
+            "Middle check missing breaks it",
+        )
+    with pytest.raises(KeyError):
+        (
+            utils.check_data_ramp_and_quality(start_std, start_check3),
+            "Last check missing breaks it",
+        )
+
+
+def test_add_empty_rainfall_to_std():
+    """Testing add_empty_rainfall_to_std()."""
+    start_std = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:05": 100,
+        }
+    )
+    start_std.index = pd.DatetimeIndex(start_std.index)
+    original_std = start_std.copy()
+
+    start_check1 = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:05": 460,
+            "2021-01-01 01:05": 735,
+        }
+    )
+    start_check1.index = pd.DatetimeIndex(start_check1.index)
+    original_check1 = start_check1.copy()
+    expected_std1 = pd.Series(
+        {
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:05": 100,
+        }
+    )
+    expected_std1.index = pd.DatetimeIndex(expected_std1.index)
+
+    start_check2 = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:05": 460,
+            "2021-01-01 01:04:59": 735,
+        }
+    )
+    start_check2.index = pd.DatetimeIndex(start_check2.index)
+    original_check2 = start_check2.copy()
+    expected_std2 = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:04:59": 0,
+            "2021-01-01 01:05": 100,
+        }
+    )
+    expected_std2.index = pd.DatetimeIndex(expected_std2.index)
+
+    start_check3 = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:04": 460,
+            "2021-01-01 01:05:01": 735,
+        }
+    )
+    start_check3.index = pd.DatetimeIndex(start_check3.index)
+    original_check3 = start_check3.copy()
+    expected_std3 = pd.Series(
+        {
+            "2021-01-01 01:00": 0,
+            "2021-01-01 01:00:01": 0,
+            "2021-01-01 01:00:02": 100,
+            "2021-01-01 01:00:03": 100,
+            "2021-01-01 01:00:04": 0,
+            "2021-01-01 01:00:05": 100,
+            "2021-01-01 01:01:06": 100,
+            "2021-01-01 01:01:07": 100,
+            "2021-01-01 01:03:08": 100,
+            "2021-01-01 01:04:09": 100,
+            "2021-01-01 01:04:10": 100,
+            "2021-01-01 01:05": 100,
+            "2021-01-01 01:05:01": 0,
+        }
+    )
+    expected_std3.index = pd.DatetimeIndex(expected_std3.index)
+
+    actual_std1 = utils.add_empty_rainfall_to_std(start_std, start_check1)
+    actual_std2 = utils.add_empty_rainfall_to_std(start_std, start_check2)
+    actual_std3 = utils.add_empty_rainfall_to_std(start_std, start_check3)
+
+    assert start_std.equals(original_std), "standard data modified, side effect"
+    assert start_check1.equals(original_check1), "check data 1 modified, side effect"
+    assert start_check2.equals(original_check2), "check data 2 modified, side effect"
+    assert start_check3.equals(original_check3), "check data 3 modified, side effect"
+
+    assert expected_std1.equals(actual_std1), "Data wrong when check is a subset of std"
+    assert expected_std2.equals(actual_std2), "Data wrong when check intersects std"
+    assert expected_std3.equals(
+        actual_std3
+    ), "Data wrong when check does not intersect std"
