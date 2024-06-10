@@ -3,9 +3,9 @@ base_url: "http://hilltopdev.horizons.govt.nz/"
 hts_filename: "Archive.hts"
 
 # Data Source Configuration
-site: "Ahuahu at Te Tuhi Junction"
-standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
-check_measurement_name: "DO saturation check"
+site: "Tamaki at Tamaki Reserve"
+standard_measurement_name: "SCADA Rainfall [Rainfall]"
+check_measurement_name: "Check Gauge Total [Rainfall]"
 quality_measurement_name: "DO Saturation"
 
 # Processing Configuration

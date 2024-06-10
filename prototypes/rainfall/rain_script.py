@@ -2,8 +2,8 @@ r"""Script to run through a processing task with the processor class.
 
 Run command:
 
-cd .\prototypes\dissolved_oxygen
-streamlit run .\do_script.py
+cd .\prototypes\rainfall
+streamlit run .\rain_script.py
 
 """
 
@@ -15,18 +15,18 @@ from hydrobot.data_acquisition import (
     import_ncr,
     import_prov_wq,
 )
-from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
+from hydrobot.rf_processor import RFProcessor
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = DOProcessor.from_config_yaml("do_config.yaml")
+data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 
-st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
+st.set_page_config(page_title="Hydrobot", layout="wide", page_icon="💦")
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 

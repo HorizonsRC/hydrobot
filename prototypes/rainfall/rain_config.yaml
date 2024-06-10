@@ -5,7 +5,7 @@ check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
 site: "Ahuahu at Te Tuhi Junction"
-standard_measurement_name: "Rainfall [Rainfall]"
+standard_measurement_name: "Rainfall [SCADA Rainfall]"
 check_measurement_name: "Check Gauge Total [Rainfall]"
 
 # Processing Configuration
