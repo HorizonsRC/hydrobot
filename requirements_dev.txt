@@ -184,3 +184,6 @@ wcwidth==0.2.8
 Werkzeug==3.0.1
 widgetsnbextension==4.0.9
 zipp==3.17.0
+
+SQLAlchemy~=2.0.30
+setuptools~=65.5.1

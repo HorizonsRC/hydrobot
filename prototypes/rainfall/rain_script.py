@@ -8,17 +8,12 @@ streamlit run .\rain_script.py
 """
 
 import pandas as pd
+import sqlalchemy as db
 import streamlit as st
 
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
 from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.rf_processor import RFProcessor
-from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -38,36 +33,71 @@ st.header(f"{data.standard_measurement_name}")
 check_col = "Value"
 logger_col = "Logger"
 
-inspections = import_inspections(
-    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
+engine = db.create_engine(
+    "mssql+pyodbc://SQL3/survey123?DRIVER=ODBC+Driver+17+for+SQL+Server"
 )
-prov_wq = import_prov_wq(
-    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+
+query = """SELECT TOP (10) Hydro_Inspection.arrival_time,
+            Hydro_Inspection.weather,
+            Hydro_Inspection.notes,
+            Hydro_Inspection.departure_time,
+            Hydro_Inspection.creator,
+            Rainfall_Inspection.dipstick,
+            Rainfall_Inspection.flask,
+            Rainfall_Inspection.gauge_emptied,
+            Rainfall_Inspection.primary_total,
+            Manual_Tips.start_time,
+            Manual_Tips.end_time,
+            Manual_Tips.primary_manual_tips,
+            Manual_Tips.backup_manual_tips,
+            RainGauge_Validation.pass
+        FROM [dbo].RainGauge_Validation
+        RIGHT JOIN ([dbo].Manual_Tips
+            RIGHT JOIN ([dbo].Rainfall_Inspection
+                INNER JOIN [dbo].Hydro_Inspection
+                ON Rainfall_Inspection.inspection_id = Hydro_Inspection.id)
+            ON Manual_Tips.inspection_id = Hydro_Inspection.id)
+        ON RainGauge_Validation.inspection_id = Hydro_Inspection.id
+        WHERE Hydro_Inspection.arrival_time >= ?
+            AND Hydro_Inspection.arrival_time <= ?
+            AND Hydro_Inspection.sitename = ?
+        ORDER BY Hydro_Inspection.arrival_time ASC
+        """
+rainfall_checks = pd.read_sql(
+    query, engine, params=(data.from_date, data.to_date, data.site)
 )
-ncrs = import_ncr("DO_non-conformance_reports.csv")
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+# columns are:
+# 'arrival_time', 'weather', 'notes', 'departure_time', 'creator',
+# 'dipstick', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
+# 'end_time', 'primary_manual_tips', 'backup_manual_tips', 'pass'
 
-all_checks_list = [data.check_data, inspections, prov_wq]
-all_checks_list = [i for i in all_checks_list if not i.empty]
 
-all_checks = pd.concat(all_checks_list).sort_index()
+check_data = pd.DataFrame(rainfall_checks["arrival_time"].copy())
+check_data.index = pd.Index(check_data)
+check_data["arrival_time"] = check_data.rename(columns={"arrival_time": "Time, "})
 
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+rainfall_checks = rainfall_checks.loc[
+    (rainfall_checks.arrival_time >= data.from_date)
+    & (rainfall_checks.arrival_time <= data.to_date)
 ]
+"""      "Time",
+        "Raw",
+        "Value",
+        "Changes",
+        "Recorder Time",
+        "Comment",
+        "Source",
+        "QC",
+        """
 
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
-check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-check_data_list = [i for i in check_data_list if not i.empty]
-data.check_data = pd.concat(check_data_list).sort_index()
+data.check_data = rainfall_checks
 
 data.check_data = data.check_data.loc[
     (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
 ]
 
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
+all_comments = rainfall_checks
+all_checks = rainfall_checks
 
 #######################################################################################
 # Common auto-processing steps

@@ -290,10 +290,11 @@ def get_qc_evaluator(qc_evaluator_name):
     qce_dict = get_qc_evaluator_dict()
     if qc_evaluator_name in qce_dict:
         return qce_dict[qc_evaluator_name]
-    raise Exception(
-        f"qc_evaluator {qc_evaluator_name} not found in the config file. "
-        f"Available qc_evaluators are {list(qce_dict.keys())}."
-    )
+    else:
+        raise Exception(
+            f"qc_evaluator {qc_evaluator_name} not found in the config file. "
+            f"Available qc_evaluators are {list(qce_dict.keys())}."
+        )
 
 
 def series_export_to_csv(

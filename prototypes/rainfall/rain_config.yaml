@@ -7,17 +7,16 @@ check_hts_filename: "HydrobotCheckData.hts"
 site: "Ahuahu at Te Tuhi Junction"
 standard_measurement_name: "Rainfall [SCADA Rainfall]"
 check_measurement_name: "Check Gauge Total [Rainfall]"
+standard_backup: "Rainfall [SCADA Rainfall]"
+check_backup: "Check Gauge Total [Rainfall]"
 
 # Processing Configuration
 from_date: "2023-06-15 14:45:00"
 to_date: "2024-04-02 10:00"
 defaults:
-  delta: 5
-  gap_limit: 12
-  high_clip: 200
-  low_clip: 50
+  high_clip: 2001
+  low_clip: -1
   max_qc: 600
-  span: 10
 
 # Annalist Configuration
 analyst_name: "default"
