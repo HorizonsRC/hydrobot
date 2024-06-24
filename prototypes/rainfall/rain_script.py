@@ -71,16 +71,28 @@ rainfall_checks = pd.read_sql(
 # 'dipstick', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
 # 'end_time', 'primary_manual_tips', 'backup_manual_tips', 'pass'
 
-
-check_data = pd.DataFrame(rainfall_checks["arrival_time"].copy())
-check_data.index = pd.Index(check_data)
-check_data["arrival_time"] = check_data.rename(columns={"arrival_time": "Time, "})
-
 rainfall_checks = rainfall_checks.loc[
     (rainfall_checks.arrival_time >= data.from_date)
     & (rainfall_checks.arrival_time <= data.to_date)
 ]
-"""      "Time",
+
+check_data = pd.DataFrame(rainfall_checks[["arrival_time", "flask", "notes"]].copy())
+
+check_data["Recorder Time"] = check_data.loc[:, "arrival_time"]
+check_data = check_data.set_index("arrival_time")
+check_data.index = pd.to_datetime(check_data.index)
+check_data.index.name = None
+
+check_data = check_data.rename(columns={"flask": "Raw", "notes": "Comment"})
+check_data["Value"] = check_data.loc[:, "Raw"]
+check_data["Time"] = pd.to_datetime(check_data["Recorder Time"], format="%H:%M:%S")
+check_data["Changes"] = ""
+check_data["Source"] = "INS"
+check_data["QC"] = True
+
+check_data = check_data[
+    [
+        "Time",
         "Raw",
         "Value",
         "Changes",
@@ -88,34 +100,29 @@ rainfall_checks = rainfall_checks.loc[
         "Comment",
         "Source",
         "QC",
-        """
-
-data.check_data = rainfall_checks
-
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
+    ]
 ]
 
-all_comments = rainfall_checks
-all_checks = rainfall_checks
+data.check_data = check_data
+
+all_checks = rainfall_checks.rename(
+    columns={"primary_total": "Logger", "flask": "Value"}
+)
+all_checks = all_checks.set_index("arrival_time")
+all_checks["Source"] = "INS"
+all_checks.index = pd.to_datetime(all_checks.index)
 
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
 
-data.insert_missing_nans()
 
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 
-# Remove obvious spikes using FBEWMA algorithm
-data.remove_spikes()
-
-#######################################################################################
-# DO specific operation
-#######################################################################################
-
-data.correct_do()
+# Rainfall is cumulative
+data.standard_data.Value = data.standard_data.Value.cumsum()
+data.standard_data.Raw = data.standard_data.Raw.cumsum()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
@@ -156,6 +163,7 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
+
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
@@ -166,7 +174,6 @@ fig_subplots = make_processing_dash(
 
 st.plotly_chart(fig_subplots, use_container_width=True)
 
-st.dataframe(all_comments, use_container_width=True)
-# st.dataframe(data.standard_data, use_container_width=True)
+st.dataframe(all_checks, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)

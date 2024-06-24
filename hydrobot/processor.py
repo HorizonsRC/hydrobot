@@ -499,6 +499,7 @@ class Processor:
                     "Expecting pd.DataFrame for Standard data, "
                     f"but got {type(raw_standard_data)} from parser."
                 )
+
             if not raw_standard_data.empty:
                 if date_format == "mowsecs":
                     raw_standard_data.index = utils.mowsecs_to_datetime_index(
@@ -506,9 +507,11 @@ class Processor:
                     )
                 else:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
+            if frequency is not None:
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.NaN
                 )
+
             if self.raw_standard_blob is not None:
                 fmt = standard_item_info["ItemFormat"]
                 div = standard_item_info["Divisor"]
@@ -1818,7 +1821,7 @@ class Processor:
 
             # TODO: Handle gaps
             if "gap_limit" not in self._defaults:
-                pass
+                standard_timeseries = actual_nan_timeseries
             else:
                 standard_timeseries = evaluator.small_gap_closer(
                     actual_nan_timeseries,
