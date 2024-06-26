@@ -452,7 +452,10 @@ def rainfall_six_minute_repacker(series: pd.Series):
     rainfall_series = pd.concat([case1, case2, case3])
     rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
 
-    return rainfall_series.astype(np.int64)
+    # fill it up with zeroes
+    rainfall_series = rainfall_series.asfreq(freq="6min", fill_value=0.0)
+
+    return rainfall_series
 
 
 def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
@@ -535,3 +538,26 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
     std_series = std_series.sort_index()
 
     return std_series
+
+
+def cumulative_check_adjust(std_series: pd.Series, check_series: pd.Series):
+    """
+    Modify check data to fit with cumulative data.
+
+    Rainfall check data is done by taking the cumulative total since the last
+    check. As such, the standard cumulative total at the previous check time
+    should be added to the check data.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        Cumulative data to adjust check data to
+    check_series : pd.Series
+        Check data which should be adjusted to add std_series cumulative total
+
+    Returns
+    -------
+    pd.Series
+        check_series with cumulative totals added
+    """
+    pass

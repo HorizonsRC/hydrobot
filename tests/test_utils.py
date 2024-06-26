@@ -239,8 +239,8 @@ def test_rainfall_six_minute_repacker():
 
     expected = pd.Series(
         {
-            "2021-01-01 01:54": 50,
-            "2021-01-01 02:00": 50,
+            "2021-01-01 01:54": 50.0,
+            "2021-01-01 02:00": 50.0,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
@@ -257,8 +257,8 @@ def test_rainfall_six_minute_repacker():
     repacked = utils.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:54": 67,
-            "2021-01-01 02:00": 33,
+            "2021-01-01 01:54": 67.0,
+            "2021-01-01 02:00": 33.0,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
@@ -277,8 +277,8 @@ def test_rainfall_six_minute_repacker():
     repacked = utils.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:54": 0,
-            "2021-01-01 02:00": 100,
+            "2021-01-01 01:54": 0.0,
+            "2021-01-01 02:00": 100.0,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
@@ -297,9 +297,9 @@ def test_rainfall_six_minute_repacker():
     repacked = utils.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:48": 0,
-            "2021-01-01 01:54": 25,
-            "2021-01-01 02:00": 75,
+            "2021-01-01 01:48": 0.0,
+            "2021-01-01 01:54": 25.0,
+            "2021-01-01 02:00": 75.0,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
@@ -318,14 +318,38 @@ def test_rainfall_six_minute_repacker():
     repacked = utils.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:48": 67,
-            "2021-01-01 01:54": 66,
-            "2021-01-01 02:00": 67,
+            "2021-01-01 01:48": 67.0,
+            "2021-01-01 01:54": 66.0,
+            "2021-01-01 02:00": 67.0,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
 
     assert expected.equals(repacked), "Summing/rounding broken"
+
+    ###########################################################################
+    series = pd.Series(
+        {
+            "2021-01-01 01:00": 100,
+            "2021-01-01 01:30": 100,
+        }
+    )
+    series.index = pd.DatetimeIndex(series.index)
+
+    repacked = utils.rainfall_six_minute_repacker(series)
+    expected = pd.Series(
+        {
+            "2021-01-01 01:00": 100.0,
+            "2021-01-01 01:06": 0.0,
+            "2021-01-01 01:12": 0.0,
+            "2021-01-01 01:18": 0.0,
+            "2021-01-01 01:24": 0.0,
+            "2021-01-01 01:30": 100.0,
+        }
+    )
+    expected.index = pd.DatetimeIndex(expected.index)
+
+    assert expected.equals(repacked), "Dry period not showing up"
 
 
 def test_check_data_ramp_and_quality():

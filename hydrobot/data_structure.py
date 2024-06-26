@@ -824,7 +824,7 @@ def parse_xml(source) -> list[DataSourceBlob]:
         ElementTree.indent(root, space="\t")
         err_text = root.findtext("Error")
         if "No data" in str(err_text):
-            warnings.warn(f"Empty hilltop response: {err_text}", stacklevel=1)
+            warnings.warn(f"Empty hilltop response: {err_text}", stacklevel=2)
         else:
             raise ValueError(err_text)
 

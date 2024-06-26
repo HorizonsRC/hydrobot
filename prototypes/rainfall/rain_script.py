@@ -121,8 +121,8 @@ all_checks.index = pd.to_datetime(all_checks.index)
 data.clip()
 
 # Rainfall is cumulative
-data.standard_data.Value = data.standard_data.Value.cumsum()
-data.standard_data.Raw = data.standard_data.Raw.cumsum()
+# data.standard_data.Value = data.standard_data.Value.cumsum()
+# data.standard_data.Raw = data.standard_data.Raw.cumsum()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
@@ -164,6 +164,9 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 
+data.standard_data["Raw"] = data.standard_data["Raw"].cumsum()
+data.standard_data["Value"] = data.ramped_standard
+
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
@@ -177,3 +180,4 @@ st.plotly_chart(fig_subplots, use_container_width=True)
 st.dataframe(all_checks, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)
+st.dataframe(data.standard_data, use_container_width=True)

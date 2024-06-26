@@ -4,10 +4,12 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
-from hydrobot.processor import Processor, evaluator
+from hydrobot import plotter
+from hydrobot.processor import Processor, evaluator, utils
 
 annalizer = Annalist()
 
@@ -46,6 +48,7 @@ class RFProcessor(Processor):
             constant_check_shift=constant_check_shift,
             **kwargs,
         )
+        self.ramped_standard = None
 
     @ClassLogger
     def quality_encoder(
@@ -57,6 +60,8 @@ class RFProcessor(Processor):
     ):
         """
         Encode quality information in the quality series for a rainfall dataset.
+
+        Also makes ramped_standard dataset.
 
         Parameters
         ----------
@@ -107,15 +112,25 @@ class RFProcessor(Processor):
         if interval_dict is None:
             interval_dict = self._interval_dict
 
-        qc_checks = self.check_data[self.check_data["QC"]]
-        qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
-
-        chk_frame = evaluator.check_data_quality_code(
-            self.standard_data["Value"],
-            qc_series,
-            self._quality_code_evaluator,
+        checks_for_qcing = self.check_data[self.check_data["QC"]]
+        qc_series = (
+            checks_for_qcing["Value"] if "Value" in checks_for_qcing else pd.Series({})
         )
-        self._apply_quality(chk_frame, replace=True)
+        qc_series = utils.series_rounder(qc_series)
+
+        six_minute_data = utils.rainfall_six_minute_repacker(
+            self.standard_data["Value"]
+        )
+
+        ramped_standard, quality_series = utils.check_data_ramp_and_quality(
+            six_minute_data, qc_series
+        )
+
+        self.ramped_standard = ramped_standard
+        qc_frame = qc_series.to_frame(name="Value")
+        qc_frame["Code"] = "RFL"
+        qc_frame["Details"] = "Rainfall custom quality encoding"
+        self._apply_quality(qc_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
             self.quality_data, qc_series, interval_dict
@@ -138,3 +153,40 @@ class RFProcessor(Processor):
 
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
         self._apply_quality(lim_frame)
+
+    @property  # type: ignore
+    def cumulative_standard_data(self) -> pd.DataFrame:  # type: ignore
+        """pd.Series: The standard series data."""
+        data = self._standard_data.copy()
+        data["Raw"] = data["Raw"].cumsum()
+        data["Value"] = data["Value"].cumsum()
+        return data
+
+    @property  # type: ignore
+    def cumulative_check_data(self) -> pd.DataFrame:  # type: ignore
+        """pd.Series: The check series data."""
+        data = self._check_data.copy()
+        data["Raw"] = data["Raw"].cumsum()
+        data["Value"] = data["Value"].cumsum()
+        return data
+
+    def plot_qc_series(self, check=False, show=True):
+        """Implement qc_plotter()."""
+        fig = plotter.qc_plotter_plotly(
+            self._standard_data["Value"],
+            (self._check_data["Value"] if check else None),
+            self._quality_data["Value"],
+            self._frequency,
+            show=show,
+        )
+
+        fig.add_trace(
+            go.Scatter(
+                x=self.ramped_standard.index,
+                y=self.ramped_standard.cumsum(),
+                mode="lines",
+                name="ramped",
+                line=dict(color="#FF10F0"),
+            )
+        )
+        return fig
