@@ -6,6 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import streamlit as st
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -1931,3 +1932,10 @@ class Processor:
             )
             data_blob_list += [quality_data_blob]
         return data_blob_list
+
+    def make_processing_dash(self):
+        """Make streamlit dashboard."""
+        pass
+        fig_subplots = None
+
+        st.plotly_chart(fig_subplots, use_container_width=True)

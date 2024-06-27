@@ -323,7 +323,8 @@ def comparison_qc_plotter_plotly(
 
 
 def make_processing_dash(fig, processor, check_data):
-    """Make the processing dash.
+    """
+    Make the processing dash.
 
     Sorry about these docs I'm in a rush.
     """
@@ -701,3 +702,14 @@ def make_processing_dash(fig, processor, check_data):
     )
 
     return fig_subplots
+
+
+def make_scatter_fig(standard_data, check_data):
+    """
+    Makes the scatter plot used for the top half of the hydrobot dash.
+
+    Returns
+    -------
+    go.Figure
+    """
+    pass

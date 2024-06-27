@@ -437,8 +437,7 @@ def splitter(std_series, qc_series, frequency):
             )
         else:
             return_dict[qc] = base_data_meets_qc(std_series, qc_series, qc)
-        if frequency is not None:
-            return_dict[qc] = return_dict[qc].asfreq(frequency)
+        return_dict[qc] = return_dict[qc].reindex(std_series.index)
 
     return return_dict
 
