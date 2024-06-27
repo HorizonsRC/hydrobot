@@ -118,6 +118,18 @@ class RFProcessor(Processor):
         )
         qc_series = utils.series_rounder(qc_series)
 
+        start_date = pd.to_datetime(self.from_date)
+        if start_date not in self.standard_data.index:
+            self.standard_data = pd.concat(
+                [
+                    pd.DataFrame(
+                        [[0.0, 0.0, "SRT", "Starting date added for ramping"]],
+                        index=[start_date],
+                        columns=self.standard_data.columns,
+                    ),
+                    self.standard_data,
+                ]
+            )
         six_minute_data = utils.rainfall_six_minute_repacker(
             self.standard_data["Value"]
         )
@@ -127,7 +139,7 @@ class RFProcessor(Processor):
         )
 
         self.ramped_standard = ramped_standard
-        qc_frame = qc_series.to_frame(name="Value")
+        qc_frame = quality_series.to_frame(name="Value")
         qc_frame["Code"] = "RFL"
         qc_frame["Details"] = "Rainfall custom quality encoding"
         self._apply_quality(qc_frame, replace=True)
@@ -185,8 +197,8 @@ class RFProcessor(Processor):
                 x=self.ramped_standard.index,
                 y=self.ramped_standard.cumsum(),
                 mode="lines",
-                name="ramped",
-                line=dict(color="#FF10F0"),
+                name="Ramped",
+                line=dict(color="#1010F0", dash="dot"),
             )
         )
         return fig

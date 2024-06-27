@@ -104,7 +104,8 @@ def check_plotter(base_series, check_series, span=20, show=True):
 
 
 def qc_colour(qc):
-    """Give the colour of the QC.
+    """
+    Give the colour of the QC.
 
     Parameters
     ----------
@@ -204,8 +205,8 @@ def qc_plotter_plotly(
     for qc in split_data:
         fig.add_trace(
             go.Scatter(
-                x=split_data[qc].index,
-                y=split_data[qc],
+                x=base_series.index,
+                y=split_data[qc].reindex(base_series.index),
                 mode="lines",
                 name=f"QC{qc}",
                 line=dict(color=qc_colour(qc)),

@@ -11,10 +11,10 @@ standard_backup: "Rainfall [SCADA Rainfall]"
 check_backup: "Check Gauge Total [Rainfall]"
 
 # Processing Configuration
-from_date: "2023-06-15 14:45:00"
+from_date: "2023-06-01 10:42:00"
 to_date: "2024-04-02 10:00"
 defaults:
-  high_clip: 2001
+  high_clip: 2.1
   low_clip: -1
   max_qc: 600
 

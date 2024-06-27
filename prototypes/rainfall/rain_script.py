@@ -105,12 +105,17 @@ check_data = check_data[
 
 data.check_data = check_data
 
+
 all_checks = rainfall_checks.rename(
     columns={"primary_total": "Logger", "flask": "Value"}
 )
 all_checks = all_checks.set_index("arrival_time")
 all_checks["Source"] = "INS"
 all_checks.index = pd.to_datetime(all_checks.index)
+all_checks.loc[pd.Timestamp(data.from_date), "Value"] = 0
+all_checks.loc[pd.Timestamp(data.from_date), "Logger"] = 0
+all_checks["Value"] = all_checks["Value"].cumsum()
+all_checks["Logger"] = all_checks["Logger"].cumsum()
 
 #######################################################################################
 # Common auto-processing steps
@@ -165,7 +170,7 @@ data.data_exporter("processed.xml")
 #######################################################################################
 
 data.standard_data["Raw"] = data.standard_data["Raw"].cumsum()
-data.standard_data["Value"] = data.ramped_standard
+data.standard_data["Value"] = data.standard_data["Value"].cumsum()
 
 fig = data.plot_qc_series(show=False)
 
