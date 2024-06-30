@@ -84,7 +84,7 @@ mypy-extensions==1.0.0
 nest-asyncio==1.5.8
 nh3==0.2.14
 nodeenv==1.8.0
-numpy==1.26.0
+numpy==1.26.4
 orjson==3.9.7
 packaging==23.1
 pandas==2.2.1
