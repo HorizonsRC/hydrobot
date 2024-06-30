@@ -131,7 +131,7 @@ def qc_colour(qc):
     return qc_dict[qc]
 
 
-def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
+def qc_plotter(base_series, check_series, qc_series, show=True):
     """Plot data with correct qc colour.
 
     Parameters
@@ -142,8 +142,6 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         Check data to plot
     qc_series : pd.Series
         QC ranges for colour coding
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
     show : bool
         Whether to show the plot directly when called
 
@@ -152,7 +150,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
     None
         Displays a plot
     """
-    split_data = splitter(base_series, qc_series, frequency)
+    split_data = splitter(base_series, qc_series)
     plt.figure()
     for qc in split_data:
         plt.plot(
@@ -177,9 +175,7 @@ def qc_plotter(base_series, check_series, qc_series, frequency, show=True):
         plt.show()
 
 
-def qc_plotter_plotly(
-    base_series, check_series, qc_series, frequency, show=True, **kwargs
-):
+def qc_plotter_plotly(base_series, check_series, qc_series, show=True, **kwargs):
     """Plot data with correct qc colour.
 
     Parameters
@@ -190,8 +186,6 @@ def qc_plotter_plotly(
         Check data to plot
     qc_series : pd.Series
         QC ranges for colour coding
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
     show : bool
         Whether to show the plot directly when called
 
@@ -200,7 +194,7 @@ def qc_plotter_plotly(
     go.Figure
 
     """
-    split_data = splitter(base_series, qc_series, frequency)
+    split_data = splitter(base_series, qc_series)
     fig = go.Figure()
     for qc in split_data:
         fig.add_trace(
@@ -235,9 +229,7 @@ def qc_plotter_plotly(
     return fig
 
 
-def comparison_qc_plotter(
-    base_series, raw_series, check_series, qc_series, frequency, show=True
-):
+def comparison_qc_plotter(base_series, raw_series, check_series, qc_series, show=True):
     """Plot data with correct qc colour a la qc_plotter(), and the raw data overlaid.
 
     Parameters
@@ -250,8 +242,6 @@ def comparison_qc_plotter(
         Check data to plot
     qc_series : pd.Series
         QC ranges for colour coding
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
     show : bool
         Whether to show the plot directly when called
 
@@ -260,7 +250,7 @@ def comparison_qc_plotter(
     None
         Displays a plot
     """
-    qc_plotter(base_series, check_series, qc_series, frequency, show=False)
+    qc_plotter(base_series, check_series, qc_series, show=False)
     plt.plot(
         raw_series.index,
         raw_series,
@@ -279,7 +269,6 @@ def comparison_qc_plotter_plotly(
     raw_series,
     check_series,
     qc_series,
-    frequency,
     show=True,
     **kwargs,
 ):
@@ -295,8 +284,6 @@ def comparison_qc_plotter_plotly(
         Check data to plot
     qc_series : pd.Series
         QC ranges for colour coding
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
     show : bool
         Whether to show the plot directly when called
 
@@ -304,9 +291,7 @@ def comparison_qc_plotter_plotly(
     -------
     comparison_qc_plotter_plotly
     """
-    fig = qc_plotter_plotly(
-        base_series, check_series, qc_series, frequency, show=False, **kwargs
-    )
+    fig = qc_plotter_plotly(base_series, check_series, qc_series, show=False, **kwargs)
 
     fig.add_trace(
         go.Scatter(
@@ -710,6 +695,6 @@ def make_scatter_fig(standard_data, check_data):
 
     Returns
     -------
-    go.Figure
+        go.Figure
     """
     pass

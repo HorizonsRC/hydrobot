@@ -393,7 +393,7 @@ def diagnose_data(std_series, check_series, qc_series, frequency):
     print(f"Missing {gap_time} of data, that's {gap_time/total_time*100}%")
 
     # QCs
-    split_data = splitter(std_series, qc_series, frequency)
+    split_data = splitter(std_series, qc_series)
     for qc in split_data:
         print(
             f"Data that is QC{qc} makes up "
@@ -404,7 +404,7 @@ def diagnose_data(std_series, check_series, qc_series, frequency):
         )
 
 
-def splitter(std_series, qc_series, frequency):
+def splitter(std_series, qc_series):
     """
     Split the data up by QC code.
 
@@ -417,8 +417,8 @@ def splitter(std_series, qc_series, frequency):
         Time series data to be split up
     qc_series : pd.Series
         QC values to split the data by
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
+    frequency : anything
+        Defunct
 
     Returns
     -------

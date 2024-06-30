@@ -188,7 +188,6 @@ class RFProcessor(Processor):
             self._standard_data["Value"],
             (self._check_data["Value"] if check else None),
             self._quality_data["Value"],
-            self._frequency,
             show=show,
         )
 

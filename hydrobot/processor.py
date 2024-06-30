@@ -1665,7 +1665,6 @@ class Processor:
             self._standard_data["Value"],
             (self._check_data["Value"] if check else None),
             self._quality_data["Value"],
-            self._frequency,
             show=show,
         )
         return fig
@@ -1677,7 +1676,6 @@ class Processor:
             self._standard_data["Raw"],
             self._check_data["Value"],
             self._quality_data["Value"],
-            self._frequency,
             show=show,
         )
         return fig

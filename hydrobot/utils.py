@@ -494,7 +494,7 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     multiplier = scada_difference.reindex(std_series.index, method="bfill")
 
     # Multiply to find std_data
-    std_series = std_series * multiplier.fillna(0)
+    std_series = std_series * multiplier.astype(np.float64).fillna(0.0)
 
     # Boolean whether it meets qc 600 standard
     qc_600 = (scada_difference > 0.9) & (scada_difference < 1.1)
