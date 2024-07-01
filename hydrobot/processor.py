@@ -262,7 +262,7 @@ class Processor:
                 processing_parameters["standard_measurement_name"],
                 processing_parameters.get("frequency", None),
                 processing_parameters.get("from_date", None),
-                processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+                processing_parameters.get("to_date", now.strftime("%Y-%m-%d %H:%M")),
                 processing_parameters.get("check_hts_filename", None),
                 processing_parameters.get("check_measurement_name", None),
                 processing_parameters["defaults"],
