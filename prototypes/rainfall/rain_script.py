@@ -10,6 +10,7 @@ streamlit run .\do_script.py
 import pandas as pd
 import streamlit as st
 
+import hydrobot
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
@@ -26,7 +27,9 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = DOProcessor.from_config_yaml("do_config.yaml")
 
-st.set_page_config(page_title="Hydrobot0.6.0", layout="wide", page_icon="💦")
+st.set_page_config(
+    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+)
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
