@@ -122,13 +122,3 @@ replace = "__version__ = \"{new_version}\""
 filename = "README.rst"
 search = "{current_version}"
 replace = "{new_version}"
-
-[[tool.bumpversion.files]]
-filename = "prototypes/example_script/config.yaml"
-search = "{current_version}"
-replace = "{new_version}"
-
-[[tool.bumpversion.files]]
-filename = "prototypes/example_script/script.py"
-search = "{current_version}"
-replace = "{new_version}"
