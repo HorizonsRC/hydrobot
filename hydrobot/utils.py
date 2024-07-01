@@ -282,12 +282,12 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
     with pd.option_context("future.no_silent_downcasting", True):
         full_index_1 = (
             qc_series_1.reindex(combined_index, method="ffill")
-            .replace(np.NaN, np.Inf)
+            .replace(np.nan, np.Inf)
             .infer_objects(copy=False)
         )
         full_index_2 = (
             qc_series_2.reindex(combined_index, method="ffill")
-            .replace(np.NaN, np.Inf)
+            .replace(np.nan, np.Inf)
             .infer_objects(copy=False)
         )
 

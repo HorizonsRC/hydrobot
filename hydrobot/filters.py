@@ -28,7 +28,7 @@ def clip(unclipped: pd.Series, low_clip: float, high_clip: float):
     """
     unclipped_arr = unclipped.to_numpy()
 
-    # np.NaN gives warning
+    # np.nan gives warning
     with np.errstate(invalid="ignore"):
         # Create a boolean condition for values that need to be clipped
         clip_cond = (unclipped_arr > high_clip) | (unclipped_arr < low_clip)
@@ -173,10 +173,10 @@ def remove_range(
         Will insert gaps based on insert_gaps strategy if missing more data points than
         min_gap_length in a row.
     insert_gaps : str
-        If "all" will insert np.NaN at every missing point.
-        If "start" will insert np.NaN only at from_date.
-        If "end" will insert np.NaN only at to_date.
-        If "none" will insert no np.NaN values, and remove all timestamps completely.
+        If "all" will insert np.nan at every missing point.
+        If "start" will insert np.nan only at from_date.
+        If "end" will insert np.nan only at to_date.
+        If "none" will insert no np.nan values, and remove all timestamps completely.
 
     Returns
     -------
@@ -189,15 +189,15 @@ def remove_range(
     if len(slice_to_remove) >= min_gap_length:
         if insert_gaps == "all":
             series_to_return = input_series.copy()
-            series_to_return.loc[from_date:to_date] = np.NaN
+            series_to_return.loc[from_date:to_date] = np.nan
         else:
             series_to_return = input_series.drop(slice_to_remove.index)
             if insert_gaps == "start":
                 start_idx = slice_to_remove.index[0]
-                series_to_return[start_idx] = np.NaN
+                series_to_return[start_idx] = np.nan
             elif insert_gaps == "end":
                 end_idx = slice_to_remove.index[-1]
-                series_to_return[end_idx] = np.NaN
+                series_to_return[end_idx] = np.nan
             elif insert_gaps == "none":
                 pass
             else:

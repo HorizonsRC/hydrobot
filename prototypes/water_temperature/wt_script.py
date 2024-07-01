@@ -65,7 +65,8 @@ data_check_list = [i for i in data_check_list if not i.empty]
 data.check_data = pd.concat(data_check_list).sort_index()
 
 data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
+    (data.check_data.index >= pd.Timestamp(data.from_date))
+    & (data.check_data.index <= pd.Timestamp(data.to_date))
 ]
 
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
