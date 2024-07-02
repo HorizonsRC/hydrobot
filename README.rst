@@ -10,7 +10,8 @@ Hydrobot
         :target: https://hydrobot.readthedocs.io/en/latest/?version=latest
         :alt: Documentation Status
 
-Python Package providing a suite of processing tools and utilities for Hilltop hydrological data.
+Python Package providing a suite of processing tools and utilities for Hilltop
+hydrological data.
 
 
 * Free software: GNU General Public License v3
@@ -26,7 +27,9 @@ Features
 
   * Clipping data
   * Removing spikes based on FBEWMA smoothing
-  * Identifying and removing 'flatlining' data, where an instrument repeats it's last collected data point (NOTE: It's unclear if this actually happening.)
+  * Identifying and removing 'flatlining' data, where an instrument repeats
+    it's last collected data point (NOTE: It's unclear if this actually
+    happening.)
   * Identifying gaps and gap lengths and closing small gaps
   * Aggregating check data from various sources.
   * Quality coding data based on NEMS standards
@@ -41,66 +44,109 @@ Features
 Usage (Alpha)
 -------------
 
-The Alpha release of Hydrobot supports a "hybrid" workflow. This means that some external tools are still required to do a full processing. Importantly, the hybrid workflow relies on some R scripts to obtain check data from sources other than Hilltop. Further processing using Hilltop manager is also supported.
+The Alpha release of Hydrobot supports a "hybrid" workflow. This means that
+some external tools are still required to do a full processing. Importantly,
+the hybrid workflow relies on some R scripts to obtain check data from sources
+other than Hilltop. Further processing using Hilltop manager is also supported.
 
-NOTE: Hydrobot 0.6.3 supports only Water Temperature processing at the moment, but more measurements will be supported in patches as the processing progresses.
+NOTE: Hydrobot 0.6.3 supports only Water Temperature processing at the moment,
+but more measurements will be supported in patches as the processing
+progresses.
 
 Initial Setup (Repeat for each release)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. Install a Python 3.11 interpreter. Note that 3.12 is not supported just yet.
-#. In your favourite shell, create a new virtual environment using this python interpreter and name it "hydrobot0.6.3". It's important that this is stored somewhere locally. I suggest creating a folder for virtual environments in your home folder::
+#. Install a Python 3.11 interpreter (3.12 is not supported just yet).
 
-    python -m venv path/to/venv/hydrobot0.6.3/
+#. In your favourite shell (if you don't know what that is, use powershell -
+   it's already installed on windows), create a new virtual environment using
+   this python interpreter and name it "hydrobot0.6.3". It's important that
+   this is stored somewhere locally. For example, it could be stored in a
+   "Hydrobot" folder in the C: drive, which would need the command::
 
-#. Activate this virtual environment. In powershell this should be something like::
+    python -m venv C:/Hydrobot/hydrobot0.6.3/
 
-    ./path/to/venv/hydrobot0.6.3/Scripts/Activate.ps1
+#. Activate this virtual environment. In powershell this should be something
+   like::
 
-#. If you're sure your venv is active (ensure with `which python` and confirm that you're using the interpreter in your venv folder), install the latest version of Hydrobot using pip::
+    C:/Hydrobot/hydrobot0.6.3/Scripts/Activate.ps1
+
+#. With your venv active, install the latest version of Hydrobot using pip::
 
     pip install hydrobot
 
-#. Record which version of dependencies you have installed. The following pip freeze records which dependencies are
-installed by the hydrobot install process for if auditing/reprocessing is required later::
+#. Record which version of dependencies you have installed. The following pip
+   freeze records which dependencies are installed by the hydrobot install
+   process for if auditing/reprocessing is required later::
 
     pip freeze > dependencies.txt
-
-#. Navigate to the processing folder that you create as part of the Processing Steps below::
-
-    cd //ares/hydro/processing/whatever/watertemp/site/30X/
 
 
 Processing Steps
 ^^^^^^^^^^^^^^^^
 
-#. Open Logsheet Loader. Fill it as normal, and note the start date of your processing period (i.e. end date of the previous period).
-#. Navigate to the data source and site folder, and create your processing folder.
-#. Copy all the processing files in this folder into your processing folder::
+#. Open Logsheet Loader. Fill it as normal, and note the start date of your
+   processing period (i.e. end date of the previous period).
 
-    \\ares\Environmental Data Validation\Water Temperature\Documents\Hydrobot_0.6.3_Files\
+#. Navigate to the data source and site folder, and create your batch folder.
 
-    //ares/Environmental\ Data\ Validation/Water\ Temperature/Documents/Hydrobot_0.6.3_Files/
+#. Copy all the hydrobot processing template files from the documents folder
+   into your new batch folder, then rename with batch number and location code.
+   The location of e.g. the water temperature template is::
 
-#. In your processing folder, open the `config.yaml` file and change the fields `site`, `from_date`, `to_date`, `analyst_name`. Feel free to mess with the other values once you get the hang of it. No one will die.
+    \\ares\Environmental Data Validation\Water Temperature\Documents\Hydrobot_template\
 
-#. Run the R script. I'm not an R guy so I'm not sure how to do this other than to open it in R studio, highlighting all the code, and hitting `Ctrl+Enter`. This should create a bunch of `.csv` files containing the check data from various sources. This is a good reasource for perusal during processing, but will be imbibed by hydrobot to for QC encoding.
+#. In your processing folder, open the `config.yaml` file and fill the fields
+   `site`, `from_date`, `to_date`, `analyst_name`. Adjust the other values if
+   desired - default values should work for most situations, but each site can
+   have it's own idiosyncrasies.
 
-#. Make sure your virtual environment is set up and active. Ensure with `which python` and confirm that your python interpreter is running from your venv folder.
+#. Run the R script. I'm not an R guy so I'm not sure how to do this other than
+   to open it in R studio, highlighting all the code, and hitting `Ctrl+Enter`.
+   This should create a bunch of `.csv` files containing the check data from
+   various sources. This is a good resource for perusal during processing, but
+   will be imbibed by hydrobot to for QC encoding.
 
-#. Run the hydrobot processing script::
+#. Make sure your virtual environment is set up (see initial setup
+   instructions) and activate it. To activate, in your shell type the location
+   of the "Activate.ps1" script in the venv/Scripts folder, e.g.::
 
-    python processing_script.py
+    C:/Hydrobot/hydrobot0.6.3/Scripts/Activate.ps1
 
-#. If all goes well, the processing script will open a browser tab showing a diagnostic dash for your site. Use this to identify issues in the site.
+   You can ensure it is active by typing `gcm python` and confirm that your
+   python interpreter (under "Source") is running from your venv folder.
 
-#. Use your python skills to solve some issues, like removing erroneous check data points or deleting chunks of data. More extensive documentation on actually using hydrobot will follow in future releases.
+#. Navigate to your batch folder in your shell. To navigate to the batch
+   folder, use the following "cd" command with your specific details::
 
-#. Open the resulting processed.xml in manager, and copy it over to a hts file.
+    cd "\\ares\Environmental Data Validation\measurement\site\batch\"
 
-#. Open the WaterTemp_check_data.csv outputed from the R file in a spreadsheet (sorry) and copy into hts file.
+   e.g. if you are doing water temperature for teachers college in batch 400,
+   your cd command would be::
 
-#. Happy processing!
+    cd "\\ares\Environmental Data Validation\Water Temperature\Manawatu at Teachers College\400"
+
+#. Run the hydrobot processing script using streamlit (name changes slightly by
+   data source)::
+
+    streamlit run wt_script.py
+
+#. If all goes well, the processing script will open a browser tab showing a
+   diagnostic dash for your site. Use this to identify issues in the site.
+
+#. Optionally, modify the python script to solve some issues, like removing
+   erroneous check data points or deleting chunks of data, then rerun the
+   script.
+
+#. Open the resulting processed.xml in manager, and copy it over to the hts
+   file found in the batch folder.
+
+#. Modify the data in hilltop as needed
+
+#. Open the WaterTemp_check_data.csv output by the R file in a spreadsheet and
+   copy into the hts batch file.
+
+#. Copy to provisional automation when complete.
 
 Credits
 -------
