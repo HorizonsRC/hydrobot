@@ -10,6 +10,7 @@ streamlit run .\wt_script.py
 import pandas as pd
 import streamlit as st
 
+import hydrobot
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
@@ -26,7 +27,9 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = Processor.from_config_yaml("wt_config.yaml")
 
-st.set_page_config(page_title="Hydrobot0.6.2", layout="wide", page_icon="💦")
+st.set_page_config(
+    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+)
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
@@ -65,7 +68,8 @@ data_check_list = [i for i in data_check_list if not i.empty]
 data.check_data = pd.concat(data_check_list).sort_index()
 
 data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
+    (data.check_data.index >= pd.Timestamp(data.from_date))
+    & (data.check_data.index <= pd.Timestamp(data.to_date))
 ]
 
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)

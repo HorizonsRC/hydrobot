@@ -263,7 +263,7 @@ class Processor:
                 processing_parameters["standard_measurement_name"],
                 processing_parameters.get("frequency", None),
                 processing_parameters.get("from_date", None),
-                processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
+                processing_parameters.get("to_date", now.strftime("%Y-%m-%d %H:%M")),
                 processing_parameters.get("check_hts_filename", None),
                 processing_parameters.get("check_measurement_name", None),
                 processing_parameters["defaults"],
@@ -510,7 +510,7 @@ class Processor:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
             if frequency is not None:
                 raw_standard_data = raw_standard_data.asfreq(
-                    frequency, fill_value=np.NaN
+                    frequency, fill_value=np.nan
                 )
 
             if self.raw_standard_blob is not None:
@@ -1095,7 +1095,7 @@ class Processor:
             else:
                 gap_limit = int(self._defaults["gap_limit"])
         if max_qc is None:
-            max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+            max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.nan
 
         if interval_dict is None:
             interval_dict = self._interval_dict
@@ -1203,13 +1203,13 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
-                else np.NaN
+                else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "high_clip" in self._defaults
-                else np.NaN
+                else np.nan
             )
 
         clipped = filters.clip(
@@ -1335,13 +1335,13 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
-                else np.NaN
+                else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "low_clip" in self._defaults
-                else np.NaN
+                else np.nan
             )
         if span is None:
             if "span" not in self._defaults:

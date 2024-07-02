@@ -11,6 +11,7 @@ import pandas as pd
 import sqlalchemy as db
 import streamlit as st
 
+import hydrobot
 from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.rf_processor import RFProcessor
@@ -21,7 +22,9 @@ from hydrobot.rf_processor import RFProcessor
 
 data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 
-st.set_page_config(page_title="Hydrobot", layout="wide", page_icon="💦")
+st.set_page_config(
+    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+)
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 

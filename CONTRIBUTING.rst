@@ -170,8 +170,8 @@ hilltop-py requires an older version) so bump-my-version needs to be installed f
     $ bump-my-version bump -v --dry-run patch # Optional, just to test if it runs without errors
     $ bump-my-version bump patch # For real this time. Possible values: major / minor / patch
 
-4. Install the local development version of the package (make sure you're in the package root directory where setup
-.py is). You should see the package install with the correct version number.::
+4. Install the local development version of the package (make sure you're in the package root directory where
+pyproject.toml is). You should see the package install with the correct version number::
 
     $ pip install -e .[all]
 

@@ -22,7 +22,7 @@ DEFAULTS = {
     "delta": 30,
     "span": 10,
     "gap_limit": 12,
-    "max_qc": np.NaN,
+    "max_qc": np.nan,
 }
 
 SITES = [

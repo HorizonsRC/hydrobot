@@ -103,3 +103,10 @@ History
 ----------------------------------
 
 * Fixed bug that meant that different data sources would not
+
+0.6.3 (2024-07-01)
+----------------------------------
+
+* Fixed to_date format to YMD rather than DMY when to_date not in yaml
+* Fixed water temperature R script when to_date not in yaml
+* Added groundwater evaluator

@@ -55,7 +55,7 @@ def small_gap_closer(series: pd.Series, gap_limit: int) -> pd.Series:
     """
     Remove small gaps from a series.
 
-    Gaps are defined by a sequential number of np.NaN values
+    Gaps are defined by a sequential number of np.nan values
     Small gaps are defined as gaps of length gap_length or less.
 
     Will return series with the nan values in the short gaps removed, and the
@@ -66,7 +66,7 @@ def small_gap_closer(series: pd.Series, gap_limit: int) -> pd.Series:
     series : pandas.Series
         Data which has gaps to be closed
     gap_limit : integer
-        Maximum length of gaps removed, will remove all np.NaN's in consecutive runs
+        Maximum length of gaps removed, will remove all np.nan's in consecutive runs
         of gap_length or less
 
     Returns
@@ -133,7 +133,7 @@ def check_data_quality_code(
         and isinstance(first_check_date, pd.Timestamp)
         and isinstance(last_check_date, pd.Timestamp)
     ):
-        # qc_series = pd.Series({first_data_date: np.NaN})
+        # qc_series = pd.Series({first_data_date: np.nan})
         qc_frame = pd.DataFrame(
             columns=["Value", "Code", "Details"],
             index=[first_data_date],
@@ -460,7 +460,7 @@ def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
     pd.DataFrame
         qc_frame with too high QCs limited to max_qc
     """
-    clipped_data = qc_frame["Value"].clip(np.NaN, max_qc)
+    clipped_data = qc_frame["Value"].clip(np.nan, max_qc)
 
     diff_idxs = qc_frame[qc_frame["Value"] != clipped_data].index
 
@@ -479,7 +479,7 @@ def quality_encoder(
     check_series: pd.Series,
     qc_evaluator: QualityCodeEvaluator,
     gap_limit: int,
-    max_qc=np.NaN,
+    max_qc=np.nan,
     interval_dict: dict = None,
 ) -> pd.Series:
     """
@@ -650,7 +650,7 @@ def cap_qc_where_std_high(std_frame, qc_frame, cap_qc, cap_threshold):
     with pd.option_context("future.no_silent_downcasting", True):
         potential_new_qc = (
             capped_qc_changes.replace(True, cap_qc)
-            .replace(False, np.NaN)
+            .replace(False, np.nan)
             .infer_objects(copy=False)
         )
     new_qc = utils.compare_two_qc_take_min(potential_new_qc, qc_frame["Value"])
