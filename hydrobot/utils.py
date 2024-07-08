@@ -497,13 +497,21 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     std_series = std_series * multiplier.astype(np.float64).fillna(0.0)
 
     # Boolean whether it meets qc 600 standard
-    qc_600 = (scada_difference > 0.9) & (scada_difference < 1.1)
+    points0 = (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    points3 = ((scada_difference >= 0.8) & (scada_difference <= 1.2)) & ~(
+        (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    )
+    points12 = ~((scada_difference >= 0.8) & (scada_difference <= 1.2))
 
     # Either QC 600 or 400
-    quality_code = qc_600.astype(np.float64) * 200 + 400
+    quality_code = (
+        points0.astype(np.float64) * 0
+        + points3.astype(np.float64) * 3
+        + points12.astype(np.float64) * 12
+    )
     # Shift quality codes for hilltop convention
     quality_code = quality_code.shift(periods=-1)
-    quality_code = quality_code.fillna(0).astype(np.int64)
+    quality_code = quality_code.fillna(-1000).astype(np.int64)
 
     return std_series, quality_code
 

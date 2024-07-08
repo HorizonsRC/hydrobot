@@ -384,8 +384,8 @@ def test_check_data_ramp_and_quality():
     expected_std = expected_std.astype(np.float64)
     expected_quality = pd.Series(
         {
-            "2021-01-01 01:00": 400,
-            "2021-01-01 01:10": 0,
+            "2021-01-01 01:00": 12,
+            "2021-01-01 01:10": -1000,
         }
     )
     expected_quality.index = pd.DatetimeIndex(expected_quality.index)
@@ -455,9 +455,9 @@ def test_check_data_ramp_and_quality():
     expected_std = expected_std.astype(np.float64)
     expected_quality = pd.Series(
         {
-            "2021-01-01 01:00": 400,
-            "2021-01-01 01:00:04": 600,
-            "2021-01-01 01:05": 0,
+            "2021-01-01 01:00": 3,
+            "2021-01-01 01:00:04": 0,
+            "2021-01-01 01:05": -1000,
         }
     )
     expected_quality.index = pd.DatetimeIndex(expected_quality.index)

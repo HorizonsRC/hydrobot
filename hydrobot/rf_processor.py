@@ -8,6 +8,7 @@ import plotly.graph_objects as go
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
+import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot import plotter
 from hydrobot.processor import Processor, evaluator, utils
 
@@ -113,10 +114,10 @@ class RFProcessor(Processor):
             interval_dict = self._interval_dict
 
         checks_for_qcing = self.check_data[self.check_data["QC"]]
-        qc_series = (
+        checks_for_qcing = (
             checks_for_qcing["Value"] if "Value" in checks_for_qcing else pd.Series({})
         )
-        qc_series = utils.series_rounder(qc_series)
+        checks_for_qcing = utils.series_rounder(checks_for_qcing)
 
         start_date = pd.to_datetime(self.from_date)
         if start_date not in self.standard_data.index:
@@ -134,8 +135,21 @@ class RFProcessor(Processor):
             self.standard_data["Value"]
         )
 
-        ramped_standard, quality_series = utils.check_data_ramp_and_quality(
-            six_minute_data, qc_series
+        ramped_standard, deviation_points = utils.check_data_ramp_and_quality(
+            six_minute_data, checks_for_qcing
+        )
+
+        time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
+
+        (
+            site_survey_points,
+            three_point_sum,
+            comment,
+            output_dict,
+        ) = rf.rainfall_nems_site_matrix(self.site)
+
+        quality_series = rf.points_to_qc(
+            [deviation_points, time_points], site_survey_points, three_point_sum
         )
 
         self.ramped_standard = ramped_standard
@@ -143,11 +157,6 @@ class RFProcessor(Processor):
         qc_frame["Code"] = "RFL"
         qc_frame["Details"] = "Rainfall custom quality encoding"
         self._apply_quality(qc_frame, replace=True)
-
-        oov_frame = evaluator.bulk_downgrade_out_of_validation(
-            self.quality_data, qc_series, interval_dict
-        )
-        self._apply_quality(oov_frame)
 
         if supplemental_data is not None:
             msg_frame = evaluator.missing_data_quality_code(
