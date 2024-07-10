@@ -372,6 +372,7 @@ def manual_tip_filter(
             if abs(manual_tips - len(inspection_data)) <= 1:
                 # Off by 1 is probably just a typo, delete it all
                 std_series[inspection_data.index] = 0
+
                 return std_series, None
             else:
                 issue = {
@@ -387,7 +388,7 @@ def manual_tip_filter(
                 )
                 # Pandas do be pandering
                 # All this does is find the first element of the shortest period
-                first_manual_tip_index = pd.DataFrame(differences).idxmin()[0]
+                first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
 
                 if differences[first_manual_tip_index] < threshold:
                     # Sufficiently intense
@@ -414,10 +415,10 @@ def manual_tip_filter(
             )
             # Pandas do be pandering
             # All this does is find the first element of the shortest period
-            first_manual_tip_index = pd.DataFrame(differences).idxmin()[0]
+            first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
 
-            if differences[first_manual_tip_index] < threshold:
-                # Sufficiently intense
+            if differences[first_manual_tip_index] < threshold or manual_tips > 30:
+                # Sufficiently intense or calibration
                 inspection_data[
                     first_manual_tip_index : first_manual_tip_index + manual_tips
                 ] = 0
