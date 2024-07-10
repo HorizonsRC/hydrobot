@@ -398,6 +398,8 @@ def manual_tip_filter(
 
                 return std_series, issue
         else:
+            if not weather:
+                weather = "NULL"
             issue = {
                 "start_time": arrival_time,
                 "end_time": departure_time,
