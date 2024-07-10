@@ -1,0 +1,17 @@
+# What all the codes we are using in hydrobot mean
+
+# General Quality code reasons
+CHK: "Base quality code: Deviation of check from logger determined this quality code"
+OOV: "Out of Validation: Quality code lowered due to long period between checks"
+GAP: "Missing data: No valid data for this time"
+LIM: "Site quality code capped: Site has a quality code cap, additive"
+# Measurement specific quality code reasons
+CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, additive"
+
+# Check source codes
+HTP: "Site inspections, imported from hilltop"
+INS: "Site Inspections, imported via R or similar process"
+SOE: "State of the environment checks"
+
+# Issue codes
+RMT: "Rainfall manual tips issue: automatic removal of manual tips ran into problems"

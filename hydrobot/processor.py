@@ -222,6 +222,15 @@ class Processor:
         self.import_data(
             from_date=self.from_date, to_date=self.to_date, check=get_check
         )
+        self.processing_issues = pd.DataFrame(
+            {
+                "start_time": [],
+                "end_time": [],
+                "code": [],
+                "comment": [],
+                "series_type": [],
+            }
+        ).astype(str)
 
     @classmethod
     def from_config_yaml(cls, config_path):
@@ -267,8 +276,10 @@ class Processor:
                 processing_parameters.get("check_hts_filename", None),
                 processing_parameters.get("check_measurement_name", None),
                 processing_parameters["defaults"],
-                processing_parameters["inspection_expiry"],
-                constant_check_shift=processing_parameters["constant_check_shift"],
+                processing_parameters.get("inspection_expiry", None),
+                constant_check_shift=processing_parameters.get(
+                    "constant_check_shift", 0
+                ),
             ),
             ann,
         )
@@ -1937,3 +1948,18 @@ class Processor:
         fig_subplots = None
 
         st.plotly_chart(fig_subplots, use_container_width=True)
+
+    def report_processing_issue(
+        self, start_time=None, end_time=None, code=None, comment=None, series_type=None
+    ):
+        """Add an issue to be reported for processing usage."""
+        self.processing_issues = pd.concat(
+            [
+                pd.DataFrame(
+                    [[start_time, end_time, code, comment, series_type]],
+                    columns=self.processing_issues.columns,
+                ),
+                self.processing_issues,
+            ],
+            ignore_index=True,
+        )

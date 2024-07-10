@@ -315,3 +315,110 @@ def points_to_qc(
     qc_series += ((points_series >= 0) & (points_series < 3)).astype(int) * 600
 
     return qc_series
+
+
+def manual_tip_filter(
+    std_series: pd.Series,
+    arrival_time: pd.Timestamp,
+    departure_time: pd.Timestamp,
+    manual_tips: int,
+    weather: str = "",
+):
+    """
+    Sets any manual tips to 0 for a single inspection.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The rainfall data to have manual tips removed. Must be datetime indexable
+    arrival_time : pd.Timestamp
+        The start of the inspection
+    departure_time : pd.Timestamp
+        The end of the inspection
+    manual_tips : int
+        Number of manual tips
+    weather : str
+        Type of weather at inspection
+
+    Returns
+    -------
+    pd.Series
+        std_series with tips zeroed.
+    dict | None
+        Issue to report, if any
+    """
+    std_series = std_series.copy()
+    threshold = pd.Timedelta("00:00:20")
+
+    if not isinstance(std_series.index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        std_series.index = pd.DatetimeIndex(std_series.index)
+
+    inspection_data = std_series[
+        (std_series.index > arrival_time) & (std_series.index < departure_time)
+    ]
+
+    if len(inspection_data) < manual_tips:
+        # Manual tips presumed to be in inspection mode, no further action
+        return std_series, None
+    elif manual_tips == 0:
+        # No manual tips to remove
+        return std_series, None
+    else:
+        if weather in ["Fine", "Overcast"]:
+            if abs(manual_tips - len(inspection_data)) <= 1:
+                # Off by 1 is probably just a typo, delete it all
+                std_series[inspection_data.index] = 0
+                return std_series, None
+            else:
+                issue = {
+                    "start_time": arrival_time,
+                    "end_time": departure_time,
+                    "code": "RMT",
+                    "comment": "Weather dry, but more tips recorded than manual tips reported",
+                    "series_type": "Standard and Check",
+                }
+                differences = (
+                    inspection_data.index[manual_tips - 1 :]
+                    - inspection_data.index[: -manual_tips + 1]
+                )
+                # Pandas do be pandering
+                # All this does is find the first element of the shortest period
+                first_manual_tip_index = pd.DataFrame(differences).idxmin()[0]
+
+                if differences[first_manual_tip_index] < threshold:
+                    # Sufficiently intense
+                    inspection_data[
+                        first_manual_tip_index : first_manual_tip_index + manual_tips
+                    ] = 0
+                    std_series[inspection_data.index] = inspection_data
+
+                return std_series, issue
+        else:
+            issue = {
+                "start_time": arrival_time,
+                "end_time": departure_time,
+                "code": "RMT",
+                "comment": f"Inspection while weather is {weather}, verify manual tips removed were not real tips",
+                "series_type": "Standard and Check",
+            }
+
+            differences = (
+                inspection_data.index[manual_tips - 1 :]
+                - inspection_data.index[: -manual_tips + 1]
+            )
+            # Pandas do be pandering
+            # All this does is find the first element of the shortest period
+            first_manual_tip_index = pd.DataFrame(differences).idxmin()[0]
+
+            if differences[first_manual_tip_index] < threshold:
+                # Sufficiently intense
+                inspection_data[
+                    first_manual_tip_index : first_manual_tip_index + manual_tips
+                ] = 0
+                std_series[inspection_data.index] = inspection_data
+
+            return std_series, issue

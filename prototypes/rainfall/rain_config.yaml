@@ -24,11 +24,3 @@ logfile: "hydrobot_logs.csv"
 format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
   stream: ""
-
-inspection_expiry:
-    500:
-        months: 2
-    0:
-        months: 4
-
-constant_check_shift: 0

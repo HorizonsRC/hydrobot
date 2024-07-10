@@ -56,7 +56,6 @@ class RFProcessor(Processor):
         self,
         gap_limit: int | None = None,
         max_qc: int | float | None = None,
-        interval_dict: dict | None = None,
         supplemental_data: pd.Series | None = None,
     ):
         """
@@ -73,10 +72,6 @@ class RFProcessor(Processor):
         max_qc : numeric or None, optional
             Maximum quality code possible at site
             If None, the max qc from the class defaults is used.
-        interval_dict : dict or None, optional
-            Dictionary that dictates when to downgrade data with old checks
-            Takes pd.DateOffset:quality_code pairs
-            If None, the interval_dict from the class defaults is used.
         supplemental_data : pd.Series or None, optional
             Used for checking if data is missing. Another source of data can be
             used to find any gaps in periods where no rainfall is collected,
@@ -109,9 +104,6 @@ class RFProcessor(Processor):
             )
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
-
-        if interval_dict is None:
-            interval_dict = self._interval_dict
 
         checks_for_qcing = self.check_data[self.check_data["QC"]]
         checks_for_qcing = (
@@ -210,3 +202,26 @@ class RFProcessor(Processor):
             )
         )
         return fig
+
+    def filter_manual_tips(self, check_query: pd.DataFrame):
+        """
+        Attempts to remove manual tips from standard_series.
+
+        Parameters
+        ----------
+        check_query : pd.DataFrame
+            The DataFrame of all the checks that have been done
+
+        Returns
+        -------
+        None, self.standard_data modified
+        """
+        for _, check in check_query.iterrows():
+            self.standard_data["Value"], issue = rf.manual_tip_filter(
+                self.standard_data["Value"],
+                check["start_time"],
+                check["end_time"],
+                check["primary_manual_tips"],
+            )
+            if issue is not None:
+                self.report_processing_issue(**issue)

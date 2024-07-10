@@ -128,6 +128,9 @@ all_checks["Logger"] = all_checks["Logger"].cumsum()
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 
+# Remove manual tips
+data.filter_manual_tips(rainfall_checks)
+
 # Rainfall is cumulative
 # data.standard_data.Value = data.standard_data.Value.cumsum()
 # data.standard_data.Raw = data.standard_data.Raw.cumsum()
@@ -185,6 +188,7 @@ fig_subplots = make_processing_dash(
 
 st.plotly_chart(fig_subplots, use_container_width=True)
 
+st.dataframe(data.processing_issues, use_container_width=True)
 st.dataframe(all_checks, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)
