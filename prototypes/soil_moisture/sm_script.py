@@ -7,10 +7,10 @@ streamlit run .\sm_script.py
 
 """
 
+import pandas as pd
 import streamlit as st
 
 import hydrobot
-from hydrobot.filters import trim_series
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 
@@ -55,11 +55,9 @@ data.remove_spikes()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-data.quality_encoder()
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.check_data["Value"],
-)
+data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
+data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
+
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
@@ -79,16 +77,29 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
+
 fig = data.plot_qc_series(show=False)
 
 fig_subplots = make_processing_dash(
     fig,
     data,
-    None,
+    pd.DataFrame(
+        columns=[
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Recorder Time",
+            "Comment",
+            "Source",
+            "QC",
+            "Logger",
+        ]
+    ).set_index("Time"),
 )
 
 st.plotly_chart(fig_subplots, use_container_width=True)
 
-# st.dataframe(data.standard_data, use_container_width=True)
+st.dataframe(data.standard_data, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)

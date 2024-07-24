@@ -197,7 +197,8 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
-        self._quality_code_evaluator.constant_check_shift = constant_check_shift
+        if constant_check_shift is not None:
+            self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         if interval_dict is None:
             self._interval_dict = {}
