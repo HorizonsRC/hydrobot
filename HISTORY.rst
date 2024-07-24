@@ -110,3 +110,8 @@ History
 * Fixed to_date format to YMD rather than DMY when to_date not in yaml
 * Fixed water temperature R script when to_date not in yaml
 * Added groundwater evaluator
+
+0.6.4 (2024-07-25)
+----------------------------------
+
+* Added support for check-less data types such as soil moisture
