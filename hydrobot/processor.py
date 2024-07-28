@@ -220,7 +220,10 @@ class Processor:
 
         # Load data for the first time
         self.import_data(
-            from_date=self.from_date, to_date=self.to_date, check=get_check
+            from_date=self.from_date,
+            to_date=self.to_date,
+            check=get_check,
+            quality=False,
         )
 
     @classmethod
@@ -614,7 +617,6 @@ class Processor:
             from_date = self.from_date
         if to_date is None:
             to_date = self.to_date
-
         if quality_data is None:
             quality_data = self._quality_data
 
