@@ -72,6 +72,7 @@ class Processor:
         defaults: dict | None = None,
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
+        fetch_quality: bool = False,
         **kwargs,
     ):
         """
@@ -223,11 +224,11 @@ class Processor:
             from_date=self.from_date,
             to_date=self.to_date,
             check=get_check,
-            quality=False,
+            quality=fetch_quality,
         )
 
     @classmethod
-    def from_config_yaml(cls, config_path):
+    def from_config_yaml(cls, config_path, fetch_quality=False):
         """
         Initialises a Processor class given a config file.
 
@@ -272,6 +273,7 @@ class Processor:
                 processing_parameters["defaults"],
                 processing_parameters["inspection_expiry"],
                 constant_check_shift=processing_parameters["constant_check_shift"],
+                fetch_quality=fetch_quality,
             ),
             ann,
         )
