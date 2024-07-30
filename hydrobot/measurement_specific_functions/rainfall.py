@@ -1,10 +1,12 @@
 """Rainfall utils."""
 
+import platform
 import warnings
 
 import numpy as np
 import pandas as pd
 import sqlalchemy as db
+from sqlalchemy.engine import URL
 
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
@@ -25,16 +27,30 @@ def rainfall_site_survey(site: str):
         The Dataframe with one entry, the most recent survey for the given site.
     """
     # Horizons sheet location
-    survey_excel_sheet = (
-        r"\\ares\HydrologySoftware\Survey "
-        r"123\RainfallSiteSurvey20220510_Pull\RainfallSiteSurvey20220510.xlsx"
-    )
+    if platform.system() == "Windows":
+        survey_excel_sheet = (
+            r"\\ares\HydrologySoftware\Survey "
+            r"123\RainfallSiteSurvey20220510_Pull\RainfallSiteSurvey20220510.xlsx"
+        )
+    elif platform.system() == "Linux":
+        # Support for Nic's personal WSL setup! Not generic linux support! Sorry!
+        survey_excel_sheet = r"/mnt/ares_software/Survey 123/RainfallSiteSurvey20220510_Pull/RainfallSiteSurvey20220510.xlsx"
+    else:
+        raise OSError("What is this, a mac? We don't do that here.")
+
     site_survey_frame = pd.ExcelFile(survey_excel_sheet).parse()
 
     # get site index from site name
-    engine = db.create_engine(
-        "mssql+pyodbc://SQL3/survey123?DRIVER=ODBC+Driver+17+for+SQL+Server"
+    connection_url = URL.create(
+        "mssql+pyodbc",
+        host="PNT-DB30.horizons.govt.nz",
+        database="survey123",
+        query={"driver": "ODBC Driver 17 for SQL Server"},
     )
+    # engine = db.create_engine(
+    #     "mssql+pyodbc://SQL3.horizons.govt.nz/survey123?DRIVER=ODBC+Driver+17+for+SQL+Server"
+    # )
+    engine = db.create_engine(connection_url)
     query = """
             SELECT TOP (100000) [SiteID]
                 ,[SiteName]
@@ -279,7 +295,9 @@ def points_combiner(list_of_points_series: list[pd.Series]):
 
 
 def points_to_qc(
-    list_of_points_series: list[pd.Series], static_points: int, three_points_total: int
+    list_of_points_series: list[pd.Series],
+    static_points: int,
+    three_points_total: int,
 ):
     """
     Convert a points series to a quality code series.

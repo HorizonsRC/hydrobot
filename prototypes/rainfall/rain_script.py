@@ -7,9 +7,12 @@ streamlit run .\rain_script.py
 
 """
 
+
 import pandas as pd
+import pyodbc
 import sqlalchemy as db
 import streamlit as st
+from sqlalchemy.engine import URL
 
 import hydrobot
 from hydrobot.filters import trim_series
@@ -36,9 +39,15 @@ st.header(f"{data.standard_measurement_name}")
 check_col = "Value"
 logger_col = "Logger"
 
-engine = db.create_engine(
-    "mssql+pyodbc://SQL3/survey123?DRIVER=ODBC+Driver+17+for+SQL+Server"
+st.write(pyodbc.drivers())
+
+connection_url = URL.create(
+    "mssql+pyodbc",
+    host="PNT-DB30.horizons.govt.nz",
+    database="survey123",
+    query={"driver": "ODBC Driver 17 for SQL Server"},
 )
+engine = db.create_engine(connection_url)
 
 query = """SELECT TOP (10) Hydro_Inspection.arrival_time,
             Hydro_Inspection.weather,
