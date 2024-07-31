@@ -7,6 +7,7 @@ streamlit run .\rain_script.py
 
 """
 
+import platform
 
 import pandas as pd
 import pyodbc
@@ -41,9 +42,17 @@ logger_col = "Logger"
 
 st.write(pyodbc.drivers())
 
+if platform.system() == "Windows":
+    hostname = "SQL3.horizons.govt.nz"
+elif platform.system() == "Linux":
+    # Nic's WSL support (with apologies). THIS IS NOT STABLE.
+    hostname = "PNT-DB30.horizons.govt.nz"
+else:
+    raise OSError("What is this, a mac? Get up on out of here, capitalist pig.")
+
 connection_url = URL.create(
     "mssql+pyodbc",
-    host="PNT-DB30.horizons.govt.nz",
+    host=hostname,
     database="survey123",
     query={"driver": "ODBC Driver 17 for SQL Server"},
 )
