@@ -96,6 +96,7 @@ class RFProcessor(Processor):
         >>> processor.quality_data["Value"]
         <updated quality series with encoded quality flags>
         """
+        # Filling empty values with default values
         if gap_limit is None:
             gap_limit = (
                 int(self._defaults["gap_limit"])
@@ -105,13 +106,20 @@ class RFProcessor(Processor):
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
 
+        # Select all check data values that are marked to be used for QC purposes
         checks_for_qcing = self.check_data[self.check_data["QC"]]
+
+        # If no check data, set to empty series
         checks_for_qcing = (
             checks_for_qcing["Value"] if "Value" in checks_for_qcing else pd.Series({})
         )
+
+        # Round all checks to the nearest 6min
         checks_for_qcing = utils.series_rounder(checks_for_qcing)
 
         start_date = pd.to_datetime(self.from_date)
+
+        # If the start date is not a date stamp in the standard data set, insert a zero
         if start_date not in self.standard_data.index:
             self.standard_data = pd.concat(
                 [
@@ -123,10 +131,13 @@ class RFProcessor(Processor):
                     self.standard_data,
                 ]
             )
+
+        # Repack the standard data to 6 minute interval
         six_minute_data = utils.rainfall_six_minute_repacker(
             self.standard_data["Value"]
         )
 
+        # Ramp standard data to go through the check data points
         ramped_standard, deviation_points = utils.check_data_ramp_and_quality(
             six_minute_data, checks_for_qcing
         )
