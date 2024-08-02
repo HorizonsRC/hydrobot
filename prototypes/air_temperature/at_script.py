@@ -7,10 +7,9 @@ streamlit run .\sm_script.py
 
 """
 
+import htmlmerger
 import pandas as pd
-import streamlit as st
 
-import hydrobot
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 
@@ -20,11 +19,11 @@ from hydrobot.processor import Processor
 
 data, ann = Processor.from_config_yaml("at_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
+# st.set_page_config(
+#     page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+# )
+# st.title(f"{data.site}")
+# st.header(f"{data.standard_measurement_name}")
 
 
 #######################################################################################
@@ -98,13 +97,31 @@ fig_subplots = make_processing_dash(
     ).set_index("Time"),
 )
 
-with open("json_plot.json", "w") as file:
+with open("pyplot.json", "w") as file:
     file.write(str(fig_subplots.to_json()))
-with open("json_plot.html", "w") as file:
+with open("pyplot.html", "w") as file:
     file.write(str(fig_subplots.to_html()))
 
-st.plotly_chart(fig_subplots, use_container_width=True)
+# st.plotly_chart(fig_subplots, use_container_width=True)
 
-st.dataframe(data.standard_data, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+# st.dataframe(data.standard_data, use_container_width=True)
+# st.dataframe(data.check_data, use_container_width=True)
+# st.dataframe(data.quality_data, use_container_width=True)
+
+with open("standard_table.html", "w") as file:
+    data.standard_data.to_html(file)
+with open("check_table.html", "w") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w") as file:
+    data.quality_data.to_html(file)
+
+merger = htmlmerger.HtmlMerger(
+    [
+        "pyplot.html",
+        "standard_table.html",
+        "check_table.html",
+        "quality_table.html",
+    ]
+)
+
+merger.merge()
