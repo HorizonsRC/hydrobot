@@ -118,12 +118,12 @@ def check_data_quality_code(
     """
     first_data_date = series.index[0]
     last_data_date = series.index[-1]
-    if check_series.empty and isinstance(first_data_date, pd.Timestamp):
+    if check_series.empty:
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
         return pd.DataFrame(
             columns=["Value", "Code", "Details"],
-            index=[first_data_date],
+            index=[],
         )
     first_check_date = check_series.index[0]
     last_check_date = check_series.index[-1]
@@ -465,13 +465,13 @@ def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
     clipped_data = qc_frame["Value"].clip(np.nan, max_qc)
 
     diff_idxs = qc_frame[qc_frame["Value"] != clipped_data].index
-
-    qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
-    qc_frame.loc[diff_idxs, "Details"] = (
-        qc_frame.loc[diff_idxs, "Details"]
-        + f" [Site QC limit applies to a maximum of {max_qc}.]"
-    )
-    qc_frame["Value"] = clipped_data
+    if not diff_idxs.empty:
+        qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"]
+            + f" [Site QC limit applies to a maximum of {max_qc}.]"
+        )
+        qc_frame["Value"] = clipped_data
 
     return qc_frame
 

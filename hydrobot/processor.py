@@ -1104,12 +1104,13 @@ class Processor:
         qc_checks = self.check_data[self.check_data["QC"]]
         qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
 
-        chk_frame = evaluator.check_data_quality_code(
-            self.standard_data["Value"],
-            qc_series,
-            self._quality_code_evaluator,
-        )
-        self._apply_quality(chk_frame, replace=True)
+        if not self.check_data.empty:
+            chk_frame = evaluator.check_data_quality_code(
+                self.standard_data["Value"],
+                qc_series,
+                self._quality_code_evaluator,
+            )
+            self._apply_quality(chk_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
             self.quality_data, qc_series, interval_dict

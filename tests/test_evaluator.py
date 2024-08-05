@@ -210,7 +210,7 @@ def test_check_data_quality_code(raw_data, check_data):
                     raw_data["Value"], pd.Series({}), meas
                 )
             )
-            == 1
+            == 0
         ), "fails for empty check data series"
     output = evaluator.check_data_quality_code(
         raw_data["Value"], check_data["Value"], meas
