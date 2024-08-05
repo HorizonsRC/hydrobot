@@ -1104,7 +1104,18 @@ class Processor:
         qc_checks = self.check_data[self.check_data["QC"]]
         qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
 
-        if not self.check_data.empty:
+        if self.check_data.empty:
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Value"] = 200
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Value"] = 0
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Code"] = "EMT"
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Code"] = "EMT, END"
+            self.quality_data.loc[
+                pd.Timestamp(self.from_date), "Details"
+            ] = "Empty data, start time set to qc200"
+            self.quality_data.loc[
+                pd.Timestamp(self.to_date), "Details"
+            ] = "Empty data, "
+        else:
             chk_frame = evaluator.check_data_quality_code(
                 self.standard_data["Value"],
                 qc_series,
