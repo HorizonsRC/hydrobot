@@ -223,18 +223,27 @@ def missing_data_quality_code(std_series, qc_data, gap_limit):
             qc_data = qc_data.drop(drop_series.index)
 
             # start of gap
-            qc_data.loc[gap[0], "Value"] = 100
-            qc_data.loc[gap[0], "Code"] = "GAP"
+            if std_series.index.get_loc(gap[0]) == 0:
+                start_gap = std_series.index[std_series.index.get_loc(gap[0])]
+            else:
+                start_gap = std_series.index[std_series.index.get_loc(gap[0]) - 1]
+
+            qc_data.loc[start_gap, "Value"] = 100
+            qc_data.loc[start_gap, "Code"] = "GAP"
             if end_idx >= len(std_series):
                 gap_end = std_series.index[-1]
             else:
                 gap_end = std_series.index[end_idx]
             qc_data.loc[
-                gap[0], "Details"
+                start_gap, "Details"
             ] = f"Missing data amounting to {(gap_end - gap[0])}"
             qc_data = qc_data.sort_index()
 
-    return qc_data.sort_index()
+    qc_data = qc_data.sort_index()
+    qc_data = qc_data.loc[
+        (qc_data.Code != "GAP") | (qc_data.Value.shift(1) != qc_data.Value)
+    ]
+    return qc_data
 
 
 def find_nearest_time(series, dt):

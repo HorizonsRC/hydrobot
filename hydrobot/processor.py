@@ -1114,7 +1114,7 @@ class Processor:
             ] = "Empty data, start time set to qc200"
             self.quality_data.loc[
                 pd.Timestamp(self.to_date), "Details"
-            ] = "Empty data, "
+            ] = "Empty data, qc0 at end"
         else:
             chk_frame = evaluator.check_data_quality_code(
                 self.standard_data["Value"],
