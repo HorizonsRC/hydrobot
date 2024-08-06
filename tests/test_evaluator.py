@@ -210,7 +210,7 @@ def test_check_data_quality_code(raw_data, check_data):
                     raw_data["Value"], pd.Series({}), meas
                 )
             )
-            == 1
+            == 0
         ), "fails for empty check data series"
     output = evaluator.check_data_quality_code(
         raw_data["Value"], check_data["Value"], meas
@@ -312,6 +312,7 @@ def test_missing_data_quality_code(gap_data, qc_data):
     new_qc = evaluator.missing_data_quality_code(
         gap_data["Value"], qc_data, gap_limit=0
     )
+
     assert (
         new_qc.loc[pd.Timestamp("2021-01-01 00:00"), "Value"] == 100
     ), "Starting gap not added"
@@ -322,28 +323,6 @@ def test_missing_data_quality_code(gap_data, qc_data):
         new_qc.loc[pd.Timestamp("2021-01-01 00:00"), "Details"]
         == "Missing data amounting to 0 days 00:15:00"
     ), "Starting gap details not correctly added"
-
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 00:15"), "Value"] == 500
-    ), "Starting gap not closed"
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 00:15"), "Code"] == "CHK"
-    ), "Starting gap previous code not correctly continued"
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 00:15"), "Details"]
-        == "Message goes here [End of gap which started at 2021-01-01 00:00:00]"
-    ), "End of gap details not correctly added"
-
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 01:15"), "Value"] == 100
-    ), "Mid-gap not added"
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 01:15"), "Code"] == "GAP"
-    ), "Mid gap code not added correctly"
-    assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 01:15"), "Details"]
-        == "Missing data amounting to 0 days 00:45:00"
-    ), "Mid gap code not added correctly"
 
     assert (
         new_qc.loc[pd.Timestamp("2021-01-01 02:00"), "Value"] == 400
@@ -357,13 +336,13 @@ def test_missing_data_quality_code(gap_data, qc_data):
     ), "Mid gap closing details not correct"
 
     assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 02:30"), "Value"] == 100
+        new_qc.loc[pd.Timestamp("2021-01-01 02:15"), "Value"] == 100
     ), "Ending gap not added"
     assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 02:30"), "Code"] == "GAP"
+        new_qc.loc[pd.Timestamp("2021-01-01 02:15"), "Code"] == "GAP"
     ), "Ending gap code not added correctly"
     assert (
-        new_qc.loc[pd.Timestamp("2021-01-01 02:30"), "Details"]
+        new_qc.loc[pd.Timestamp("2021-01-01 02:15"), "Details"]
         == "Missing data amounting to 0 days 00:15:00"
     ), "End of gap details not correctly added"
 

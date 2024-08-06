@@ -55,9 +55,9 @@ data.remove_spikes()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
-data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
-
+# data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
+# data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
+data.quality_encoder()
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "

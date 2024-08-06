@@ -1104,12 +1104,24 @@ class Processor:
         qc_checks = self.check_data[self.check_data["QC"]]
         qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
 
-        chk_frame = evaluator.check_data_quality_code(
-            self.standard_data["Value"],
-            qc_series,
-            self._quality_code_evaluator,
-        )
-        self._apply_quality(chk_frame, replace=True)
+        if self.check_data.empty:
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Value"] = 200
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Value"] = 0
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Code"] = "EMT"
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Code"] = "EMT, END"
+            self.quality_data.loc[
+                pd.Timestamp(self.from_date), "Details"
+            ] = "Empty data, start time set to qc200"
+            self.quality_data.loc[
+                pd.Timestamp(self.to_date), "Details"
+            ] = "Empty data, qc0 at end"
+        else:
+            chk_frame = evaluator.check_data_quality_code(
+                self.standard_data["Value"],
+                qc_series,
+                self._quality_code_evaluator,
+            )
+            self._apply_quality(chk_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
             self.quality_data, qc_series, interval_dict

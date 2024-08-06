@@ -115,3 +115,10 @@ History
 ----------------------------------
 
 * Added support for check-less data types such as soil moisture
+
+0.6.5 (?)
+----------------------------------
+
+* Made quality_encoder automatically assign qc200 for check-less data
+* Fixed the missing data quality codes to fit with hilltop's funky qc system
+* ?
