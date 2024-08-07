@@ -416,6 +416,8 @@ def make_processing_dash(fig, processor, check_data):
 
     edited_blocks = change_blocks(standard_data["Raw"], standard_data["Value"])
 
+    print("bleh")
+    print(len(edited_blocks))
     first_change = True
     for change_start, change_end in edited_blocks:
         fig_subplots.add_vrect(
