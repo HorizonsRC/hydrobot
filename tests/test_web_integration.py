@@ -262,6 +262,7 @@ def test_processor_integration(tmp_path):
         processing_parameters["check_hts_filename"],
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
+        fetch_quality=True,
     )
 
     assert isinstance(data.standard_data, pd.DataFrame)

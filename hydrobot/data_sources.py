@@ -145,6 +145,38 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         return qc
 
 
+class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
+    """QualityCodeEvaluator for data without checks.
+
+    Returns 200 for QC.
+    """
+
+    def __init__(
+        self,
+    ):
+        """Initialize UncheckedQualityCodeEvaluator."""
+        QualityCodeEvaluator.__init__(self, -1, -2)
+
+    def find_qc(self, base_datum, check_datum):
+        """
+        Return 200 quality code.
+
+        Parameters
+        ----------
+        base_datum : numerical
+            Closest continuum datum point to the check
+        check_datum : numerical
+            The check data to verify the continuous data, shifted by any constant_check_shift
+
+        Returns
+        -------
+        int
+            The Quality code 200
+
+        """
+        return 200
+
+
 class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
     """QualityCodeEvaluator for DO NEMS.
 
@@ -291,10 +323,7 @@ def get_qc_evaluator(qc_evaluator_name):
     if qc_evaluator_name in qce_dict:
         return qce_dict[qc_evaluator_name]
     else:
-        raise Exception(
-            f"qc_evaluator {qc_evaluator_name} not found in the config file. "
-            f"Available qc_evaluators are {list(qce_dict.keys())}."
-        )
+        return UncheckedQualityCodeEvaluator()
 
 
 def series_export_to_csv(

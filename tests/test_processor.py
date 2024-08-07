@@ -434,6 +434,7 @@ def test_processor_init(
         check_measurement_name=CHECK_MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
+        fetch_quality=True,
     )
 
     captured = capsys.readouterr()
@@ -1308,6 +1309,7 @@ def test_data_export(
         check_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
+        fetch_quality=True,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1437,7 +1439,9 @@ def test_from_yaml_config(
     # data_acquisition. Not sure if this makes sense to me, but it works.
     monkeypatch.setattr("hydrobot.data_acquisition.get_hilltop_xml", get_mock_xml_data)
 
-    pr, ann = processor.Processor.from_config_yaml("tests/test_data/test_config.yaml")
+    pr, ann = processor.Processor.from_config_yaml(
+        "tests/test_data/test_config.yaml", fetch_quality=True
+    )
 
     captured = capsys.readouterr()
     ann_output = captured.err.split("\n")

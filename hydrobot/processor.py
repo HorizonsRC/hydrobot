@@ -73,6 +73,7 @@ class Processor:
         defaults: dict | None = None,
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
+        fetch_quality: bool = False,
         **kwargs,
     ):
         """
@@ -198,7 +199,8 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
-        self._quality_code_evaluator.constant_check_shift = constant_check_shift
+        if constant_check_shift is not None:
+            self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         if interval_dict is None:
             self._interval_dict = {}
@@ -220,7 +222,10 @@ class Processor:
 
         # Load data for the first time
         self.import_data(
-            from_date=self.from_date, to_date=self.to_date, check=get_check
+            from_date=self.from_date,
+            to_date=self.to_date,
+            check=get_check,
+            quality=fetch_quality,
         )
         self.processing_issues = pd.DataFrame(
             {
@@ -233,7 +238,7 @@ class Processor:
         ).astype(str)
 
     @classmethod
-    def from_config_yaml(cls, config_path):
+    def from_config_yaml(cls, config_path, fetch_quality=False):
         """
         Initialises a Processor class given a config file.
 
@@ -280,6 +285,7 @@ class Processor:
                 constant_check_shift=processing_parameters.get(
                     "constant_check_shift", 0
                 ),
+                fetch_quality=fetch_quality,
             ),
             ann,
         )
@@ -628,7 +634,6 @@ class Processor:
             from_date = self.from_date
         if to_date is None:
             to_date = self.to_date
-
         if quality_data is None:
             quality_data = self._quality_data
 
@@ -1114,12 +1119,24 @@ class Processor:
         qc_checks = self.check_data[self.check_data["QC"]]
         qc_series = qc_checks["Value"] if "Value" in qc_checks else pd.Series({})
 
-        chk_frame = evaluator.check_data_quality_code(
-            self.standard_data["Value"],
-            qc_series,
-            self._quality_code_evaluator,
-        )
-        self._apply_quality(chk_frame, replace=True)
+        if self.check_data.empty:
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Value"] = 200
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Value"] = 0
+            self.quality_data.loc[pd.Timestamp(self.from_date), "Code"] = "EMT"
+            self.quality_data.loc[pd.Timestamp(self.to_date), "Code"] = "EMT, END"
+            self.quality_data.loc[
+                pd.Timestamp(self.from_date), "Details"
+            ] = "Empty data, start time set to qc200"
+            self.quality_data.loc[
+                pd.Timestamp(self.to_date), "Details"
+            ] = "Empty data, qc0 at end"
+        else:
+            chk_frame = evaluator.check_data_quality_code(
+                self.standard_data["Value"],
+                qc_series,
+                self._quality_code_evaluator,
+            )
+            self._apply_quality(chk_frame, replace=True)
 
         oov_frame = evaluator.bulk_downgrade_out_of_validation(
             self.quality_data, qc_series, interval_dict
