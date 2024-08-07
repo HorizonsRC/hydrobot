@@ -68,6 +68,7 @@ for site_index in site_config.index:
                 data["site"] = site_config.loc[site_index].site_name
                 data["from_date"] = site_config.loc[site_index].from_date
                 data["to_date"] = site_config.loc[site_index].to_date
+                data["frequency"] = site_config.loc[site_index].frequency
                 data["analyst_name"] = annalist
 
             with open(file, "w") as fp:
