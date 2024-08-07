@@ -121,4 +121,5 @@ History
 
 * Made quality_encoder automatically assign qc200 for check-less data
 * Fixed the missing data quality codes to fit with hilltop's funky qc system
+* Added batch processing
 * ?
