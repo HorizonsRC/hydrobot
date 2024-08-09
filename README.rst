@@ -49,7 +49,7 @@ some external tools are still required to do a full processing. Importantly,
 the hybrid workflow relies on some R scripts to obtain check data from sources
 other than Hilltop. Further processing using Hilltop manager is also supported.
 
-NOTE: Hydrobot 0.6.4 supports only Water Temperature processing at the moment,
+NOTE: Hydrobot 0.6.5 supports only Water Temperature processing at the moment,
 but more measurements will be supported in patches as the processing
 progresses.
 
@@ -60,16 +60,16 @@ Initial Setup (Repeat for each release)
 
 #. In your favourite shell (if you don't know what that is, use powershell -
    it's already installed on windows), create a new virtual environment using
-   this python interpreter and name it "hydrobot0.6.4". It's important that
+   this python interpreter and name it "hydrobot0.6.5". It's important that
    this is stored somewhere locally. For example, it could be stored in a
    "Hydrobot" folder in the C: drive, which would need the command::
 
-    python -m venv C:/Hydrobot/hydrobot0.6.4/
+    python -m venv C:/Hydrobot/hydrobot0.6.5/
 
 #. Activate this virtual environment. In powershell this should be something
    like::
 
-    C:/Hydrobot/hydrobot0.6.4/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.6.5/Scripts/Activate.ps1
 
 #. With your venv active, install the latest version of Hydrobot using pip::
 
@@ -111,7 +111,7 @@ Processing Steps
    instructions) and activate it. To activate, in your shell type the location
    of the "Activate.ps1" script in the venv/Scripts folder, e.g.::
 
-    C:/Hydrobot/hydrobot0.6.4/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.6.5/Scripts/Activate.ps1
 
    You can ensure it is active by typing `gcm python` and confirm that your
    python interpreter (under "Source") is running from your venv folder.
