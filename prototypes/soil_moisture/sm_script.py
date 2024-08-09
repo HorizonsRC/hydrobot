@@ -68,7 +68,7 @@ data.quality_encoder()
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
-data.data_exporter("processed.xml")
+data.data_exporter()
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
 

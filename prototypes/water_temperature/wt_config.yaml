@@ -14,6 +14,9 @@ standard_measurement_name: "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement_name: "Water Temperature Check [Water Temperature]"
 frequency: "15min"
 
+# Export configuration
+export_file_name: "processed_wt.xml"
+
 # Processing Configuration
 defaults:
   delta: 5

@@ -14,6 +14,9 @@ standard_measurement_name: "Air Temperature (1.5m)"
 # check_measurement_name: "Air Temperature"
 frequency: "10min"
 
+# Export configuration
+export_file_name: "processed_at.xml"
+
 # Processing Configuration
 defaults:
   delta: 5
