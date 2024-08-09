@@ -64,7 +64,7 @@ class Processor:
         site: str,
         standard_hts: str,
         standard_measurement_name: str,
-        frequency: str,
+        frequency: str | None,
         from_date: str | None = None,
         to_date: str | None = None,
         check_hts: str | None = None,
@@ -73,6 +73,7 @@ class Processor:
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
         fetch_quality: bool = False,
+        export_file_name: str | None = None,
         **kwargs,
     ):
         """
@@ -102,6 +103,8 @@ class Processor:
             The default settings (default is None).
         interval_dict : dict, optional
             Determines how data with old checks is downgraded
+        export_file_name : string, optional
+            Where the data is exported to. Used as default when exporting without specified filename.
         kwargs : dict
             Additional keyword arguments.
         """
@@ -198,6 +201,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
+        self.export_file_name = export_file_name
         if constant_check_shift is not None:
             self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
@@ -274,6 +278,7 @@ class Processor:
                 processing_parameters["inspection_expiry"],
                 constant_check_shift=processing_parameters["constant_check_shift"],
                 fetch_quality=fetch_quality,
+                export_file_name=processing_parameters.get("export_file_name", None),
             ),
             ann,
         )
@@ -1558,7 +1563,7 @@ class Processor:
     @ClassLogger
     def data_exporter(
         self,
-        file_location,
+        file_location=None,
         ftype="xml",
         standard: bool = True,
         quality: bool = True,
@@ -1570,12 +1575,13 @@ class Processor:
 
         Parameters
         ----------
-        file_location : str
+        file_location : str | None
             The file path where the file will be saved. If 'ftype' is "csv" or "xml",
             this should be a full file path including extension. If 'ftype' is
             "hilltop_csv", multiple files will be created, so 'file_location' should be
             a prefix that will be appended with "_std_qc.csv" for the file containing
             the standard and quality data, and "_check.csv" for the check data file.
+            If None, uses self.export_file_name
         ftype : str, optional
             Avalable options are "xml", "hilltop_csv", "csv", "check".
         trimmed : bool, optional
@@ -1601,6 +1607,8 @@ class Processor:
         >>> processor.data_exporter("output.xml", trimmed=True)
         >>> # Check the generated XML file at 'output.xml'
         """
+        if file_location is None:
+            file_location = self.export_file_name
         export_selections = [standard, quality, check]
         if trimmed:
             std_data = filters.trim_series(
