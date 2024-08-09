@@ -12,8 +12,10 @@ template_base = ".\\template\\"
 destination_base = ".\\output_dump\\"
 site_config = pd.read_csv("batch_config.csv")
 annalist = "analyst_name"
+dsn_name = "batch_dsn.dsn"
 
 run_files = []
+dsn_file_list = []
 
 # for each site
 for site_index in site_config.index:
@@ -70,6 +72,10 @@ for site_index in site_config.index:
                 data["to_date"] = site_config.loc[site_index].to_date
                 data["frequency"] = site_config.loc[site_index].frequency
                 data["analyst_name"] = annalist
+                print(data)
+                dsn_file_list.append(
+                    os.path.join(site_destination, data["export_file_name"])
+                )
 
             with open(file, "w") as fp:
                 yaml.dump(data, fp)
@@ -89,6 +95,16 @@ def remove_prefix_dots(string):
         return string
 
 
+def make_dsn(file_list, file_path):
+    """Makes the hilltop dsn."""
+    with open(file_path, "w") as dsn:
+        dsn.write("[Hilltop]\n")
+        dsn.write("Style=Merge\n")
+        for index, file_name in enumerate(file_list):
+            dsn.write(f'File{index + 1}="{os.path.abspath(file_name)}"\n')
+
+
+make_dsn(dsn_file_list, os.path.join(destination_base, dsn_name))
 base_dir = os.getcwd()
 # run the scripts
 for file in run_files:
