@@ -85,7 +85,6 @@ def small_gap_closer(series: pd.Series, gap_limit: int) -> pd.Series:
             )
             # Remove the bad rows
             series = pd.Series(series[mask])
-    return series
 
 
 def check_data_quality_code(

@@ -11,13 +11,13 @@ import pandas as pd
 import streamlit as st
 
 import hydrobot
+from hydrobot import plotter
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
     import_prov_wq,
 )
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
@@ -45,7 +45,10 @@ inspections = import_inspections(
     "WaterTemp_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
 prov_wq = import_prov_wq(
-    "WaterTemp_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+    "WaterTemp_ProvWQ.csv",
+    check_col=check_col,
+    logger_col=logger_col,
+    use_for_qc=True,
 )
 ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 
@@ -126,17 +129,57 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-fig = data.plot_qc_series(show=False)
+# fig = data.plot_qc_series(show=False)
+#
+# fig_subplots = make_processing_dash(
+#     fig,
+#     data,
+#     all_checks,
+# )
+#
+#
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
+fig = plotter.plot_raw_data(data.standard_data)
+fig = plotter.qc_plotter_plotly(
+    data.standard_data,
+    data.quality_data,
+    data.frequency,
+    fig=fig,
+)
+fig = plotter.plot_check_data(
+    data.standard_data,
     all_checks,
+    data.quality_code_evaluator.constant_check_shift,
+    tag_list=["HTP", "INS", "SOE"],
+    check_names=["Check data", "Inspections", "SOE checks"],
+    ghosts=True,
+    # diffs=True,
+    # align_checks=True,
+    fig=fig,
 )
 
-st.plotly_chart(fig_subplots, use_container_width=True)
 
-st.dataframe(all_comments, use_container_width=True)
-# st.dataframe(data.standard_data, use_container_width=True)
+diff_fig = plotter.plot_check_data(
+    data.standard_data,
+    all_checks,
+    data.quality_code_evaluator.constant_check_shift,
+    tag_list=["HTP", "INS", "SOE"],
+    check_names=["Check data", "Inspections", "SOE checks"],
+    ghosts=True,
+    diffs=True,
+)
+
+diff_fig = plotter.add_qc_limit_bars(
+    data.quality_code_evaluator.qc_500_limit,
+    data.quality_code_evaluator.qc_600_limit,
+    fig=diff_fig,
+)
+
+st.plotly_chart(fig, use_container_width=True)
+st.plotly_chart(diff_fig, use_container_width=True)
+# st.plotly_chart(pcc_fig, use_container_width=True)
+
+# st.dataframe(all_comments, use_container_width=True)
+# # st.dataframe(data.standard_data, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+# st.dataframe(data.quality_data, use_container_width=True)

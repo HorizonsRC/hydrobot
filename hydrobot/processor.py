@@ -6,6 +6,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -1660,26 +1661,44 @@ class Processor:
             self._frequency,
         )
 
-    def plot_qc_series(self, check=False, show=True):
+    def plot_qc_series(self, fig=None, check=False, show=True):
         """Implement qc_plotter()."""
+        if fig is None:
+            fig = go.Figure()
         fig = plotter.qc_plotter_plotly(
             self._standard_data["Value"],
             (self._check_data["Value"] if check else None),
             self._quality_data["Value"],
             self._frequency,
+            fig=fig,
             show=show,
         )
         return fig
 
-    def plot_comparison_qc_series(self, show=True):
+    def plot_comparison_qc_series(self, fig=None, show=True):
         """Implement comparison_qc_plotter()."""
+        if fig is None:
+            fig = go.Figure()
         fig = plotter.comparison_qc_plotter_plotly(
             self._standard_data["Value"],
             self._standard_data["Raw"],
             self._check_data["Value"],
             self._quality_data["Value"],
             self._frequency,
+            fig=fig,
             show=show,
+        )
+        return fig
+
+    def plot_all_check_data(self, fig=None):
+        """Implement plot_all_check_data()."""
+        if fig is None:
+            fig = go.Figure()
+        fig = plotter.plot_all_check_data(
+            fig,
+            self.standard_data,
+            self.check_data,
+            self.quality_code_evaluator.constant_check_shift,
         )
         return fig
 
