@@ -9,6 +9,7 @@ streamlit run .\wt_script.py
 
 import pandas as pd
 import streamlit as st
+from plotly.subplots import make_subplots
 
 import hydrobot
 from hydrobot import plotter
@@ -120,7 +121,7 @@ data.standard_data["Value"] = trim_series(
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
-data.data_exporter("processed.xml")
+# data.data_exporter("processed.xml")
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
 
@@ -139,12 +140,16 @@ data.data_exporter("processed.xml")
 #
 #
 
-fig = plotter.plot_raw_data(data.standard_data)
-fig = plotter.qc_plotter_plotly(
+fig = make_subplots(rows=2, cols=1, shared_xaxes=True)
+
+fig = plotter.plot_raw_data(data.standard_data, row=1, col=1)
+fig = plotter.plot_qc_codes(
     data.standard_data,
     data.quality_data,
     data.frequency,
     fig=fig,
+    row=1,
+    col=1,
 )
 fig = plotter.plot_check_data(
     data.standard_data,
@@ -156,6 +161,8 @@ fig = plotter.plot_check_data(
     # diffs=True,
     # align_checks=True,
     fig=fig,
+    row=1,
+    col=1,
 )
 
 
@@ -174,6 +181,7 @@ diff_fig = plotter.add_qc_limit_bars(
     data.quality_code_evaluator.qc_600_limit,
     fig=diff_fig,
 )
+
 
 st.plotly_chart(fig, use_container_width=True)
 st.plotly_chart(diff_fig, use_container_width=True)

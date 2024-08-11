@@ -34,7 +34,7 @@ def qc_colour(qc):
     return qc_dict[qc]
 
 
-def plot_raw_data(standard_data, fig=None):
+def plot_raw_data(standard_data, fig=None, **kwargs):
     """Plotting raw data as a skinny nice line."""
     if fig is None:
         fig = go.Figure()
@@ -46,12 +46,13 @@ def plot_raw_data(standard_data, fig=None):
             name="Raw data",
             line=dict(color="darkgray", width=0.5),
             opacity=0.5,
+            **kwargs,
         )
     )
     return fig
 
 
-def qc_plotter_plotly(
+def plot_qc_codes(
     standard_data,
     quality_data,
     frequency,
@@ -117,6 +118,7 @@ def add_qc_limit_bars(
     qc400,
     qc500,
     fig=None,
+    **kwargs,
 ):
     """Add qc limit bars to a plot."""
     if fig is None:
@@ -127,6 +129,7 @@ def add_qc_limit_bars(
         name="QC400",
         showlegend=True,
         legendgroup="QC400",
+        **kwargs,
     )
 
     fig.add_hline(
@@ -136,6 +139,7 @@ def add_qc_limit_bars(
         showlegend=False,
         legendgroup="QC400",
         visible=True,
+        **kwargs,
     )
     fig.add_hline(
         y=qc500,
@@ -144,6 +148,7 @@ def add_qc_limit_bars(
         showlegend=True,
         legendgroup="QC500",
         visible=True,
+        **kwargs,
     )
     fig.add_hline(
         y=-qc500,
@@ -152,6 +157,7 @@ def add_qc_limit_bars(
         showlegend=False,
         legendgroup="QC500",
         visible=True,
+        **kwargs,
     )
 
     fig.update_layout(
@@ -203,6 +209,7 @@ def plot_check_data(
     check_data["Value"] += constant_check_shift
 
     arrow_annotations = []
+
     for i, tag in enumerate(tag_list):
         tag_check = check_data[check_data["Source"] == tag]
         if align_checks or ghosts or diffs:
@@ -245,6 +252,7 @@ def plot_check_data(
                     opacity=0.5,
                     hoverinfo="skip",
                 ),
+                **kwargs,
             )
 
             # Add arrows that point from where check is to where it is used
