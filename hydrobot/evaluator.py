@@ -117,12 +117,12 @@ def check_data_quality_code(
     """
     first_data_date = series.index[0]
     last_data_date = series.index[-1]
-    if check_series.empty and isinstance(first_data_date, pd.Timestamp):
+    if check_series.empty:
         # Maybe you should go find that check data
         warnings.warn("Warning: No check data", stacklevel=2)
         return pd.DataFrame(
             columns=["Value", "Code", "Details"],
-            index=[first_data_date],
+            index=[],
         )
     first_check_date = check_series.index[0]
     last_check_date = check_series.index[-1]
@@ -222,18 +222,27 @@ def missing_data_quality_code(std_series, qc_data, gap_limit):
             qc_data = qc_data.drop(drop_series.index)
 
             # start of gap
-            qc_data.loc[gap[0], "Value"] = 100
-            qc_data.loc[gap[0], "Code"] = "GAP"
+            if std_series.index.get_loc(gap[0]) == 0:
+                start_gap = std_series.index[std_series.index.get_loc(gap[0])]
+            else:
+                start_gap = std_series.index[std_series.index.get_loc(gap[0]) - 1]
+
+            qc_data.loc[start_gap, "Value"] = 100
+            qc_data.loc[start_gap, "Code"] = "GAP"
             if end_idx >= len(std_series):
                 gap_end = std_series.index[-1]
             else:
                 gap_end = std_series.index[end_idx]
             qc_data.loc[
-                gap[0], "Details"
+                start_gap, "Details"
             ] = f"Missing data amounting to {(gap_end - gap[0])}"
             qc_data = qc_data.sort_index()
 
-    return qc_data.sort_index()
+    qc_data = qc_data.sort_index()
+    qc_data = qc_data.loc[
+        (qc_data.Code != "GAP") | (qc_data.Value.shift(1) != qc_data.Value)
+    ]
+    return qc_data
 
 
 def find_nearest_time(series, dt):
@@ -464,13 +473,13 @@ def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
     clipped_data = qc_frame["Value"].clip(np.nan, max_qc)
 
     diff_idxs = qc_frame[qc_frame["Value"] != clipped_data].index
-
-    qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
-    qc_frame.loc[diff_idxs, "Details"] = (
-        qc_frame.loc[diff_idxs, "Details"]
-        + f" [Site QC limit applies to a maximum of {max_qc}.]"
-    )
-    qc_frame["Value"] = clipped_data
+    if not diff_idxs.empty:
+        qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
+        qc_frame.loc[diff_idxs, "Details"] = (
+            qc_frame.loc[diff_idxs, "Details"]
+            + f" [Site QC limit applies to a maximum of {max_qc}.]"
+        )
+        qc_frame["Value"] = clipped_data
 
     return qc_frame
 
