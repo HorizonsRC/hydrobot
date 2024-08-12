@@ -11,7 +11,6 @@ import pandas as pd
 import streamlit as st
 
 import hydrobot
-from hydrobot import plotter
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
@@ -130,17 +129,7 @@ data.data_exporter()
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 
-fig = plotter.plot_processing_overview_chart(
-    data.standard_data,
-    data.quality_data,
-    all_checks,
-    data.frequency,
-    data.quality_code_evaluator.constant_check_shift,
-    data.quality_code_evaluator.qc_500_limit,
-    data.quality_code_evaluator.qc_600_limit,
-    tag_list=["HTP", "INS", "SOE"],
-    check_names=["Check data", "Inspections", "SOE checks"],
-)
+fig = data.plot_processing_overview_chart()
 
 
 st.plotly_chart(fig, use_container_width=True)

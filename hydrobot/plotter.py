@@ -266,7 +266,6 @@ def plot_check_data(
             ):
                 # If the timestamps are not the same
                 if shiftstamp != oldstamp and not pd.isna(checkval):
-                    print("Yes arrow")
                     arrow_annotations.append(
                         dict(
                             ax=oldstamp,
@@ -363,5 +362,7 @@ def plot_processing_overview_chart(
         col=1,
         **kwargs,
     )
+
+    fig.update_yaxes(autorange=True)
 
     return fig
