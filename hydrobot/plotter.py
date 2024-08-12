@@ -3,6 +3,7 @@
 import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
+from plotly.subplots import make_subplots
 
 from hydrobot.evaluator import splitter
 
@@ -46,8 +47,8 @@ def plot_raw_data(standard_data, fig=None, **kwargs):
             name="Raw data",
             line=dict(color="darkgray", width=0.5),
             opacity=0.5,
-            **kwargs,
-        )
+        ),
+        **kwargs,
     )
     return fig
 
@@ -90,8 +91,8 @@ def plot_qc_codes(
                 mode="lines",
                 name=f"QC{qc}",
                 line=dict(color=qc_colour(qc)),
-                **kwargs,
-            )
+            ),
+            **kwargs,
         )
     return fig
 
@@ -225,6 +226,7 @@ def plot_check_data(
             )
         else:
             checks = tag_check["Value"].to_numpy()
+
         fig.add_trace(
             go.Scatter(
                 x=timestamps,
@@ -232,8 +234,8 @@ def plot_check_data(
                 mode="markers",
                 name=check_names[i],
                 marker=dict(color=check_colours[i], size=10, symbol=check_markers[i]),
-                **kwargs,
-            )
+            ),
+            **kwargs,
         )
         if ghosts:
             # Add check data where they actually are
@@ -283,4 +285,83 @@ def plot_check_data(
                         )
                     )
     fig.update_layout(annotations=arrow_annotations)
+    return fig
+
+
+def plot_processing_overview_chart(
+    standard_data,
+    quality_data,
+    check_data,
+    frequency,
+    constant_check_shift,
+    qc_500_limit,
+    qc_600_limit,
+    tag_list=None,
+    check_names=None,
+    fig=None,
+    **kwargs,
+):
+    """Plot the standard processing plot with small pcc chart underneath."""
+    if fig is None:
+        fig = go.Figure()
+    if tag_list is None:
+        tag_list = list(set(check_data["Source"]))
+    if check_names is None:
+        check_names = tag_list
+
+    fig = make_subplots(
+        rows=2,
+        cols=1,
+        shared_xaxes=True,
+        row_heights=(0.7, 0.3),
+        vertical_spacing=0.02,
+    )
+
+    fig = plot_raw_data(standard_data, fig=fig, row=1, col=1)
+    fig = plot_qc_codes(
+        standard_data,
+        quality_data,
+        frequency,
+        fig=fig,
+        row=1,
+        col=1,
+        **kwargs,
+    )
+
+    fig = plot_check_data(
+        standard_data,
+        check_data,
+        constant_check_shift,
+        tag_list=tag_list,
+        check_names=check_names,
+        ghosts=True,
+        fig=fig,
+        row=1,
+        col=1,
+        **kwargs,
+    )
+
+    fig = plot_check_data(
+        standard_data,
+        check_data,
+        constant_check_shift,
+        tag_list=tag_list,
+        check_names=check_names,
+        ghosts=True,
+        diffs=True,
+        fig=fig,
+        row=2,
+        col=1,
+        **kwargs,
+    )
+
+    fig = add_qc_limit_bars(
+        qc_500_limit,
+        qc_600_limit,
+        fig=fig,
+        row=2,
+        col=1,
+        **kwargs,
+    )
+
     return fig

@@ -9,7 +9,6 @@ streamlit run .\wt_script.py
 
 import pandas as pd
 import streamlit as st
-from plotly.subplots import make_subplots
 
 import hydrobot
 from hydrobot import plotter
@@ -130,61 +129,21 @@ data.data_exporter()
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-# fig = data.plot_qc_series(show=False)
-#
-# fig_subplots = make_processing_dash(
-#     fig,
-#     data,
-#     all_checks,
-# )
-#
-#
 
-fig = make_subplots(rows=2, cols=1, shared_xaxes=True)
-
-fig = plotter.plot_raw_data(data.standard_data, row=1, col=1)
-fig = plotter.plot_qc_codes(
+fig = plotter.plot_processing_overview_chart(
     data.standard_data,
     data.quality_data,
+    all_checks,
     data.frequency,
-    fig=fig,
-    row=1,
-    col=1,
-)
-fig = plotter.plot_check_data(
-    data.standard_data,
-    all_checks,
     data.quality_code_evaluator.constant_check_shift,
-    tag_list=["HTP", "INS", "SOE"],
-    check_names=["Check data", "Inspections", "SOE checks"],
-    ghosts=True,
-    # diffs=True,
-    # align_checks=True,
-    fig=fig,
-    row=1,
-    col=1,
-)
-
-
-diff_fig = plotter.plot_check_data(
-    data.standard_data,
-    all_checks,
-    data.quality_code_evaluator.constant_check_shift,
-    tag_list=["HTP", "INS", "SOE"],
-    check_names=["Check data", "Inspections", "SOE checks"],
-    ghosts=True,
-    diffs=True,
-)
-
-diff_fig = plotter.add_qc_limit_bars(
     data.quality_code_evaluator.qc_500_limit,
     data.quality_code_evaluator.qc_600_limit,
-    fig=diff_fig,
+    tag_list=["HTP", "INS", "SOE"],
+    check_names=["Check data", "Inspections", "SOE checks"],
 )
 
 
 st.plotly_chart(fig, use_container_width=True)
-st.plotly_chart(diff_fig, use_container_width=True)
 # st.plotly_chart(pcc_fig, use_container_width=True)
 
 # st.dataframe(all_comments, use_container_width=True)
