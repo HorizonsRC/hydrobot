@@ -1,0 +1,14 @@
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+standard_hts_filename: "boo.hts"
+export_file_name: "output_dump/missing.csv"
+start: "2023-06-15 14:45:00"
+end: "2024-04-02 10:00"
+
+sites:
+    - Manawatu at Teachers College
+    - Manawatu at Upper Gorge
+
+measurements:
+    - DO Saturation [Dissolved Oxygen (%)]
+    - Soil Moisture [Soil Moisture]
