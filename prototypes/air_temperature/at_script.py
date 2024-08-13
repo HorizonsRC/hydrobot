@@ -8,10 +8,12 @@ streamlit run .\sm_script.py
 """
 
 import pandas as pd
+
 import streamlit as st
 
 import hydrobot
 from hydrobot.htmlmerger import HtmlMerger
+
 from hydrobot.processor import Processor
 
 #######################################################################################
@@ -20,11 +22,12 @@ from hydrobot.processor import Processor
 
 data, ann = Processor.from_config_yaml("at_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
+# st.set_page_config(
+#     page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+# )
+# st.title(f"{data.site}")
+# st.header(f"{data.standard_measurement_name}")
+
 
 
 #######################################################################################
@@ -77,6 +80,7 @@ data.data_exporter("processed.xml")
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
+
 fig = data.plot_processing_overview_chart()
 
 with open("pyplot.json", "w", encoding="utf-8") as file:
