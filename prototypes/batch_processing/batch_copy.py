@@ -73,6 +73,7 @@ for site_index in site_config.index:
                     data["to_date"] = site_config.loc[site_index].to_date
                     data["frequency"] = site_config.loc[site_index].frequency
                     data["analyst_name"] = annalist
+                    data["standard_measurement_name"] = measurement
                     dsn_file_list.append(
                         os.path.join(site_destination, data["export_file_name"])
                     )
