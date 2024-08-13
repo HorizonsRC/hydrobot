@@ -17,7 +17,6 @@ from hydrobot.data_acquisition import (
     import_prov_wq,
 )
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
@@ -45,7 +44,10 @@ inspections = import_inspections(
     "WaterTemp_Inspections.csv", check_col=check_col, logger_col=logger_col
 )
 prov_wq = import_prov_wq(
-    "WaterTemp_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+    "WaterTemp_ProvWQ.csv",
+    check_col=check_col,
+    logger_col=logger_col,
+    use_for_qc=True,
 )
 ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 
@@ -126,17 +128,14 @@ data.data_exporter()
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-fig = data.plot_qc_series(show=False)
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    all_checks,
-)
+fig = data.plot_processing_overview_chart()
 
-st.plotly_chart(fig_subplots, use_container_width=True)
 
-st.dataframe(all_comments, use_container_width=True)
-# st.dataframe(data.standard_data, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
+# st.plotly_chart(pcc_fig, use_container_width=True)
+
+# st.dataframe(all_comments, use_container_width=True)
+# # st.dataframe(data.standard_data, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+# st.dataframe(data.quality_data, use_container_width=True)

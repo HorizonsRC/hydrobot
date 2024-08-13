@@ -1680,105 +1680,81 @@ class Processor:
             self._frequency,
         )
 
-    def plot_qc_series(self, check=False, show=True):
-        """Implement qc_plotter()."""
-        fig = plotter.qc_plotter_plotly(
-            self._standard_data["Value"],
-            (self._check_data["Value"] if check else None),
-            self._quality_data["Value"],
-            self._frequency,
-            show=show,
-        )
+    def plot_raw_data(self, fig=None, **kwargs):
+        """Implement plotting.plot_raw_data."""
+        fig = plotter.plot_raw_data(self.standard_data, fig=fig, **kwargs)
+
         return fig
 
-    def plot_comparison_qc_series(self, show=True):
-        """Implement comparison_qc_plotter()."""
-        fig = plotter.comparison_qc_plotter_plotly(
-            self._standard_data["Value"],
-            self._standard_data["Raw"],
-            self._check_data["Value"],
-            self._quality_data["Value"],
-            self._frequency,
-            show=show,
+    def plot_qc_codes(self, fig=None, **kwargs):
+        """Implement plotting.plot_qc_codes."""
+        fig = plotter.plot_qc_codes(
+            self.standard_data,
+            self.quality_data,
+            self.frequency,
+            fig=fig,
+            **kwargs,
         )
+
         return fig
 
-    def plot_gaps(self, span=None, show=True):
-        """
-        Plot gaps in the data.
+    def add_qc_limit_bars(self, fig=None, **kwargs):
+        """Implement plotting.add_qc_limit_bars."""
+        fig = plotter.add_qc_limit_bars(
+            self.quality_code_evaluator.qc_500_limit,
+            self.quality_code_evaluator.qc_600_limit,
+            fig=fig,
+            **kwargs,
+        )
 
-        Parameters
-        ----------
-        span : int | None, optional
-            Size of the moving window for identifying gaps. If None, the default
-            behavior is used. Default is None.
-        show : bool, optional
-            Whether to display the plot. If True, the plot is displayed; if False,
-            the plot is generated but not displayed. Default is True.
+        return fig
 
-        Returns
-        -------
-        None
+    def plot_check_data(
+        self,
+        tag_list=None,
+        check_names=None,
+        ghosts=False,
+        diffs=False,
+        align_checks=False,
+        fig=None,
+        **kwargs,
+    ):
+        """Implement plotting.plot_qc_codes."""
+        fig = plotter.plot_check_data(
+            self.standard_data,
+            self.quality_data,
+            self.quality_code_evaluator.constant_check_shift,
+            tag_list=tag_list,
+            check_names=check_names,
+            ghosts=ghosts,
+            diffs=diffs,
+            align_checks=align_checks,
+            fig=fig,
+            **kwargs,
+        )
 
-        Notes
-        -----
-        This method utilizes the gap_plotter function to visualize gaps in the
-        standard series data. Gaps are identified based on the specified span.
+        return fig
 
-        Examples
-        --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_data()
-        >>> processor.plot_gaps(span=10, show=True)
-        >>> # Display a plot showing gaps in the standard series.
-        """
-        if span is None:
-            plotter.gap_plotter(self._standard_data["Value"], show=show)
-        else:
-            plotter.gap_plotter(self._standard_data["Value"], span, show=show)
+    def plot_processing_overview_chart(self, fig=None, **kwargs):
+        """Implement plotting.plot_qc_codes."""
+        tag_list = ["HTP", "INS", "SOE"]
+        check_names = ["Check data", "Inspections", "SOE checks"]
 
-    def plot_checks(self, span=None, show=True):
-        """
-        Plot checks against the standard series data.
+        fig = plotter.plot_processing_overview_chart(
+            self.standard_data,
+            self.quality_data,
+            self.check_data,
+            self.frequency,
+            self.quality_code_evaluator.constant_check_shift,
+            self.quality_code_evaluator.qc_500_limit,
+            self.quality_code_evaluator.qc_600_limit,
+            tag_list=tag_list,
+            check_names=check_names,
+            fig=fig,
+            **kwargs,
+        )
 
-        Parameters
-        ----------
-        span : int | None, optional
-            Size of the moving window for smoothing the plot. If None, the default
-            behavior is used. Default is None.
-        show : bool, optional
-            Whether to display the plot. If True, the plot is displayed; if False,
-            the plot is generated but not displayed. Default is True.
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This method utilizes the check_plotter function to visualize checks against
-        the standard series data. The plot includes both the standard and check series.
-
-        Examples
-        --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_data()
-        >>> processor.plot_checks(span=10, show=True)
-        >>> # Display a plot comparing checks to the standard series.
-        """
-        if span is None:
-            plotter.check_plotter(
-                self._standard_data["Value"],
-                self._check_data["Value"],
-                show=show,
-            )
-        else:
-            plotter.check_plotter(
-                self._standard_data["Value"],
-                self._check_data["Value"],
-                span,
-                show=show,
-            )
+        return fig
 
     def to_xml_data_structure(self, standard=True, quality=True, check=True):
         """

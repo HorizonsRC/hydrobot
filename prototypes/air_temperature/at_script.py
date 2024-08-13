@@ -9,8 +9,11 @@ streamlit run .\sm_script.py
 
 import pandas as pd
 
+import streamlit as st
+
+import hydrobot
 from hydrobot.htmlmerger import HtmlMerger
-from hydrobot.plotter import make_processing_dash
+
 from hydrobot.processor import Processor
 
 #######################################################################################
@@ -24,6 +27,7 @@ data, ann = Processor.from_config_yaml("at_config.yaml")
 # )
 # st.title(f"{data.site}")
 # st.header(f"{data.standard_measurement_name}")
+
 
 
 #######################################################################################
@@ -77,30 +81,12 @@ data.data_exporter("processed.xml")
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 
-fig = data.plot_qc_series(show=False)
-
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    pd.DataFrame(
-        columns=[
-            "Time",
-            "Raw",
-            "Value",
-            "Changes",
-            "Recorder Time",
-            "Comment",
-            "Source",
-            "QC",
-            "Logger",
-        ]
-    ).set_index("Time"),
-)
+fig = data.plot_processing_overview_chart()
 
 with open("pyplot.json", "w", encoding="utf-8") as file:
-    file.write(str(fig_subplots.to_json()))
+    file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
-    file.write(str(fig_subplots.to_html()))
+    file.write(str(fig.to_html()))
 
 # st.plotly_chart(fig_subplots, use_container_width=True)
 

@@ -17,7 +17,6 @@ from hydrobot.data_acquisition import (
     import_prov_wq,
 )
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
@@ -127,15 +126,10 @@ data.data_exporter()
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-fig = data.plot_qc_series(show=False)
+fig = data.plot_processing_overview_chart()
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    all_checks,
-)
 
-st.plotly_chart(fig_subplots, use_container_width=True)
+st.plotly_chart(fig, use_container_width=True)
 
 st.dataframe(all_comments, use_container_width=True)
 # st.dataframe(data.standard_data, use_container_width=True)
