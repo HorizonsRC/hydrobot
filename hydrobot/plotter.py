@@ -36,7 +36,22 @@ def qc_colour(qc):
 
 
 def plot_raw_data(standard_data, fig=None, **kwargs):
-    """Plotting raw data as a skinny nice line."""
+    """
+    Plot the raw data with a grey line.
+
+    Parameters
+    ----------
+    standard_data : pd.Series
+        The data to be plotted
+    fig : go.Figure
+        The figure to add the plot to
+    kwargs : dict
+        Additional arguments to be passed to the plot
+
+    Returns
+    -------
+    go.Figure
+    """
     if fig is None:
         fig = go.Figure()
     fig.add_trace(
@@ -121,7 +136,24 @@ def add_qc_limit_bars(
     fig=None,
     **kwargs,
 ):
-    """Add qc limit bars to a plot."""
+    """
+    Add horizontal lines to the plot for the QC limits.
+
+    Parameters
+    ----------
+    qc400 : float
+        The value of the QC400 limit
+    qc500 : float
+        The value of the QC500 limit
+    fig : go.Figure
+        The figure to add the horizontal lines to
+    kwargs : dict
+        Additional arguments to pass to the lines
+
+    Returns
+    -------
+    go.Figure
+    """
     if fig is None:
         fig = go.Figure()
     fig.add_hline(
@@ -173,6 +205,19 @@ def find_nearest_periodic_indices(periodic_series, check_series):
 
     Given a periodic and non-periodic series, this function finds the indices of
     the periodic series that is closest to the points in the non-periodic series.
+
+    Parameters
+    ----------
+    periodic_series : pd.Series
+        The series that has periodic timestamps
+    check_series : pd.Series
+        The series that does not have periodic timestamps
+
+    Returns
+    -------
+    list[int]
+        A list of indices of the periodic series that are closest to the check series
+
     """
     nearest_periodic_indices = []
     for check_index in check_series.index:
@@ -199,7 +244,38 @@ def plot_check_data(
     fig=None,
     **kwargs,
 ):
-    """Plotting all check data points by source."""
+    """
+    Plot the check data.
+
+    Parameters
+    ----------
+    standard_data : pd.Series
+        The data to be plotted
+    check_data : pd.Series
+        The data to be plotted on top of the standard data
+    constant_check_shift : float
+        The shift between the check data and the standard data
+    tag_list : list[str]
+        The tags of the check data
+    check_names : list[str]
+        The names of the check data
+    ghosts : bool
+        Whether to plot the check data where the timestamps are
+    diffs : bool
+        Whether to plot the difference between the check data and the standard data
+    align_checks : bool
+        Whether to align the check data to the standard data
+    fig : go.Figure
+        The figure to add the plot to
+    kwargs : dict
+        Additional arguments to be passed to the plot
+
+    Returns
+    -------
+    go.Figure
+
+
+    """
     if fig is None:
         fig = go.Figure()
     if tag_list is None:
@@ -300,7 +376,38 @@ def plot_processing_overview_chart(
     fig=None,
     **kwargs,
 ):
-    """Plot the standard processing plot with small pcc chart underneath."""
+    """
+    Plot the standard processing plot with small pcc chart underneath.
+
+    Parameters
+    ----------
+    standard_data : pd.Series
+        The data to be plotted
+    quality_data : pd.Series
+        The quality data to be plotted
+    check_data : pd.Series
+        The check data to be plotted
+    frequency : DateOffset or str
+        The frequency to which the data is set to
+    constant_check_shift : float
+        The shift between the check data and the standard data
+    qc_500_limit : float
+        The value of the QC500 limit
+    qc_600_limit : float
+        The value of the QC600 limit
+    tag_list : list[str]
+        The tags of the check data
+    check_names : list[str]
+        The names of the check data
+    fig : go.Figure
+        The figure to add the plot to
+    kwargs : dict
+        Additional arguments to pass to the plot
+
+    Returns
+    -------
+    go.Figure
+    """
     if fig is None:
         fig = go.Figure()
     if tag_list is None:
@@ -354,6 +461,7 @@ def plot_processing_overview_chart(
         **kwargs,
     )
 
+    #
     fig = add_qc_limit_bars(
         qc_500_limit,
         qc_600_limit,

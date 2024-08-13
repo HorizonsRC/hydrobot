@@ -178,7 +178,29 @@ def merge_series(series_a, series_b, tolerance=1e-09):
 
 
 def change_blocks(raw_series, changed_series):
-    """Find all changes between two series."""
+    """Find the blocks of changes between two series.
+
+    Parameters
+    ----------
+    raw_series : pd.Series
+        The original series
+    changed_series : pd.Series
+        The series with changes
+
+    Returns
+    -------
+    list
+        A list of tuples where each tuple represents a block of change.
+        The first element of the tuple is the start of the block and the second
+        element is the end of the block.
+
+    Notes
+    -----
+    The function takes two series and finds the blocks of changes between them.
+    The function returns the blocks of changes as a list of tuples where each
+    tuple represents a block of change. The first element of the tuple is the
+    start of the block and the second element is the end of the block.
+    """
     changed_block_list = []
     start_index = None
 
@@ -224,9 +246,29 @@ def change_blocks(raw_series, changed_series):
 
 
 def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
-    """Merge all comments coming in from various sources.
+    """Make a sorted dataframe of all comments from all sources.
 
-    Sorry, not sure where to put this.
+    Parameters
+    ----------
+    hill_checks : pd.DataFrame
+        Hilltop check data
+    pwq_checks : pd.DataFrame
+        Provisional water quality data
+    s123_checks : pd.DataFrame
+        Survey123 inspection data
+    ncrs : pd.DataFrame
+        Non-conformance reports
+
+    Returns
+    -------
+    pd.DataFrame
+        A sorted dataframe of all comments from all sources
+
+    Notes
+    -----
+    The function takes four dataframes of comments from different sources and
+    combines them into a single dataframe. The function returns a sorted dataframe
+    of all comments from all sources.
     """
     hill_checks = hill_checks.rename(columns={"Water Temperature Check": "Temp Check"})
     hill_checks = hill_checks.reset_index()
@@ -535,3 +577,26 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
     std_series = std_series.sort_index()
 
     return std_series
+
+
+def infer_frequency(series: pd.Series):
+    """
+    Infer the frequency of a series using pandas infer_freq.
+
+    Parameters
+    ----------
+    series : pd.Series
+        The series to infer the frequency of
+
+    Returns
+    -------
+    str
+        The inferred frequency of the series
+    """
+    if not isinstance(series.index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        series.index = pd.DatetimeIndex(series.index)
+    return pd.infer_freq(series.index)
