@@ -9,11 +9,9 @@ streamlit run .\sm_script.py
 
 import pandas as pd
 
-import streamlit as st
-
-import hydrobot
+# import streamlit as st
+# import hydrobot
 from hydrobot.htmlmerger import HtmlMerger
-
 from hydrobot.processor import Processor
 
 #######################################################################################
@@ -27,7 +25,6 @@ data, ann = Processor.from_config_yaml("at_config.yaml")
 # )
 # st.title(f"{data.site}")
 # st.header(f"{data.standard_measurement_name}")
-
 
 
 #######################################################################################
@@ -71,7 +68,7 @@ data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
-data.data_exporter("processed.xml")
+data.data_exporter()
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
 

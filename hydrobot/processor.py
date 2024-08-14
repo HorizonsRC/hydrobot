@@ -55,9 +55,67 @@ EMPTY_QUALITY_DATA = pd.DataFrame(
 
 
 class Processor:
-    """A class used to process data from a Hilltop server."""
+    """
+    Processor class for handling data processing.
 
-    @ClassLogger  # type: ignore
+    Attributes
+    ----------
+    _defaults : dict
+        The default settings.
+    _site : str
+        The site to be processed.
+    _standard_measurement_name : str
+        The standard measurement to be processed.
+    _check_measurement_name : str
+        The measurement to be checked.
+    _base_url : str
+        The base URL of the Hilltop server.
+    _standard_hts : str
+        The standard Hilltop service.
+    _check_hts : str
+        The Hilltop service to be checked.
+    _frequency : str
+        The frequency of the data.
+    _from_date : str
+        The start date of the data.
+    _to_date : str
+        The end date of the data.
+    _quality_code_evaluator : QualityCodeEvaluator
+        The quality code evaluator.
+    _interval_dict : dict
+        Determines how data with old checks is downgraded.
+    _standard_data : pd.Series
+        The standard series data.
+    _check_data : pd.Series
+        The series containing check data.
+    _quality_data : pd.Series
+        The quality series data.
+    raw_standard_blob : Blob
+        The raw standard data blob.
+    raw_standard_xml : str
+        The raw standard data XML.
+    raw_quality_blob : Blob
+        The raw quality data blob.
+    raw_quality_xml : str
+        The raw quality data XML.
+    raw_check_blob : Blob
+        The raw check data blob.
+    raw_check_xml : str
+        The raw check data XML.
+    standard_item_name : str
+        The name of the standard item.
+    standard_data_source_name : str
+        The name of the standard data source.
+    check_item_name : str
+        The name of the check item.
+    check_data_source_name : str
+        The name of the check data source.
+    export_file_name : str
+        Where the data is exported to. Used as default when exporting without specified
+
+    """
+
+    @ClassLogger  # type:ignore
     def __init__(
         self,
         base_url: str,
@@ -517,6 +575,11 @@ class Processor:
                     )
                 else:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
+                if frequency is None:
+                    frequency = utils.infer_frequency(
+                        raw_standard_data.iloc[:, 0], method="strict"
+                    )
+                    print("FREQ: ", frequency)
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.nan
                 )
@@ -1736,7 +1799,21 @@ class Processor:
         return fig
 
     def plot_processing_overview_chart(self, fig=None, **kwargs):
-        """Implement plotting.plot_qc_codes."""
+        """
+        Plot a processing overview chart.
+
+        Parameters
+        ----------
+        fig :  plotly.graph_objects.Figure, optional
+            The figure to plot on, by default None.
+        kwargs : dict
+            Additional keyword arguments to pass to the plot
+
+        Returns
+        -------
+        plotly.graph_objects.Figure
+            The figure with the processing overview chart.
+        """
         tag_list = ["HTP", "INS", "SOE"]
         check_names = ["Check data", "Inspections", "SOE checks"]
 
@@ -1782,6 +1859,7 @@ class Processor:
         """
         data_blob_list = []
 
+        # If standard data is present, add it to the list of data blobs
         if standard:
             standard_item_info = data_structure.ItemInfo(
                 item_number=1,
@@ -1817,7 +1895,7 @@ class Processor:
 
             actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
 
-            # TODO: Handle gaps
+            # If gap limit is not in the defaults, do not pass it to the gap closer
             if "gap_limit" not in self._defaults:
                 pass
             else:
@@ -1839,6 +1917,7 @@ class Processor:
             )
             data_blob_list += [standard_data_blob]
 
+        # If check data is present, add it to the list of data blobs
         if check:
             check_item_info = data_structure.ItemInfo(
                 item_number=1,
@@ -1906,6 +1985,7 @@ class Processor:
             )
             data_blob_list += [check_data_blob]
 
+        # If quality data is present, add it to the list of data blobs
         if quality:
             quality_data_source = data_structure.DataSource(
                 name=self.standard_data_source_name,
