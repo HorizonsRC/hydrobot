@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
 
 MOWSECS_OFFSET = 946771200
 
@@ -579,7 +580,7 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
     return std_series
 
 
-def infer_frequency(series: pd.Series):
+def infer_frequency(series: pd.Series, method="strict"):
     """
     Infer the frequency of a series using pandas infer_freq.
 
@@ -587,6 +588,10 @@ def infer_frequency(series: pd.Series):
     ----------
     series : pd.Series
         The series to infer the frequency of
+    method : str
+        The method to use to infer the frequency. Default is 'strict' Options are:
+        - strict: Raise an error if the frequency cannot be inferred.
+        - mode: Use the mode of the intervals between timestamps as the frequency.
 
     Returns
     -------
@@ -599,4 +604,20 @@ def infer_frequency(series: pd.Series):
             stacklevel=2,
         )
         series.index = pd.DatetimeIndex(series.index)
-    return pd.infer_freq(series.index)
+    freq = pd.infer_freq(series.index)
+
+    if freq is None and method == "strict":
+        raise ValueError(
+            "Could not infer frequency of the series. Either specify the frequency or remove non-regular timestamps."
+        )
+    elif freq is None and method == "mode":
+        # Calculate the intervals between all DatetimeIndex timestamps in the series
+        intervals = series.index.to_series().diff()
+
+        # Calculate the mode of the intervals
+        mode_freq = intervals.mode().iloc[0]
+
+        # return the mode timedelta as a frequency string
+        return to_offset(pd.Timedelta(mode_freq)).freqstr
+    else:
+        return pd.infer_freq(series.index)
