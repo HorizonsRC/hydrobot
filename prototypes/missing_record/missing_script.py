@@ -1,5 +1,6 @@
 """Missing record script."""
 import csv
+import time
 
 import numpy as np
 import pandas as pd
@@ -36,11 +37,13 @@ def report_missing_record(site, measurement, start, end):
 
 
 a = {}
+start_timer = time.time()
 for site in config["sites"]:
     b = []
     for meas in config["measurements"]:
         b.append(report_missing_record(site, meas, config["start"], config["end"]))
     a[site] = b
+    print(site, time.time() - start_timer)
 
 with open("output_dump/output.csv", "w", newline="") as output:
     wr = csv.writer(output)
