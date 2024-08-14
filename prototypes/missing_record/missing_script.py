@@ -6,6 +6,7 @@ import pandas as pd
 import yaml
 
 from hydrobot.data_acquisition import get_data
+from hydrobot.utils import infer_frequency
 
 with open("script_config.yaml") as file:
     config = yaml.safe_load(file)
@@ -28,7 +29,7 @@ def report_missing_record(site, measurement, start, end):
     series = blob[0].data.timeseries[blob[0].data.timeseries.columns[0]]
     series.index = pd.DatetimeIndex(series.index)
 
-    freq = "15min"
+    freq = infer_frequency(series, method="mode")
     series = series.reindex(pd.date_range(start, end, freq=freq))
     missing_points = series.asfreq(freq).isna().sum()
     return missing_points
