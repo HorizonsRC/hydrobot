@@ -683,17 +683,17 @@ def test_add_empty_rainfall_to_std():
 def test_infer_frequency(datetime_data):
     """Test infer_frequency utility."""
     freq = utils.infer_frequency(datetime_data.index, method="mode")
-    assert freq == "5T", "Frequency not inferred correctly when method is mode."
+    assert freq == "5min", "Frequency not inferred correctly when method is mode."
     strict_freq = utils.infer_frequency(datetime_data.index, method="strict")
     assert (
-        strict_freq == "5T"
+        strict_freq == "5min"
     ), "Frequency not inferred correctly when method is strict."
 
 
 def test_frequency_switch(freq_switch_data):
     """Test infer_frequency utility on non-regular data."""
     freq = utils.infer_frequency(freq_switch_data.index, method="mode")
-    assert freq == "10T", "Frequency not inferred correctly when frequency changes."
+    assert freq == "10min", "Frequency not inferred correctly when frequency changes."
     strict_freq = utils.infer_frequency(freq_switch_data.index, method="strict")
     assert (
         strict_freq is None
@@ -703,7 +703,7 @@ def test_frequency_switch(freq_switch_data):
 def test_frequency_gap(freq_gap_data):
     """Test infer_frequency utility on data where there is a gap."""
     freq = utils.infer_frequency(freq_gap_data.index, method="mode")
-    assert freq == "5T", "Frequency not inferred correctly when there is a gap."
+    assert freq == "5min", "Frequency not inferred correctly when there is a gap."
     strict_freq = utils.infer_frequency(freq_gap_data.index, method="strict")
     assert (
         strict_freq is None
