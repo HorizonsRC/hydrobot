@@ -1,14 +1,85 @@
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "boo.hts"
-export_file_name: "output_dump/missing.csv"
-start: "2023-06-15 14:45:00"
-end: "2024-04-02 10:00"
+hts: "boo.hts"
+export_file: "output_dump/missing.csv"
+start: "2024-07-01 00:00"
+end: "2024-08-01 00:00"
 
 sites:
     - Manawatu at Teachers College
-    - Manawatu at Upper Gorge
+    - Mangapapa at Troup Rd
+    - Akitio at Cadmus Bridge
+    - Arawhata Drain at Dairy Track Bridge
+    - Arawhata Drain at Hokio Beach Road
+    - Butlers
+    - Forest Rd Drain at Drop Structure
+    - Hautapu at Alabasters
+    - Hokio at Lake Horowhenua
+    - Joblins at Kane Boundary
+    - Kahuterawa at Johnstons Rata
+    - Kai Iwi at Handley Road
+    - Kuku Beach
+    - Kumeti at Te Rehunga
+    - Lake Papaitonga at Staff Gauge
+    - L Horowhenua Inflow at Lindsay Road
+    - Lake Horowhenua at Buoy
+    - Lake Horowhenua at Weir
+    - Lake Koitiata
+    - Makakahi at Hamua
+    - Makino at Boness Road
+    - Makotuku at Raetihi
+    - Makuri at Tuscan Hills
+    - Manakau at S.H.1 Bridge
+    - Manawatu at Hopelands
+    - Manawatu at Foxton
+    - Manawatu at Moutoa
+    - Manawatu at Teachers College
+    - Manawatu at Weber Road
+    - Manga-atua at Hopelands Rd
+    - Mangahao at Ballance
+    - Mangaone at Milson Line
+    - Mangapapa at Troup Rd
+    - Mangatainoka at Larsons Road
+    - Mangatainoka at Pahiatua Town Bridge
+    - Mangatoro at Mangahei Road
+    - Mangawhero at Ore Ore
+    - Mangawhero at Pakihi Rd Bridge
+    - Ohau at Haines Ford
+    - Ohau at Rongomatane
+    - Ohura at Tokorima
+    - Ongarue at Taringamotu
+    - Oroua at Almadale Slackline
+    - Oruakeretaki at S.H.2 Napier
+    - Owahanga at Owahanga Station
+    - Patiki Stream at Kawiu Road
+    - Pohangina at Mais Reach
+    - Rangitikei at Mangaweka
+    - Rangitikei at McKelvies
+    - Rangitikei at Pukeokahu
+    - Raparapawai at Jackson Rd
+    - Tamaki at Stephensons
+    - Tamaki at Water Supply Weir
+    - Tiraumea at Ngaturi
+    - Tokiahuru at Junction
+    - Tokiahuru at Karioi Forest
+    - Tokiahuru at Powells Rd
+    - Tokomaru at Riverland Farm
+    - Turakina at ONeills Bridge
+    - Turakina at Otairi
+    - Turakina at Waipu
+    - Waihi at S.H.52
+    - Waikawa at ds Manakau Confluence
+    - Waikawa at North Manakau Road
+    - Wainui at Herbertville Road Br
+    - Whangaehu at Aranui
+    - Whangaehu at Karioi
+    - Whangaehu at Kauangaroa
+    - Whanganui at Te Maire
+    - Whanganui at Te Rewa
+    - Whelans at Kane Boundary
 
 measurements:
     - DO Saturation [Dissolved Oxygen (%)]
     - Soil Moisture [Soil Moisture]
+    - Water Temperature [Dissolved Oxygen sensor]
+    - Water Temperature [Water Temperature]
