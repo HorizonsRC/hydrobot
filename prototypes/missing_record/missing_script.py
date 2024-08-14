@@ -29,10 +29,10 @@ def report_missing_record(site, measurement, start, end):
     series = blob[0].data.timeseries[blob[0].data.timeseries.columns[0]]
     series.index = pd.DatetimeIndex(series.index)
 
-    freq = infer_frequency(series, method="mode")
+    freq = infer_frequency(series.index, method="mode")
     series = series.reindex(pd.date_range(start, end, freq=freq))
     missing_points = series.asfreq(freq).isna().sum()
-    return missing_points
+    return str(missing_points * pd.to_timedelta(freq))
 
 
 a = {}
