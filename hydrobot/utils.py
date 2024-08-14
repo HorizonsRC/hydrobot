@@ -580,39 +580,42 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
     return std_series
 
 
-def infer_frequency(series: pd.Series, method="strict"):
+def infer_frequency(index: pd.DatetimeIndex, method="strict"):
     """
     Infer the frequency of a series using pandas infer_freq.
 
     Parameters
     ----------
-    series : pd.Series
-        The series to infer the frequency of
+    index : pd.DatetimeIndex
+        The index to infer the frequency of
     method : str
         The method to use to infer the frequency. Default is 'strict' Options are:
         - strict: Raise an error if the frequency cannot be inferred.
         - mode: Use the mode of the intervals between timestamps as the frequency.
+        - raise: Raise an error if the frequency cannot be inferred.
 
     Returns
     -------
     str
         The inferred frequency of the series
     """
-    if not isinstance(series.index, pd.DatetimeIndex):
+    if not isinstance(index, pd.DatetimeIndex):
         warnings.warn(
             "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
             stacklevel=2,
         )
-        series.index = pd.DatetimeIndex(series.index)
-    freq = pd.infer_freq(series.index)
+        index = pd.DatetimeIndex(index)
+    freq = pd.infer_freq(index)
 
     if freq is None and method == "strict":
+        return None
+    if freq is None and method == "raise":
         raise ValueError(
             "Could not infer frequency of the series. Either specify the frequency or remove non-regular timestamps."
         )
     elif freq is None and method == "mode":
         # Calculate the intervals between all DatetimeIndex timestamps in the series
-        intervals = series.index.to_series().diff()
+        intervals = index.to_series().diff()
 
         # Calculate the mode of the intervals
         mode_freq = intervals.mode().iloc[0]
@@ -620,4 +623,4 @@ def infer_frequency(series: pd.Series, method="strict"):
         # return the mode timedelta as a frequency string
         return to_offset(pd.Timedelta(mode_freq)).freqstr
     else:
-        return pd.infer_freq(series.index)
+        return pd.infer_freq(index)
