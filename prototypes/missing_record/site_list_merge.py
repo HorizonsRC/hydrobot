@@ -22,7 +22,7 @@ connection_url = URL.create(
 engine = db.create_engine(connection_url)
 
 sites_query = """
-SELECT Sites.SiteID, SiteName
+SELECT Sites.SiteID, SiteName, Regions.RegionName
     FROM Sites
     INNER JOIN RegionSites on Sites.SiteID = RegionSites.SiteID
     INNER JOIN Regions on RegionSites.RegionID = Regions.RegionID
