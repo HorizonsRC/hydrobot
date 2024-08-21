@@ -96,7 +96,7 @@ with open("output_dump/output_percent.csv", "w", newline="") as output:
     wr.writerow(["Sites"] + measurements)
     for site in a:
         wr.writerow(
-            [site] + [(i / diff) * 100 if i is not np.NaN else np.NaN for i in a[site]]
+            [site] + [(i / diff) * 100 if i is not np.nan else np.nan for i in a[site]]
         )
 
 for region in regions_list:
@@ -107,7 +107,7 @@ for region in regions_list:
             wr.writerow(
                 [site]
                 + [
-                    (i / diff) * 100 if i is not np.NaN else np.NaN
+                    (i / diff) * 100 if i is not np.nan else np.nan
                     for i in regions_dict[region][site]
                 ]
             )
