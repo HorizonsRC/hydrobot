@@ -102,11 +102,14 @@ for site in all_stats_dict:
         elif len(nanless) == 1:
             site_bucket_dict[bucket] = nanless[0]
         else:
-            print("max used")
+            print("Multiple data sources in one bucket")
             print(site, bucket, nanless)
             # sum
-            # site_bucket_dict[bucket] = sum([pd.to_timedelta(n) for n in nanless], pd.to_timedelta('0'))
-            site_bucket_dict[bucket] = max([pd.to_timedelta(n) for n in nanless])
+            site_bucket_dict[bucket] = sum(
+                [pd.to_timedelta(n) for n in nanless], pd.to_timedelta("0")
+            )
+            # or max?
+            # site_bucket_dict[bucket] = max([pd.to_timedelta(n) for n in nanless])
 
     bucket_stats_dict[site] = [site_bucket_dict[m] for m in measurement_buckets]
 
