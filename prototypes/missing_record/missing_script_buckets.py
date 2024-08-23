@@ -5,6 +5,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import site_list_merge
 import yaml
 from pandas.tseries.frequencies import to_offset
 
@@ -16,13 +17,13 @@ warnings.filterwarnings("ignore", message=".*Empty hilltop response:.*")
 with open("script_config.yaml") as file:
     config = yaml.safe_load(file)
 
-# sites = site_list_merge.get_sites().head()
-sites = pd.DataFrame(
-    {
-        "SiteName": ["Lake William", "Manawatu at Teachers College"],
-        "RegionName": ["LAKES AND WQ", "Central"],
-    }
-)
+sites = site_list_merge.get_sites()
+# sites = pd.DataFrame(
+#     {
+#         "SiteName": ["Lake William", "Manawatu at Teachers College"],
+#         "RegionName": ["LAKES AND WQ", "Central"],
+#     }
+# )
 
 with open("Active_Measurements_buckets.csv", newline="") as f:
     reader = csv.reader(f)
