@@ -4,7 +4,6 @@ Stage [Water Level],WL
 Rainfall [SCADA Rainfall],RF
 Water Temperature [Dissolved Oxygen sensor],WT
 Water Temperature [Conductivity sensor],WT
-Rainfall [Rainfall],RF
 Water Temperature (-500 mm) [Water Temperature (-500 mm)],WT
 Water Temperature (-1000 mm) [Water Temperature (-1000 mm)],WT
 Water Temperature (-1500 mm) [Water Temperature (-1500 mm)],WT
