@@ -35,15 +35,16 @@ region_stats_dict = {
     "Central": [],
     "Special_P": [],
 }
-regions_list = {
+regions_dict = {
     "Northern": ["NORTHERN"],
     "Eastern": ["EASTERN"],
     "Central": ["CENTRAL"],
     "Special_P": ["LAKES AND WQ", "Arawhata Piezometers"],
 }
+annex_3_sites = {}
 for _, site in sites.iterrows():
-    for region in regions_list:
-        if site.RegionName in regions_list[region]:
+    for region in regions_dict:
+        if site.RegionName in regions_dict[region]:
             region_stats_dict[region].append(site.SiteName)
 
 
@@ -136,7 +137,9 @@ def write_dict_to_file(output_file, input_dict, output_as_percent):
 
 write_dict_to_file("output_dump/output.csv", bucket_stats_dict, False)
 write_dict_to_file("output_dump/output_percent.csv", bucket_stats_dict, True)
-for region in regions_list:
+for region in regions_dict:
     write_dict_to_file(
         f"output_dump/output_{region}.csv", region_stats_dict[region], True
     )
+
+# Annex splitting
