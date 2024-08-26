@@ -14,7 +14,7 @@ from hydrobot.utils import infer_frequency
 
 warnings.filterwarnings("ignore", message=".*Empty hilltop response:.*")
 
-with open("script_config.yaml") as file:
+with open("../script_config.yaml") as file:
     config = yaml.safe_load(file)
 
 
@@ -83,7 +83,7 @@ for _, site in sites.iterrows():
             regions_dict[key][site.SiteName] = b
     print(site.SiteName, time.time() - start_timer)
 
-with open("output_dump/output.csv", "w", newline="") as output:
+with open("../output_dump/output.csv", "w", newline="") as output:
     wr = csv.writer(output)
     wr.writerow(["Sites"] + measurements)
     for site in a:
@@ -91,7 +91,7 @@ with open("output_dump/output.csv", "w", newline="") as output:
 
 diff = pd.to_datetime(config["end"]) - pd.to_datetime(config["start"])
 
-with open("output_dump/output_percent.csv", "w", newline="") as output:
+with open("../output_dump/output_percent.csv", "w", newline="") as output:
     wr = csv.writer(output)
     wr.writerow(["Sites"] + measurements)
     for site in a:
