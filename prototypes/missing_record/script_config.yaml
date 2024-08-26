@@ -27,6 +27,7 @@ Annex_1_buckets:
     - Atmospheric Pressure
     - Flow
     - Groundwater
+    - Lahar
     - Particulate Matter
     - Rainfall
     - Rainfall Backup
@@ -36,6 +37,8 @@ Annex_1_buckets:
     - Wind
 
 Annex_2_buckets:
+    - Blue Green Algae
+    - Chlorophyll
     - Conductivity
     - Dissolved Oxygen
     - Nitrates
