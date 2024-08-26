@@ -114,35 +114,29 @@ for site in all_stats_dict:
 
     bucket_stats_dict[site] = [site_bucket_dict[m] for m in measurement_buckets]
 
-with open("output_dump/output.csv", "w", newline="") as output:
-    wr = csv.writer(output)
-    wr.writerow(["Sites"] + measurement_buckets)
-    for site in bucket_stats_dict:
-        wr.writerow([site] + bucket_stats_dict[site])
 
-diff = pd.to_datetime(config["end"]) - pd.to_datetime(config["start"])
-
-with open("output_dump/output_percent.csv", "w", newline="") as output:
-    wr = csv.writer(output)
-    wr.writerow(["Sites"] + measurement_buckets)
-    for site in bucket_stats_dict:
-        wr.writerow(
-            [site]
-            + [
-                (i / diff) * 100 if i is not np.NaN else np.NaN
-                for i in bucket_stats_dict[site]
-            ]
-        )
-
-for region in regions_list:
-    with open(f"output_dump/output_{region}.csv", "w", newline="") as output:
+def write_dict_to_file(output_file, input_dict, output_as_percent):
+    """Writes a dict into csv."""
+    diff = pd.to_datetime(config["end"]) - pd.to_datetime(config["start"])
+    with open(output_file, "w", newline="") as output:
         wr = csv.writer(output)
         wr.writerow(["Sites"] + measurement_buckets)
-        for site in region_stats_dict[region]:
-            wr.writerow(
-                [site]
-                + [
-                    (i / diff) * 100 if i is not np.NaN else np.NaN
-                    for i in bucket_stats_dict[site]
-                ]
-            )
+        for site in input_dict:
+            if output_as_percent:
+                wr.writerow(
+                    [site]
+                    + [
+                        (i / diff) * 100 if i is not np.NaN else np.NaN
+                        for i in bucket_stats_dict[site]
+                    ]
+                )
+            else:
+                wr.writerow([site] + bucket_stats_dict[site])
+
+
+write_dict_to_file("output_dump/output.csv", bucket_stats_dict, False)
+write_dict_to_file("output_dump/output_percent.csv", bucket_stats_dict, True)
+for region in regions_list:
+    write_dict_to_file(
+        f"output_dump/output_{region}.csv", region_stats_dict[region], True
+    )
