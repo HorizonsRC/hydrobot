@@ -123,3 +123,8 @@ History
 * Fixed the missing data quality codes to fit with hilltop's funky qc system
 * Added batch processing
 * Yaml now specifies destination file name
+
+0.6.6 (2024-08-27)
+----------------------------------
+
+* Adding support for infer frequency and missing record prototype
