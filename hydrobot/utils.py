@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+from pandas.tseries.frequencies import to_offset
 
 MOWSECS_OFFSET = 946771200
 
@@ -178,7 +179,29 @@ def merge_series(series_a, series_b, tolerance=1e-09):
 
 
 def change_blocks(raw_series, changed_series):
-    """Find all changes between two series."""
+    """Find the blocks of changes between two series.
+
+    Parameters
+    ----------
+    raw_series : pd.Series
+        The original series
+    changed_series : pd.Series
+        The series with changes
+
+    Returns
+    -------
+    list
+        A list of tuples where each tuple represents a block of change.
+        The first element of the tuple is the start of the block and the second
+        element is the end of the block.
+
+    Notes
+    -----
+    The function takes two series and finds the blocks of changes between them.
+    The function returns the blocks of changes as a list of tuples where each
+    tuple represents a block of change. The first element of the tuple is the
+    start of the block and the second element is the end of the block.
+    """
     changed_block_list = []
     start_index = None
 
@@ -224,9 +247,29 @@ def change_blocks(raw_series, changed_series):
 
 
 def merge_all_comments(hill_checks, pwq_checks, s123_checks, ncrs):
-    """Merge all comments coming in from various sources.
+    """Make a sorted dataframe of all comments from all sources.
 
-    Sorry, not sure where to put this.
+    Parameters
+    ----------
+    hill_checks : pd.DataFrame
+        Hilltop check data
+    pwq_checks : pd.DataFrame
+        Provisional water quality data
+    s123_checks : pd.DataFrame
+        Survey123 inspection data
+    ncrs : pd.DataFrame
+        Non-conformance reports
+
+    Returns
+    -------
+    pd.DataFrame
+        A sorted dataframe of all comments from all sources
+
+    Notes
+    -----
+    The function takes four dataframes of comments from different sources and
+    combines them into a single dataframe. The function returns a sorted dataframe
+    of all comments from all sources.
     """
     hill_checks = hill_checks.rename(columns={"Water Temperature Check": "Temp Check"})
     hill_checks = hill_checks.reset_index()
@@ -569,3 +612,50 @@ def cumulative_check_adjust(std_series: pd.Series, check_series: pd.Series):
         check_series with cumulative totals added
     """
     pass
+
+
+def infer_frequency(index: pd.DatetimeIndex, method="strict"):
+    """
+    Infer the frequency of a series using pandas infer_freq.
+
+    Parameters
+    ----------
+    index : pd.DatetimeIndex
+        The index to infer the frequency of
+    method : str
+        The method to use to infer the frequency. Default is 'strict' Options are:
+        - strict: Raise an error if the frequency cannot be inferred.
+        - mode: Use the mode of the intervals between timestamps as the frequency.
+        - raise: Raise an error if the frequency cannot be inferred.
+
+    Returns
+    -------
+    str
+        The inferred frequency of the series
+    """
+    if not isinstance(index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        index = pd.DatetimeIndex(index)
+    freq = pd.infer_freq(index)
+
+    if freq is None and method == "strict":
+        return None
+    if freq is None and method == "raise":
+        raise ValueError(
+            "Could not infer frequency of the series. "
+            "Either specify the frequency or remove non-regular timestamps."
+        )
+    elif freq is None and method == "mode":
+        # Calculate the intervals between all DatetimeIndex timestamps in the series
+        intervals = index.to_series().diff()
+
+        # Calculate the mode of the intervals
+        mode_freq = intervals.mode().iloc[0]
+
+        # return the mode timedelta as a frequency string
+        return to_offset(pd.Timedelta(mode_freq)).freqstr
+    else:
+        return pd.infer_freq(index)

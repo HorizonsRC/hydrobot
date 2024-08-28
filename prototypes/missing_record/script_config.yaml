@@ -1,0 +1,48 @@
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+hts: "boo.hts"
+export_file: "output_dump/missing.csv"
+start: "2024-04-01 00:00"
+end: "2024-05-01 00:00"
+
+Annew_3_sites:
+    - Lake Dudding
+    - Lake Heaton
+    - Lake Herbert
+    - Lake Horowhenua at Buoy
+    - Lake Horowhenua at Weed Buoy 1
+    - Lake Horowhenua at Weed Buoy 2
+    - Lake Horowhenua at Weir
+    - Lake Kaitoke
+    - Lake Kohata
+    - Lake Koitiata
+    - Lake Papaitonga at Staff Gauge
+    - Lake Pauri
+    - Lake Waipu
+    - Lake William
+    - Lake Wiritoa
+
+Annex_1_buckets:
+    - Air Temperature
+    - Atmospheric Pressure
+    - Flow
+    - Groundwater
+    - Lahar
+    - Particulate Matter
+    - Rainfall
+    - Rainfall Backup
+    - Relative Humidity
+    - Soil
+    - Water Level
+    - Wind
+
+Annex_2_buckets:
+    - Blue Green Algae
+    - Chlorophyll
+    - Conductivity
+    - Dissolved Oxygen
+    - Nitrates
+    - ORP
+    - pH
+    - Turbidity
+    - Water Temperature

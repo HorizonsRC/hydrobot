@@ -8,9 +8,7 @@ streamlit run .\sm_script.py
 """
 
 import pandas as pd
-import streamlit as st
 
-import hydrobot
 from hydrobot.plotter import make_processing_dash
 from hydrobot.processor import Processor
 
@@ -18,13 +16,13 @@ from hydrobot.processor import Processor
 # Reading configuration from config.yaml
 #######################################################################################
 
-data, ann = Processor.from_config_yaml("sm_config.yaml")
+data, ann = Processor.from_config_yaml("at_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
+# st.set_page_config(
+#     page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
+# )
+# st.title(f"{data.site}")
+# st.header(f"{data.standard_measurement_name}")
 
 
 #######################################################################################
@@ -55,8 +53,6 @@ data.remove_spikes()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-# data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
-# data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
 data.quality_encoder()
 
 # ann.logger.info(
@@ -98,8 +94,33 @@ fig_subplots = make_processing_dash(
     ).set_index("Time"),
 )
 
-st.plotly_chart(fig_subplots, use_container_width=True)
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig_subplots.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig_subplots.to_html()))
 
-st.dataframe(data.standard_data, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+# st.plotly_chart(fig_subplots, use_container_width=True)
+
+# st.dataframe(data.standard_data, use_container_width=True)
+# st.dataframe(data.check_data, use_container_width=True)
+# st.dataframe(data.quality_data, use_container_width=True)
+
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    data.standard_data.to_html(file)
+with open("check_table.html", "w", encoding="utf-8") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w", encoding="utf-8") as file:
+    data.quality_data.to_html(file)
+
+"""
+merger = HtmlMerger(
+    [
+        "pyplot.html",
+        "check_table.html",
+        "quality_table.html",
+        "standard_table.html",
+    ],
+    encoding="utf-8",
+)
+
+merger.merge()"""

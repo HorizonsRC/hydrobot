@@ -56,16 +56,74 @@ EMPTY_QUALITY_DATA = pd.DataFrame(
 
 
 class Processor:
-    """A class used to process data from a Hilltop server."""
+    """
+    Processor class for handling data processing.
 
-    @ClassLogger  # type: ignore
+    Attributes
+    ----------
+    _defaults : dict
+        The default settings.
+    _site : str
+        The site to be processed.
+    _standard_measurement_name : str
+        The standard measurement to be processed.
+    _check_measurement_name : str
+        The measurement to be checked.
+    _base_url : str
+        The base URL of the Hilltop server.
+    _standard_hts : str
+        The standard Hilltop service.
+    _check_hts : str
+        The Hilltop service to be checked.
+    _frequency : str
+        The frequency of the data.
+    _from_date : str
+        The start date of the data.
+    _to_date : str
+        The end date of the data.
+    _quality_code_evaluator : QualityCodeEvaluator
+        The quality code evaluator.
+    _interval_dict : dict
+        Determines how data with old checks is downgraded.
+    _standard_data : pd.Series
+        The standard series data.
+    _check_data : pd.Series
+        The series containing check data.
+    _quality_data : pd.Series
+        The quality series data.
+    raw_standard_blob : Blob
+        The raw standard data blob.
+    raw_standard_xml : str
+        The raw standard data XML.
+    raw_quality_blob : Blob
+        The raw quality data blob.
+    raw_quality_xml : str
+        The raw quality data XML.
+    raw_check_blob : Blob
+        The raw check data blob.
+    raw_check_xml : str
+        The raw check data XML.
+    standard_item_name : str
+        The name of the standard item.
+    standard_data_source_name : str
+        The name of the standard data source.
+    check_item_name : str
+        The name of the check item.
+    check_data_source_name : str
+        The name of the check data source.
+    export_file_name : str
+        Where the data is exported to. Used as default when exporting without specified
+
+    """
+
+    @ClassLogger  # type:ignore
     def __init__(
         self,
         base_url: str,
         site: str,
         standard_hts: str,
         standard_measurement_name: str,
-        frequency: str,
+        frequency: str | None,
         from_date: str | None = None,
         to_date: str | None = None,
         check_hts: str | None = None,
@@ -74,6 +132,7 @@ class Processor:
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
         fetch_quality: bool = False,
+        export_file_name: str | None = None,
         **kwargs,
     ):
         """
@@ -103,6 +162,8 @@ class Processor:
             The default settings (default is None).
         interval_dict : dict, optional
             Determines how data with old checks is downgraded
+        export_file_name : string, optional
+            Where the data is exported to. Used as default when exporting without specified filename.
         kwargs : dict
             Additional keyword arguments.
         """
@@ -199,6 +260,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
+        self.export_file_name = export_file_name
         if constant_check_shift is not None:
             self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
@@ -286,6 +348,7 @@ class Processor:
                     "constant_check_shift", 0
                 ),
                 fetch_quality=fetch_quality,
+                export_file_name=processing_parameters.get("export_file_name", None),
             ),
             ann,
         )
@@ -525,7 +588,10 @@ class Processor:
                     )
                 else:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
-            if frequency is not None:
+                if frequency is None:
+                    frequency = utils.infer_frequency(
+                        raw_standard_data.iloc[:, 0], method="strict"
+                    )
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.nan
                 )
@@ -1573,7 +1639,7 @@ class Processor:
     @ClassLogger
     def data_exporter(
         self,
-        file_location,
+        file_location=None,
         ftype="xml",
         standard: bool = True,
         quality: bool = True,
@@ -1585,12 +1651,13 @@ class Processor:
 
         Parameters
         ----------
-        file_location : str
+        file_location : str | None
             The file path where the file will be saved. If 'ftype' is "csv" or "xml",
             this should be a full file path including extension. If 'ftype' is
             "hilltop_csv", multiple files will be created, so 'file_location' should be
             a prefix that will be appended with "_std_qc.csv" for the file containing
             the standard and quality data, and "_check.csv" for the check data file.
+            If None, uses self.export_file_name
         ftype : str, optional
             Avalable options are "xml", "hilltop_csv", "csv", "check".
         trimmed : bool, optional
@@ -1616,6 +1683,8 @@ class Processor:
         >>> processor.data_exporter("output.xml", trimmed=True)
         >>> # Check the generated XML file at 'output.xml'
         """
+        if file_location is None:
+            file_location = self.export_file_name
         export_selections = [standard, quality, check]
         if trimmed:
             std_data = filters.trim_series(
@@ -1687,103 +1756,95 @@ class Processor:
             self._frequency,
         )
 
-    def plot_qc_series(self, check=False, show=True):
-        """Implement qc_plotter()."""
-        fig = plotter.qc_plotter_plotly(
-            self._standard_data["Value"],
-            (self._check_data["Value"] if check else None),
-            self._quality_data["Value"],
-            show=show,
-        )
+    def plot_raw_data(self, fig=None, **kwargs):
+        """Implement plotting.plot_raw_data."""
+        fig = plotter.plot_raw_data(self.standard_data, fig=fig, **kwargs)
+
         return fig
 
-    def plot_comparison_qc_series(self, show=True):
-        """Implement comparison_qc_plotter()."""
-        fig = plotter.comparison_qc_plotter_plotly(
-            self._standard_data["Value"],
-            self._standard_data["Raw"],
-            self._check_data["Value"],
-            self._quality_data["Value"],
-            show=show,
+    def plot_qc_codes(self, fig=None, **kwargs):
+        """Implement plotting.plot_qc_codes."""
+        fig = plotter.plot_qc_codes(
+            self.standard_data,
+            self.quality_data,
+            self.frequency,
+            fig=fig,
+            **kwargs,
         )
+
         return fig
 
-    def plot_gaps(self, span=None, show=True):
+    def add_qc_limit_bars(self, fig=None, **kwargs):
+        """Implement plotting.add_qc_limit_bars."""
+        fig = plotter.add_qc_limit_bars(
+            self.quality_code_evaluator.qc_500_limit,
+            self.quality_code_evaluator.qc_600_limit,
+            fig=fig,
+            **kwargs,
+        )
+
+        return fig
+
+    def plot_check_data(
+        self,
+        tag_list=None,
+        check_names=None,
+        ghosts=False,
+        diffs=False,
+        align_checks=False,
+        fig=None,
+        **kwargs,
+    ):
+        """Implement plotting.plot_qc_codes."""
+        fig = plotter.plot_check_data(
+            self.standard_data,
+            self.quality_data,
+            self.quality_code_evaluator.constant_check_shift,
+            tag_list=tag_list,
+            check_names=check_names,
+            ghosts=ghosts,
+            diffs=diffs,
+            align_checks=align_checks,
+            fig=fig,
+            **kwargs,
+        )
+
+        return fig
+
+    def plot_processing_overview_chart(self, fig=None, **kwargs):
         """
-        Plot gaps in the data.
+        Plot a processing overview chart.
 
         Parameters
         ----------
-        span : int | None, optional
-            Size of the moving window for identifying gaps. If None, the default
-            behavior is used. Default is None.
-        show : bool, optional
-            Whether to display the plot. If True, the plot is displayed; if False,
-            the plot is generated but not displayed. Default is True.
+        fig :  plotly.graph_objects.Figure, optional
+            The figure to plot on, by default None.
+        kwargs : dict
+            Additional keyword arguments to pass to the plot
 
         Returns
         -------
-        None
-
-        Notes
-        -----
-        This method utilizes the gap_plotter function to visualize gaps in the
-        standard series data. Gaps are identified based on the specified span.
-
-        Examples
-        --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_data()
-        >>> processor.plot_gaps(span=10, show=True)
-        >>> # Display a plot showing gaps in the standard series.
+        plotly.graph_objects.Figure
+            The figure with the processing overview chart.
         """
-        if span is None:
-            plotter.gap_plotter(self._standard_data["Value"], show=show)
-        else:
-            plotter.gap_plotter(self._standard_data["Value"], span, show=show)
+        tag_list = ["HTP", "INS", "SOE"]
+        check_names = ["Check data", "Inspections", "SOE checks"]
 
-    def plot_checks(self, span=None, show=True):
-        """
-        Plot checks against the standard series data.
+        fig = plotter.plot_processing_overview_chart(
+            self.standard_data,
+            self.quality_data,
+            self.check_data,
+            self.frequency,
+            self.quality_code_evaluator.constant_check_shift,
+            self.quality_code_evaluator.qc_500_limit,
+            self.quality_code_evaluator.qc_600_limit,
+            tag_list=tag_list,
+            check_names=check_names,
+            fig=fig,
+            **kwargs,
+        )
 
-        Parameters
-        ----------
-        span : int | None, optional
-            Size of the moving window for smoothing the plot. If None, the default
-            behavior is used. Default is None.
-        show : bool, optional
-            Whether to display the plot. If True, the plot is displayed; if False,
-            the plot is generated but not displayed. Default is True.
-
-        Returns
-        -------
-        None
-
-        Notes
-        -----
-        This method utilizes the check_plotter function to visualize checks against
-        the standard series data. The plot includes both the standard and check series.
-
-        Examples
-        --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_data()
-        >>> processor.plot_checks(span=10, show=True)
-        >>> # Display a plot comparing checks to the standard series.
-        """
-        if span is None:
-            plotter.check_plotter(
-                self._standard_data["Value"],
-                self._check_data["Value"],
-                show=show,
-            )
-        else:
-            plotter.check_plotter(
-                self._standard_data["Value"],
-                self._check_data["Value"],
-                span,
-                show=show,
-            )
+        return fig
 
     def to_xml_data_structure(self, standard=True, quality=True, check=True):
         """
@@ -1811,6 +1872,7 @@ class Processor:
         """
         data_blob_list = []
 
+        # If standard data is present, add it to the list of data blobs
         if standard:
             standard_item_info = data_structure.ItemInfo(
                 item_number=1,
@@ -1846,7 +1908,7 @@ class Processor:
 
             actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
 
-            # TODO: Handle gaps
+            # If gap limit is not in the defaults, do not pass it to the gap closer
             if "gap_limit" not in self._defaults:
                 standard_timeseries = actual_nan_timeseries
             else:
@@ -1868,6 +1930,7 @@ class Processor:
             )
             data_blob_list += [standard_data_blob]
 
+        # If check data is present, add it to the list of data blobs
         if check:
             check_item_info = data_structure.ItemInfo(
                 item_number=1,
@@ -1935,6 +1998,7 @@ class Processor:
             )
             data_blob_list += [check_data_blob]
 
+        # If quality data is present, add it to the list of data blobs
         if quality:
             quality_data_source = data_structure.DataSource(
                 name=self.standard_data_source_name,

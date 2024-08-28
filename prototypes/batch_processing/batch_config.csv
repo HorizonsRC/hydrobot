@@ -1,0 +1,3 @@
+site_name,site_code,list_of_measurements,batch_no,from_date,to_date,frequency
+Desert Rd Summit Climate Station,ZTH,Air Temperature (1.5m),410,2023-03-03 11:00,2024-04-04 22:00,10min
+Air Quality at Taihape,TAQ,Air Temperature (1.5m),400,2023-01-01 10:00,2024-02-02 20:00,5min

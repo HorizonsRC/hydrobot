@@ -1,0 +1,126 @@
+Air Temperature (1.5m) [Air Temperature (1.5m)], Air Temperature
+Air Temperature (5m) [Air Temperature (5m)], Air Temperature
+Air Temperature (10m) [Air Temperature (10m)], Air Temperature
+Air Temperature [Air Temperature], Air Temperature
+
+Atmospheric Pressure [Atmospheric Pressure], Atmospheric Pressure
+
+Flow [Water Level], Flow
+
+Groundwater [GroundWater], Groundwater
+
+Valert [Valert], Lahar
+Galert [Galert], Lahar
+
+PM10 (5min) [PM10 (5min)], Particulate Matter
+PM2.5 (5min) [PM2.5 (5min)], Particulate Matter
+
+Rainfall [SCADA Rainfall], Rainfall
+Rainfall (backup) [SCADA Rainfall (backup)], Rainfall Backup
+
+Relative Humidity [Relative Humidity], Relative Humidity
+
+Soil Temperature [Soil Temperature], Soil
+Soil Moisture [Soil Moisture], Soil
+SM VWC [SM VWC], Soil
+SM EC [SM EC], Soil
+SM TS [SM TS], Soil
+SM PAvg [SM PAvg], Soil
+SM VR [SM VR], Soil
+SM Ka [SM Ka], Soil
+5cm VWC [5cm VWC], Soil
+5cm TS [5cm TS], Soil
+5cm EC [5cm EC], Soil
+5cm Relative Permittivity [5cm Relative Permittivity], Soil
+10cm VWC [10cm VWC], Soil
+10cm TS [10cm TS], Soil
+10cm EC [10cm EC], Soil
+10cm Relative Permittivity [10cm Relative Permittivity], Soil
+20cm VWC [20cm VWC], Soil
+20cm Relative Permittivity [20cm Relative Permittivity], Soil
+20cm TS [20cm TS], Soil
+20cm EC [20cm EC], Soil
+30cm EC [30cm EC], Soil
+30cm TS [30cm TS], Soil
+30cm Relative Permittivity [30cm Relative Permittivity], Soil
+30cm VWC [30cm VWC], Soil
+40cm VWC [40cm VWC], Soil
+50cm VWC [50cm VWC], Soil
+40cm Relative Permittivity [40cm Relative Permittivity], Soil
+50cm Relative Permittivity [50cm Relative Permittivity], Soil
+40cm TS [40cm TS], Soil
+50cm TS [50cm TS], Soil
+40cm EC [40cm EC], Soil
+50cm EC [50cm EC], Soil
+
+Stage [Water Level], Water Level
+
+Wind Direction [Wind Direction (10m)], Wind
+Wind Speed [Wind Speed (10m)], Wind
+Wind Direction [Wind], Wind
+Wind Speed [Wind Speed (instantaneous)], Wind
+
+Blue Green Algae (-500 mm) [Blue Green Algae (-500 mm)], Blue Green Algae
+Blue Green Algae (-2000 mm) [Blue Green Algae (-2000 mm)], Blue Green Algae
+
+Chlorophyll (-500 mm) [Chlorophyll (-500 mm)], Chlorophyll
+Chlorophyll (-2000 mm) [Chlorophyll (-2000 mm)], Chlorophyll
+
+Conductivity Low Range (Raw) [Conductivity Low Range (Raw)], Conductivity
+Conductivity Low Range (T Comp) [Conductivity Low Range (T Comp)], Conductivity
+TDS - (0.67) [Conductivity Low Range (T Comp)], Conductivity
+SP Conductivity (-500 mm) [SP Conductivity (-500 mm)], Condunctivity
+Conductivity (-2000 mm) [Conductivity (-2000 mm)], Conductivity
+SP Conductivity (-2000 mm) [SP Conductivity (-2000 mm)], Conductivity
+
+DO Saturation [Dissolved Oxygen (%)], Dissolved Oxygen
+DO concentration [Dissolved Oxygen (ppm)], Dissolved Oxygen
+Dissolved Oxygen Saturation (-500 mm) [Dissolved Oxygen Saturation (-500 mm)], Dissolved Oxygen
+Dissolved Oxygen Saturation (-2000 mm) [Dissolved Oxygen Saturation (-2000 mm)], Dissolved Oxygen
+
+Nitrate (ISE) [Nitrate (ISE)], Nitrates
+Nitrate (-500 mm) [Nitrate (-500 mm)], Nitrates
+Nitrate (UV) [Nitrate (UV)], Nitrates
+NO3-N Concentration [NO3-N Concentration], Nitrates
+Absorbance at 220nm [Absorbance at 220nm], Nitrates
+Absorbance at 270nm [Absorbance at 270nm], Nitrates
+
+ORP [ORP], ORP
+ORP (-500 mm) [ORP (-500 mm)], ORP
+ORP (-2000 mm) [ORP (-2000 mm)], ORP
+
+pH [pH sensor], pH
+pH (-500 mm) [pH (-500 mm)], pH
+pH (-2000 mm) [pH (-2000 mm)], pH
+
+Turbidity: Point Sample [Turbidity: Point Sample], Turbidity
+Turbidity (ISO) [Turbidity (ISO)], Turbidity
+Turbidity (ISO) (-500 mm) [Turbidity (ISO) (-500 mm)], Turbidity
+Turbidity (Low Range): Point Sample [Turbidity (Low Range): Point Sample], Turbidity
+Turbidity (ISO) (-2000 mm) [Turbidity (ISO) (-2000 mm)], Turbidity
+Turbidity (ISO) - OBS [Turbidity (ISO) - OBS], Turbidity
+Suspended Sediment [Sediment Sensor], Turbidity
+
+Water Temperature [Water Temperature], Water Temperature
+Water Temperature [Dissolved Oxygen sensor], Water Temperature
+Water Temperature (-500 mm) [Water Temperature (-500 mm)], Water Temperature
+Water Temperature (-1000 mm) [Water Temperature (-1000 mm)], Water Temperature
+Water Temperature (-1500 mm) [Water Temperature (-1500 mm)], Water Temperature
+Water Temperature (-2000 mm) [Water Temperature (-2000 mm)], Water Temperature
+Water Temperature (-2500 mm) [Water Temperature (-2500 mm)], Water Temperature
+Water Temperature (-3000 mm) [Water Temperature (-3000 mm)], Water Temperature
+Water Temperature (-3500 mm) [Water Temperature (-3500 mm)], Water Temperature
+Water Temperature (-4000 mm) [Water Temperature (-4000 mm)], Water Temperature
+Water Temperature (-4500 mm) [Water Temperature (-4500 mm)], Water Temperature
+Water Temperature (-5000 mm) [Water Temperature (-5000 mm)], Water Temperature
+Water Temperature (-5500 mm) [Water Temperature (-5500 mm)], Water Temperature
+Water Temperature (-6000 mm) [Water Temperature (-6000 mm)], Water Temperature
+Water Temperature (-6500 mm) [Water Temperature (-6500 mm)], Water Temperature
+Water Temperature (-7000 mm) [Water Temperature (-7000 mm)], Water Temperature
+Water Temperature (-7500 mm) [Water Temperature (-7500 mm)], Water Temperature
+Water Temperature (-8000 mm) [Water Temperature (-8000 mm)], Water Temperature
+Water Temperature (-8500 mm) [Water Temperature (-8500 mm)], Water Temperature
+Water Temperature (-9000 mm) [Water Temperature (-9000 mm)], Water Temperature
+Water Temperature (-9500 mm) [Water Temperature (-9500 mm)], Water Temperature
+Water Temperature (-10000 mm) [Water Temperature (-10000 mm)], Water Temperature
+Water Temperature [Conductivity sensor], Water Temperature

@@ -34,6 +34,33 @@ datetime_data_dict = {
     "2023-01-01 00:45:00": 42,
 }
 
+datetime_data_freq_switch = {
+    # 5 minute frequency
+    "2023-01-01 00:00:00": 42,
+    "2023-01-01 00:05:00": 42,
+    "2023-01-01 00:10:00": 42,
+    "2023-01-01 00:15:00": 42,
+    # Switch to 10 minute frequency
+    "2023-01-01 00:20:00": 42,
+    "2023-01-01 00:30:00": 42,
+    "2023-01-01 00:40:00": 42,
+    "2023-01-01 00:50:00": 42,
+    "2023-01-01 01:00:00": 42,
+    "2023-01-01 01:10:00": 42,
+}
+
+datetime_data_freq_gap = {
+    # 5 minute frequency
+    "2023-01-01 00:00:00": 42,
+    "2023-01-01 00:05:00": 42,
+    "2023-01-01 00:10:00": 42,
+    "2023-01-01 00:15:00": 42,
+    # Gap of 20 minutes
+    "2023-01-01 00:35:00": 42,
+    "2023-01-01 00:40:00": 42,
+    "2023-01-01 00:45:00": 42,
+}
+
 
 @pytest.fixture()
 def mowsecs_data():
@@ -55,6 +82,25 @@ def datetime_data():
     data = pd.Series(datetime_data_dict)
     data.index = pd.to_datetime(data.index)
     return data
+
+
+@pytest.fixture()
+def freq_switch_data():
+    """Get example data for testing the frequency switch.
+
+    Do not change these values!
+    """
+    return pd.Series(datetime_data_freq_switch)
+
+
+@pytest.fixture()
+def freq_gap_data():
+    """Get example data for testing the frequency switch.
+
+    Do not change these values!
+    """
+    # Allows parametrization with a list of keys to change to np.nan
+    return pd.Series(datetime_data_freq_gap)
 
 
 def test_mowsecs_to_timestamp(mowsecs_data, datetime_data):
@@ -401,7 +447,11 @@ def test_check_data_ramp_and_quality():
         actual_std, expected_std, rtol=1e-05, atol=1e-08, equal_nan=False
     ), "Standard data incorrect after single check"
     assert np.allclose(
-        actual_quality, expected_quality, rtol=1e-05, atol=1e-08, equal_nan=False
+        actual_quality,
+        expected_quality,
+        rtol=1e-05,
+        atol=1e-08,
+        equal_nan=False,
     ), "Quality data incorrect after single check"
 
     ###########################################################################
@@ -473,7 +523,11 @@ def test_check_data_ramp_and_quality():
         actual_std, expected_std, rtol=1e-05, atol=1e-08, equal_nan=False
     ), "Standard data incorrect after double check + different time scales"
     assert np.allclose(
-        actual_quality, expected_quality, rtol=1e-05, atol=1e-08, equal_nan=False
+        actual_quality,
+        expected_quality,
+        rtol=1e-05,
+        atol=1e-08,
+        equal_nan=False,
     ), "Quality data incorrect after double check + different time scales"
 
     ###########################################################################
@@ -648,3 +702,33 @@ def test_add_empty_rainfall_to_std():
     assert expected_std3.equals(
         actual_std3
     ), "Data wrong when check does not intersect std"
+
+
+def test_infer_frequency(datetime_data):
+    """Test infer_frequency utility."""
+    freq = utils.infer_frequency(datetime_data.index, method="mode")
+    assert freq == "5min", "Frequency not inferred correctly when method is mode."
+    strict_freq = utils.infer_frequency(datetime_data.index, method="strict")
+    assert (
+        strict_freq == "5min"
+    ), "Frequency not inferred correctly when method is strict."
+
+
+def test_frequency_switch(freq_switch_data):
+    """Test infer_frequency utility on non-regular data."""
+    freq = utils.infer_frequency(freq_switch_data.index, method="mode")
+    assert freq == "10min", "Frequency not inferred correctly when frequency changes."
+    strict_freq = utils.infer_frequency(freq_switch_data.index, method="strict")
+    assert (
+        strict_freq is None
+    ), "Frequency not inferred correctly when frequency changes when method is strict."
+
+
+def test_frequency_gap(freq_gap_data):
+    """Test infer_frequency utility on data where there is a gap."""
+    freq = utils.infer_frequency(freq_gap_data.index, method="mode")
+    assert freq == "5min", "Frequency not inferred correctly when there is a gap."
+    strict_freq = utils.infer_frequency(freq_gap_data.index, method="strict")
+    assert (
+        strict_freq is None
+    ), "Frequency not inferred correctly when frequency changes when method is strict."
