@@ -4,12 +4,10 @@ import warnings
 
 import numpy as np
 import pandas as pd
-import plotly.graph_objects as go
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
-from hydrobot import plotter
 from hydrobot.processor import Processor, evaluator, utils
 
 annalizer = Annalist()
@@ -193,26 +191,6 @@ class RFProcessor(Processor):
         data["Raw"] = data["Raw"].cumsum()
         data["Value"] = data["Value"].cumsum()
         return data
-
-    def plot_qc_series(self, check=False, show=True):
-        """Implement qc_plotter()."""
-        fig = plotter.qc_plotter_plotly(
-            self._standard_data["Value"],
-            (self._check_data["Value"] if check else None),
-            self._quality_data["Value"],
-            show=show,
-        )
-
-        fig.add_trace(
-            go.Scatter(
-                x=self.ramped_standard.index,
-                y=self.ramped_standard.cumsum(),
-                mode="lines",
-                name="Ramped",
-                line=dict(color="#1010F0", dash="dot"),
-            )
-        )
-        return fig
 
     def filter_manual_tips(self, check_query: pd.DataFrame):
         """

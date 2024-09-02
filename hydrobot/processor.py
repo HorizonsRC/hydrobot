@@ -6,7 +6,6 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import streamlit as st
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -590,7 +589,7 @@ class Processor:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
                 if frequency is None:
                     frequency = utils.infer_frequency(
-                        raw_standard_data.iloc[:, 0], method="strict"
+                        raw_standard_data.index, method="strict"
                     )
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.nan
@@ -2023,17 +2022,27 @@ class Processor:
             data_blob_list += [quality_data_blob]
         return data_blob_list
 
-    def make_processing_dash(self):
-        """Make streamlit dashboard."""
-        pass
-        fig_subplots = None
-
-        st.plotly_chart(fig_subplots, use_container_width=True)
-
     def report_processing_issue(
         self, start_time=None, end_time=None, code=None, comment=None, series_type=None
     ):
-        """Add an issue to be reported for processing usage."""
+        """Add an issue to be reported for processing usage.
+
+        This method adds an issue to the processing_issues DataFrame.
+
+        Parameters
+        ----------
+        start_time : str
+            The start time of the issue.
+        end_time : str
+            The end time of the issue.
+        code : str
+            The code of the issue.
+        comment : str
+            The comment of the issue.
+        series_type : str
+            The type of the series the issue is related to.
+
+        """
         self.processing_issues = pd.concat(
             [
                 pd.DataFrame(

@@ -13,12 +13,14 @@ import pandas as pd
 import pyodbc
 import sqlalchemy as db
 import streamlit as st
+from rich.traceback import install
 from sqlalchemy.engine import URL
 
 import hydrobot
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
 from hydrobot.rf_processor import RFProcessor
+
+install()
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -193,18 +195,12 @@ data.data_exporter()
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 
-data.standard_data["Raw"] = data.standard_data["Raw"].cumsum()
-data.standard_data["Value"] = data.standard_data["Value"].cumsum()
+fig = data.plot_processing_overview_chart()
 
-fig = data.plot_qc_series(show=False)
-
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    all_checks,
-)
-
-st.plotly_chart(fig_subplots, use_container_width=True)
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_html()))
 
 st.dataframe(data.processing_issues, use_container_width=True)
 st.dataframe(all_checks, use_container_width=True)

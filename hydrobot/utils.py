@@ -638,7 +638,11 @@ def infer_frequency(index: pd.DatetimeIndex, method="strict"):
             "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
             stacklevel=2,
         )
-        index = pd.DatetimeIndex(index)
+        try:
+            index = pd.DatetimeIndex(index)
+        except ValueError as e:
+            print(index)
+            raise ValueError("Could not convert index to DatetimeIndex") from e
     freq = pd.infer_freq(index)
 
     if freq is None and method == "strict":
