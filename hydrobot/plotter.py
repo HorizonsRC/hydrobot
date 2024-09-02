@@ -94,7 +94,7 @@ def plot_qc_codes(
     go.Figure
 
     """
-    split_data = splitter(standard_data["Value"], quality_data["Value"], frequency)
+    split_data = splitter(standard_data["Value"], quality_data["Value"])
     if fig is None:
         fig = go.Figure()
     for qc in split_data:

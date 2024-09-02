@@ -13,14 +13,11 @@ import pandas as pd
 import pyodbc
 import sqlalchemy as db
 import streamlit as st
-from rich.traceback import install
 from sqlalchemy.engine import URL
 
 import hydrobot
 from hydrobot.filters import trim_series
 from hydrobot.rf_processor import RFProcessor
-
-install()
 
 #######################################################################################
 # Reading configuration from config.yaml

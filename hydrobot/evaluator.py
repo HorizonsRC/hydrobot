@@ -426,8 +426,6 @@ def splitter(std_series, qc_series):
         Time series data to be split up
     qc_series : pd.Series
         QC values to split the data by
-    frequency : anything
-        Defunct
 
     Returns
     -------
