@@ -14,7 +14,7 @@ check_backup: "Check Gauge Total [Rainfall]"
 export_file_name: "processed_rf.xml"
 
 # Processing Configuration
-from_date: "2023-06-01 10:42:00"
+from_date: "2023-06-01 10:42"
 to_date: "2024-04-02 10:00"
 defaults:
   high_clip: 2.1

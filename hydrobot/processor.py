@@ -589,7 +589,7 @@ class Processor:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
                 if frequency is None:
                     frequency = utils.infer_frequency(
-                        raw_standard_data.index, method="strict"
+                        raw_standard_data.index, method="mode"
                     )
                 raw_standard_data = raw_standard_data.asfreq(
                     frequency, fill_value=np.nan
