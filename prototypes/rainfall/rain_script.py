@@ -22,7 +22,6 @@ from hydrobot.rf_processor import RFProcessor
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
 data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 
 st.set_page_config(
@@ -35,7 +34,6 @@ st.header(f"{data.standard_measurement_name}")
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
-
 check_col = "Value"
 logger_col = "Logger"
 
@@ -125,7 +123,6 @@ check_data = check_data[
 
 data.check_data = check_data
 
-
 all_checks = rainfall_checks.rename(
     columns={"primary_total": "Logger", "flask": "Value"}
 )
@@ -144,10 +141,8 @@ all_checks["Logger"] = all_checks["Logger"].cumsum()
 
 # Clipping all data outside of low_clip and high_clip
 data.clip()
-
 # Remove manual tips
 data.filter_manual_tips(rainfall_checks)
-
 # Rainfall is cumulative
 # data.standard_data.Value = data.standard_data.Value.cumsum()
 # data.standard_data.Raw = data.standard_data.Raw.cumsum()
@@ -172,7 +167,6 @@ data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
 )
-
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
 #     "the temperature sensor reading."
@@ -193,7 +187,6 @@ data.data_exporter()
 #######################################################################################
 
 fig = data.plot_processing_overview_chart()
-
 with open("pyplot.json", "w", encoding="utf-8") as file:
     file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
