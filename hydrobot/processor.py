@@ -479,12 +479,14 @@ class Processor:
             The end date for data retrieval. If None, defaults to latest available
             data.
         frequency : str or None, optional
-            The frequency of the data. If None, defaults to the frequency on the processor
-            object.
+            The frequency of the data. If None, defaults to the frequency on the
+            processor object. If that's also None, the infer_frequency is consulted to
+            determine whether to infer the frequency from the data.
         infer_frequency : bool, optional
-            If True, infer the frequency of the data. If False, use the frequency provided
-            in the frequency parameter. If both false and the frequency parameter is
-            None, the data is assumed to be irregular.
+            Whether to infer the frequency from the data. If True, the frequency is
+            inferred from the data. If False, the frequency is set to None. Only used if
+            the frequency is not provided as a parameter AND not specified on the
+            processor object.
 
         Returns
         -------
@@ -611,31 +613,24 @@ class Processor:
                     )
                 else:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
-                if infer_frequency:
-                    # We have been told to infer the frequency.
-                    if frequency is not None:
-                        warnings.warn(
-                            "Frequency provided and infer_frequency is True. "
-                            "Ignoring provided frequency.",
-                            stacklevel=1,
-                        )
-                    frequency = utils.infer_frequency(
-                        raw_standard_data.index, method="mode"
-                    )
+
+                if frequency is not None:
+                    # Frequency is provided
                     raw_standard_data = raw_standard_data.asfreq(
                         frequency, fill_value=np.nan
                     )
                 else:
-                    if frequency is None:
-                        warnings.warn(
-                            "Frequency not provided and infer_frequency is False. "
-                            "Assuming irregular data.",
-                            stacklevel=1,
+                    if infer_frequency:
+                        # We have been asked to infer the frequency
+                        frequency = utils.infer_frequency(
+                            raw_standard_data.index, method="mode"
+                        )
+                        raw_standard_data = raw_standard_data.asfreq(
+                            frequency, fill_value=np.nan
                         )
                     else:
-                        # Frequency is provided and infer_frequency is False
-                        # In this case, we make sure the data is resampled
-                        # to the provided frequency
+                        # infer_frequency is explicitly set to false and frequency is None
+                        # Assuming irregular data
                         raw_standard_data = raw_standard_data.asfreq(
                             frequency, fill_value=np.nan
                         )
