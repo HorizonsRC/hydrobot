@@ -70,9 +70,8 @@ def plot_raw_data(standard_data, fig=None, **kwargs):
 
 
 def plot_qc_codes(
-    standard_data,
-    quality_data,
-    frequency,
+    standard_series,
+    quality_series,
     fig=None,
     **kwargs,
 ):
@@ -80,28 +79,26 @@ def plot_qc_codes(
 
     Parameters
     ----------
-    base_series : pd.Series
+    standard_series : pd.Series
         Data to be sorted by colour
-    check_series : pd.Series
-        Check data to plot
-    qc_series : pd.Series
-        QC ranges for colour coding
-    show : bool
-        Whether to show the plot directly when called
+    quality_series : pd.Series
+        Data to use to determine colour
+    fig : go.Figure | None, optional
+        The figure to add info to, will make a figure if None
 
     Returns
     -------
     go.Figure
 
     """
-    split_data = splitter(standard_data["Value"], quality_data["Value"])
+    split_data = splitter(standard_series, quality_series)
     if fig is None:
         fig = go.Figure()
     for qc in split_data:
         fig.add_trace(
             go.Scatter(
-                x=standard_data.index,
-                y=split_data[qc].reindex(standard_data.index),
+                x=standard_series.index,
+                y=split_data[qc].reindex(standard_series.index),
                 mode="lines",
                 name=f"QC{qc}",
                 line=dict(color=qc_colour(qc)),
@@ -366,7 +363,6 @@ def plot_processing_overview_chart(
     standard_data,
     quality_data,
     check_data,
-    frequency,
     constant_check_shift,
     qc_500_limit,
     qc_600_limit,
@@ -386,8 +382,6 @@ def plot_processing_overview_chart(
         The quality data to be plotted
     check_data : pd.Series
         The check data to be plotted
-    frequency : DateOffset or str
-        The frequency to which the data is set to
     constant_check_shift : float
         The shift between the check data and the standard data
     qc_500_limit : float
@@ -424,9 +418,8 @@ def plot_processing_overview_chart(
 
     fig = plot_raw_data(standard_data, fig=fig, row=1, col=1)
     fig = plot_qc_codes(
-        standard_data,
-        quality_data,
-        frequency,
+        standard_data["Value"],
+        quality_data["Value"],
         fig=fig,
         row=1,
         col=1,
