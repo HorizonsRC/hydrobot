@@ -8,6 +8,7 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
+from hydrobot import plotter
 from hydrobot.processor import Processor, evaluator, utils
 
 annalizer = Annalist()
@@ -48,6 +49,97 @@ class RFProcessor(Processor):
             **kwargs,
         )
         self.ramped_standard = None
+
+    def import_data(
+        self,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        standard: bool = True,
+        check: bool = True,
+        quality: bool = True,
+    ):
+        """
+        Import data using the class parameter range.
+
+        Overrides Processor.import_data to specify that the standard data is irregular and
+        that a periodic frequency should not be inferred.
+
+
+        Parameters
+        ----------
+        standard : bool, optional
+            Whether to import standard data, by default True.
+        check : bool, optional
+            Whether to import check data, by default True.
+        quality : bool, optional
+            Whether to import quality data, by default False.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method imports data for the specified date range, using the class
+        parameters `_from_date` and `_to_date`. It updates the internal series data in
+        the Processor instance for standard, check, and quality measurements
+        separately.
+
+        Examples
+        --------
+        >>> processor = RFProcessor(base_url="https://hilltop-server.com", site="Site1")
+        >>> processor.import_data("2022-01-01", "2022-12-31",standard=True, check=True)
+        False
+        """
+        if standard:
+            (
+                self._standard_data,
+                self.raw_standard_data,
+                self.raw_standard_xml,
+                self.raw_standard_blob,
+            ) = self.import_standard(
+                standard_hts=self.standard_hts,
+                site=self.site,
+                standard_measurement_name=self._standard_measurement_name,
+                standard_data_source_name=self.standard_data_source_name,
+                standard_item_info=self.standard_item_info,
+                standard_data=self._standard_data,
+                from_date=from_date,
+                to_date=to_date,
+                infer_frequency=False,
+            )
+        if quality:
+            (
+                self._quality_data,
+                self.raw_quality_data,
+                self.raw_standard_xml,
+                self.raw_standard_blob,
+            ) = self.import_quality(
+                standard_hts=self._standard_hts,
+                site=self._site,
+                standard_measurement_name=self._standard_measurement_name,
+                standard_data_source_name=self.standard_data_source_name,
+                quality_data=self.quality_data,
+                from_date=from_date,
+                to_date=to_date,
+            )
+        if check:
+            (
+                self._check_data,
+                self.raw_check_data,
+                self.raw_standard_xml,
+                self.raw_standard_blob,
+            ) = self.import_check(
+                check_hts=self._check_hts,
+                site=self._site,
+                check_measurement_name=self._check_measurement_name,
+                check_data_source_name=self.check_data_source_name,
+                check_item_info=self.check_item_info,
+                check_item_name=self.check_item_name,
+                check_data=self.check_data,
+                from_date=from_date,
+                to_date=to_date,
+            )
 
     @ClassLogger
     def quality_encoder(
@@ -214,3 +306,59 @@ class RFProcessor(Processor):
             )
             if issue is not None:
                 self.report_processing_issue(**issue)
+
+    def plot_processing_overview_chart(self, fig=None, **kwargs):
+        """
+        Plot a processing overview chart for the rainfall data.
+
+        Overrides Processor.plot_processing_overview_chart to include the ramped
+        standard data.
+
+        Parameters
+        ----------
+        fig : plt.Figure or None, optional
+            The figure to plot on, by default None.
+            If None, a new figure is created.
+        kwargs : dict
+            Additional keyword arguments to pass to the plot.
+
+        Returns
+        -------
+        fig : plt.Figure
+            The plotly figure with the plot.
+        """
+        tag_list = ["HTP", "INS", "SOE"]
+        check_names = ["Check data", "Inspections", "SOE checks"]
+
+        zeroed_cumulative_check_data = self.cumulative_check_data.copy()
+        zeroed_cumulative_check_data["Value"] = (
+            zeroed_cumulative_check_data["Value"]
+            - zeroed_cumulative_check_data["Value"].iloc[0]
+        )
+
+        fig = plotter.plot_processing_overview_chart(
+            self.cumulative_standard_data,
+            self.quality_data,
+            zeroed_cumulative_check_data,
+            self.frequency,
+            self.quality_code_evaluator.constant_check_shift,
+            self.quality_code_evaluator.qc_500_limit,
+            self.quality_code_evaluator.qc_600_limit,
+            tag_list=tag_list,
+            check_names=check_names,
+            fig=fig,
+            **kwargs,
+        )
+
+        # fig = go.Figure()
+        #
+        # # fig.add_trace(
+        # #     go.Scatter(
+        # #         x = self.ramped_standard.index,
+        # #         y = self.ramped_standard.to_numpy().cumsum(),
+        # #         mode = "lines",
+        # #         name="Ramped Standard",
+        # #         line=dict(color="blue", dash="dash"),
+        # #     )
+        # # )
+        return fig

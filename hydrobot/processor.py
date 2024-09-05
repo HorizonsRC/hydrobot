@@ -449,18 +449,42 @@ class Processor:
         from_date: str | None = None,
         to_date: str | None = None,
         frequency: str | None = None,
+        infer_frequency: bool = True,
     ):
         """
         Import standard data.
 
         Parameters
         ----------
+        standard_hts : str or None, optional
+            The standard Hilltop service. If None, defaults to the standard HTS.
+        site : str or None, optional
+            The site to be processed. If None, defaults to the site on the processor object.
+        standard_measurement_name : str or None, optional
+            The standard measurement to be processed. If None, defaults to the standard
+            measurement name on the processor object.
+        standard_data_source_name : str or None, optional
+            The name of the standard data source. If None, defaults to the standard data
+            source name on the processor object.
+        standard_item_info : dict or None, optional
+            The item information for the standard data. If None, defaults to the
+            standard item info on the processor object.
+        standard_data : pd.DataFrame or None, optional
+            The standard data. If None, defaults to the standard data on the processor
+            object.
         from_date : str or None, optional
             The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
             data.
+        frequency : str or None, optional
+            The frequency of the data. If None, defaults to the frequency on the processor
+            object.
+        infer_frequency : bool, optional
+            If True, infer the frequency of the data. If False, use the frequency provided
+            in the frequency parameter. If both false and the frequency parameter is
+            None, the data is assumed to be irregular.
 
         Returns
         -------
@@ -587,13 +611,34 @@ class Processor:
                     )
                 else:
                     raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
-                if frequency is None:
+                if infer_frequency:
+                    # We have been told to infer the frequency.
+                    if frequency is not None:
+                        warnings.warn(
+                            "Frequency provided and infer_frequency is True. "
+                            "Ignoring provided frequency.",
+                            stacklevel=1,
+                        )
                     frequency = utils.infer_frequency(
                         raw_standard_data.index, method="mode"
                     )
-                raw_standard_data = raw_standard_data.asfreq(
-                    frequency, fill_value=np.nan
-                )
+                    raw_standard_data = raw_standard_data.asfreq(
+                        frequency, fill_value=np.nan
+                    )
+                else:
+                    if frequency is None:
+                        warnings.warn(
+                            "Frequency not provided and infer_frequency is False. "
+                            "Assuming irregular data.",
+                            stacklevel=1,
+                        )
+                    else:
+                        # Frequency is provided and infer_frequency is False
+                        # In this case, we make sure the data is resampled
+                        # to the provided frequency
+                        raw_standard_data = raw_standard_data.asfreq(
+                            frequency, fill_value=np.nan
+                        )
 
             if self.raw_standard_blob is not None:
                 fmt = standard_item_info["ItemFormat"]
