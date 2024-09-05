@@ -1883,7 +1883,6 @@ class Processor:
             self.standard_data,
             self.quality_data,
             self.check_data,
-            self.frequency,
             self.quality_code_evaluator.constant_check_shift,
             self.quality_code_evaluator.qc_500_limit,
             self.quality_code_evaluator.qc_600_limit,

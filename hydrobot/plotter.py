@@ -363,7 +363,6 @@ def plot_processing_overview_chart(
     standard_data,
     quality_data,
     check_data,
-    frequency,
     constant_check_shift,
     qc_500_limit,
     qc_600_limit,
@@ -383,8 +382,6 @@ def plot_processing_overview_chart(
         The quality data to be plotted
     check_data : pd.Series
         The check data to be plotted
-    frequency : DateOffset or str
-        The frequency to which the data is set to
     constant_check_shift : float
         The shift between the check data and the standard data
     qc_500_limit : float
