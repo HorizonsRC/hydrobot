@@ -1763,7 +1763,6 @@ class Processor:
             data_sources.hilltop_export(
                 file_location,
                 self._site,
-                self._quality_code_evaluator.name,
                 std_data,
                 self._check_data["Value"],
                 self._quality_data["Value"],
