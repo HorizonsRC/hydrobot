@@ -396,7 +396,7 @@ class Data:
         self,
         date_format: str,
         num_items: int,
-        timeseries: pd.DataFrame,
+        timeseries: pd.DataFrame | pd.Series,
     ):
         """
         Initialize a Data instance.
@@ -737,7 +737,7 @@ class DataSourceBlob:
 
         Examples
         --------
-        >>> data_source_blob = DataSourceBlob("Example", data_source, data, "123")
+        >>> data_source_blob = DataSourceBlob("Example", DataSource(), Data(), "123")
         >>> xml_tree = data_source_blob.to_xml_tree()
         >>> isinstance(xml_tree, ElementTree.Element)
         True
@@ -925,7 +925,7 @@ def write_hilltop_xml(data_source_blob_list, output_path):
 
     Examples
     --------
-    >>> blob_list = [dataSourceBlob1, dataSourceBlob2, dataSourceBlob3]
+    >>> blob_list = [DataSourceBlob(), DataSourceBlob(), DataSourceBlob()]
     >>> write_hilltop_xml(blob_list, "output.xml")
 
     The above example writes a Hilltop XML file named "output.xml" based on the provided
