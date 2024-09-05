@@ -1704,6 +1704,12 @@ class Processor:
             If None, uses self.export_file_name
         ftype : str, optional
             Avalable options are "xml", "hilltop_csv", "csv", "check".
+        standard : bool, optional
+            Whether standard data is exported, default true
+        check : bool, optional
+            Whether check data is exported, default true
+        quality : bool, optional
+            Whether quality data is exported, default true
         trimmed : bool, optional
             If True, export trimmed data; otherwise, export the full data.
             Default is True.

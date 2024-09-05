@@ -138,7 +138,7 @@ all_checks["Logger"] = all_checks["Logger"].cumsum()
 # Common auto-processing steps
 #######################################################################################
 
-
+st.dataframe(data.standard_data, use_container_width=True)
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 # Remove manual tips
