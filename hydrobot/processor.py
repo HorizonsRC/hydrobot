@@ -1815,9 +1815,8 @@ class Processor:
     def plot_qc_codes(self, fig=None, **kwargs):
         """Implement plotting.plot_qc_codes."""
         fig = plotter.plot_qc_codes(
-            self.standard_data,
-            self.quality_data,
-            self.frequency,
+            self.standard_data["Value"],
+            self.quality_data["Value"],
             fig=fig,
             **kwargs,
         )
@@ -1930,7 +1929,7 @@ class Processor:
                 item_format=self.standard_item_info["ItemFormat"],
                 divisor=self.standard_item_info["Divisor"],
                 units=self.standard_item_info["Units"],
-                format=self.standard_item_info["Format"],
+                number_format=self.standard_item_info["Format"],
             )
             standard_data_source = data_structure.DataSource(
                 name=self.standard_data_source_name,
@@ -1988,7 +1987,7 @@ class Processor:
                 item_format=self.check_item_info["ItemFormat"],
                 divisor=self.check_item_info["Divisor"],
                 units=self.check_item_info["Units"],
-                format=self.check_item_info["Format"],
+                number_format=self.check_item_info["Format"],
             )
             recorder_time_item_info = data_structure.ItemInfo(
                 item_number=2,
@@ -1996,7 +1995,7 @@ class Processor:
                 item_format="D",
                 divisor="1",
                 units="",
-                format="###",
+                number_format="###",
             )
             comment_item_info = data_structure.ItemInfo(
                 item_number=3,
@@ -2004,7 +2003,7 @@ class Processor:
                 item_format="F",
                 divisor="1",
                 units="",
-                format="###",
+                number_format="###",
             )
 
             check_data_source = data_structure.DataSource(

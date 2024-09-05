@@ -17,7 +17,7 @@ class ItemInfo:
         item_format: str,
         divisor: str,
         units: str,
-        format: str,
+        number_format: str,
     ):
         """
         Initialize an ItemInfo instance.
@@ -30,23 +30,23 @@ class ItemInfo:
             The name of the item.
         item_format : str
             The format of the item.
-        divisor : str
+        divisor : int
             The divisor associated with the item.
         units : str
             The units of measurement for the item.
-        format : str
-            The format of the item information.
+        number_format : str
+            The format of the number in hilltop.
 
         Returns
         -------
-        None
+        ItemInfo
         """
         self.item_number = item_number
         self.item_name = item_name
         self.item_format = item_format
         self.divisor = divisor
         self.units = units
-        self.format = format
+        self.format = number_format
 
     @classmethod
     def from_xml(cls, source):
@@ -204,7 +204,7 @@ class DataSource:
 
         Returns
         -------
-        None
+        DataSource
         """
         self.name = name
         self.num_items = num_items
@@ -413,7 +413,7 @@ class Data:
 
         Returns
         -------
-        None
+        Data
         """
         self.date_format = date_format
         self.num_items = num_items
@@ -647,7 +647,7 @@ class DataSourceBlob:
 
         Returns
         -------
-        None
+        DataSourceBlob
         """
         self.site_name = site_name
         self.data_source = data_source
