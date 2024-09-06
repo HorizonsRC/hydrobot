@@ -33,7 +33,6 @@ class HtmlMerger:
 
     Examples
     --------
-    >>> from htmlmerger import HtmlMerger
     >>> merger = HtmlMerger(input_directory="my_htmls/")  # result will be in my_htmls/merged.html
     >>> merger.merge(clean=True)  # or clean=False to keep the individual files (default behavior)
 
