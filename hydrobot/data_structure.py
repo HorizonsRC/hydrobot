@@ -537,7 +537,7 @@ class Data:
         for date, row in self.timeseries.iterrows():
             if (pd.isna(row).sum() == len(row)) or (sum(row.to_numpy() == "nan") > 0):
                 # If all values in a row are NaNs, insert a Gap.
-                element = ElementTree.SubElement(data_root, "Gap")
+                ElementTree.SubElement(data_root, "Gap")
             else:
                 element = ElementTree.SubElement(data_root, "E")
                 timestamp = ElementTree.SubElement(element, "T")

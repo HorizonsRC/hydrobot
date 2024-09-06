@@ -11,17 +11,17 @@ MOWSECS_OFFSET = 946771200
 
 def mowsecs_to_timestamp(mowsecs):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert MOWSECS (Ministry of Works Seconds) to timestamp.
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    mowsecs : str | int
+        Number of seconds since MOWSECS epoch.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    pd.Timestamp
+        The converted datetime.
 
     Notes
     -----
@@ -47,17 +47,17 @@ def mowsecs_to_timestamp(mowsecs):
 
 def timestamp_to_mowsecs(timestamp):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert timestamp to MOWSECS (Ministry of Works Seconds).
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    timestamp : pd.Timestamp | np.datetime64
+        The input timestamp.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    int
+        Number of seconds since MOWSECS epoch.
 
     Notes
     -----
@@ -217,7 +217,7 @@ def change_blocks(raw_series, changed_series):
         if raw_date != changed_date:
             # If one series has a timestamp that the other doesn't, treat it as a change
             # Change block goes from the raw timestamp that is missing in the edit to the
-            # next value in the edit, i.e the entire gap.
+            # next value in the edit, i.e. the entire gap.
             if start_index is None:
                 start_index = raw_date
         elif raw_val != changed_val:
