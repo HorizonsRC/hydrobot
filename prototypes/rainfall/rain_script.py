@@ -30,6 +30,7 @@ st.set_page_config(
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
+st.dataframe(data.standard_data, use_container_width=True)
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
@@ -138,7 +139,6 @@ all_checks["Logger"] = all_checks["Logger"].cumsum()
 # Common auto-processing steps
 #######################################################################################
 
-st.dataframe(data.standard_data, use_container_width=True)
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 # Remove manual tips
@@ -162,7 +162,6 @@ data.filter_manual_tips(rainfall_checks)
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-st.dataframe(data.standard_data["Value"])
 
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
