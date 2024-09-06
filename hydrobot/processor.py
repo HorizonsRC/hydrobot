@@ -307,6 +307,8 @@ class Processor:
         ----------
         config_path : string
             Path to config.yaml.
+        fetch_quality : bool, optional
+            Whether to fetch any existing quality data, default false
 
         Returns
         -------
