@@ -359,7 +359,7 @@ def base_data_meets_qc(std_series, qc_series, target_qc):
     pandas.Series
         Filtered data
     """
-    return base_data_qc_filter(std_series, qc_series == target_qc)
+    return base_data_qc_filter(std_series, qc_series.eq(target_qc))
 
 
 def diagnose_data(std_series, check_series, qc_series, frequency):
@@ -479,51 +479,6 @@ def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
         qc_frame["Value"] = clipped_data
 
     return qc_frame
-
-
-def quality_encoder(
-    base_series: pd.Series,
-    check_series: pd.Series,
-    qc_evaluator: QualityCodeEvaluator,
-    gap_limit: int,
-    max_qc=np.nan,
-    interval_dict: dict = None,
-) -> pd.Series:
-    """
-    Return complete QC series.
-
-    Parameters
-    ----------
-    base_series : pd.Series
-        Base time series data
-    check_series : pd.Series
-        Check data time series
-    qc_evaluator : data_sources.QualityCodeEvaluator
-        Handler for QC comparisons
-    gap_limit : int
-        Maximum size of gaps which will be ignored
-    max_qc : numeric
-        Maximum allowed QC value
-    interval_dict : dict
-        Key:Value pairs of max_interval:downgraded_qc for single_downgrade_out_of_validation
-
-    Returns
-    -------
-    pd.Series
-        The modified QC series, indexed by the start time of the QC period
-    """
-    qc_series = check_data_quality_code(base_series, check_series, qc_evaluator)
-    if interval_dict is None:
-        interval_dict = {}
-    qc_series = bulk_downgrade_out_of_validation(
-        qc_series, check_series, interval_dict=interval_dict
-    )
-    qc_series = missing_data_quality_code(base_series, qc_series, gap_limit=gap_limit)
-
-    qc_series = max_qc_limiter(qc_series, max_qc)
-    # qc_series.index.name = "Time"
-    # qc_series.name = "Value"
-    return qc_series
 
 
 def bulk_downgrade_out_of_validation(
