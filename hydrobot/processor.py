@@ -1656,10 +1656,6 @@ class Processor:
         """
         Set the data to the correct frequency, filled with NaNs as appropriate.
 
-        Parameters
-        ----------
-        None
-
         Returns
         -------
         None
@@ -1674,7 +1670,7 @@ class Processor:
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
         >>> processor.insert_missing_nans()
-        >>> processor.standard_series
+        >>> processor.standard_data
         <standard series with missing values filled with NaNs>
         """
         self.standard_data = self._standard_data.asfreq(self._frequency)
@@ -1806,7 +1802,7 @@ class Processor:
 
     def plot_raw_data(self, fig=None, **kwargs):
         """Implement plotting.plot_raw_data."""
-        fig = plotter.plot_raw_data(self.standard_data, fig=fig, **kwargs)
+        fig = plotter.plot_raw_data(self.standard_data["Raw"], fig=fig, **kwargs)
 
         return fig
 
@@ -1844,7 +1840,7 @@ class Processor:
     ):
         """Implement plotting.plot_qc_codes."""
         fig = plotter.plot_check_data(
-            self.standard_data,
+            self.standard_data["Value"],
             self.quality_data,
             self.quality_code_evaluator.constant_check_shift,
             tag_list=tag_list,

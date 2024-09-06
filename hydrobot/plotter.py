@@ -36,14 +36,14 @@ def qc_colour(qc):
     return qc_dict[qc]
 
 
-def plot_raw_data(standard_data, fig=None, **kwargs: int):
+def plot_raw_data(raw_standard_series, fig=None, **kwargs: int):
     """
     Plot the raw data with a grey line.
 
     Parameters
     ----------
-    standard_data : pd.Series
-        The data to be plotted. Needs to have a "Raw" column.
+    raw_standard_series : pd.Series
+        The data to be plotted.
     fig : go.Figure
         The figure to add the plot to
     kwargs : dict
@@ -57,8 +57,8 @@ def plot_raw_data(standard_data, fig=None, **kwargs: int):
         fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=standard_data["Raw"].index,
-            y=standard_data["Raw"].to_numpy(),
+            x=raw_standard_series.index,
+            y=raw_standard_series.to_numpy(),
             mode="lines",
             name="Raw data",
             line=dict(color="darkgray", width=0.5),
@@ -204,14 +204,14 @@ def find_nearest_periodic_indices(periodic_series, check_series):
 
     Parameters
     ----------
-    periodic_series : pd.Series
+    periodic_series : pd.Series | pd.DataFrame
         The series that has periodic timestamps
-    check_series : pd.Series
+    check_series : pd.Series | pd.DataFrame
         The series that does not have periodic timestamps
 
     Returns
     -------
-    list[int]
+    list[indices]
         A list of indices of the periodic series that are closest to the check series
 
     """
@@ -229,7 +229,7 @@ def find_nearest_periodic_indices(periodic_series, check_series):
 
 
 def plot_check_data(
-    standard_data,
+    standard_series,
     check_data,
     constant_check_shift,
     tag_list=None,
@@ -245,9 +245,9 @@ def plot_check_data(
 
     Parameters
     ----------
-    standard_data : pd.Series
-        The data to be plotted
-    check_data : pd.Series
+    standard_series : pd.Series
+        The series to be plotted
+    check_data : pd.DataFrame
         The data to be plotted on top of the standard data
     constant_check_shift : float
         The shift between the check data and the standard data
@@ -286,15 +286,15 @@ def plot_check_data(
     for i, tag in enumerate(tag_list):
         tag_check = check_data[check_data["Source"] == tag]
         if align_checks or ghosts or diffs:
-            nearest_standards = find_nearest_periodic_indices(standard_data, tag_check)
-            standards = standard_data["Value"].iloc[nearest_standards]
+            nearest_standards = find_nearest_periodic_indices(
+                standard_series, tag_check
+            )
+            standards = standard_series.iloc[nearest_standards]
             timestamps = standards.index
         else:
             timestamps = tag_check.index
         if diffs:
-            checks = (
-                tag_check["Value"].to_numpy() - standard_data["Value"].loc[timestamps]
-            )
+            checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
         else:
             checks = tag_check["Value"].to_numpy()
 
@@ -375,11 +375,11 @@ def plot_processing_overview_chart(
 
     Parameters
     ----------
-    standard_data : pd.Series
+    standard_data : pd.DataFrame
         The data to be plotted
-    quality_data : pd.Series
+    quality_data : pd.DataFrame
         The quality data to be plotted
-    check_data : pd.Series
+    check_data : pd.DataFrame
         The check data to be plotted
     constant_check_shift : float
         The shift between the check data and the standard data
@@ -414,7 +414,7 @@ def plot_processing_overview_chart(
         figure=fig,
     )
 
-    fig = plot_raw_data(standard_data, fig=fig, row=1, col=1)
+    fig = plot_raw_data(standard_data["Raw"], fig=fig, row=1, col=1)
     fig = plot_qc_codes(
         standard_data["Value"],
         quality_data["Value"],
@@ -425,7 +425,7 @@ def plot_processing_overview_chart(
     )
 
     fig = plot_check_data(
-        standard_data,
+        standard_data["Value"],
         check_data,
         constant_check_shift,
         tag_list=tag_list,
@@ -438,7 +438,7 @@ def plot_processing_overview_chart(
     )
 
     fig = plot_check_data(
-        standard_data,
+        standard_data["Value"],
         check_data,
         constant_check_shift,
         tag_list=tag_list,

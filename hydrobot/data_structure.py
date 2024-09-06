@@ -15,7 +15,7 @@ class ItemInfo:
         item_number: int,
         item_name: str,
         item_format: str,
-        divisor: str,
+        divisor: str | int,
         units: str,
         number_format: str,
     ):
@@ -30,7 +30,7 @@ class ItemInfo:
             The name of the item.
         item_format : str
             The format of the item.
-        divisor : int
+        divisor : str or int
             The divisor associated with the item.
         units : str
             The units of measurement for the item.
