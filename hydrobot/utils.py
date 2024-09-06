@@ -215,7 +215,7 @@ def change_blocks(raw_series, changed_series):
         changed_date, changed_val = changed_next if changed_next else (None, None)
 
         if raw_date != changed_date:
-            # If one series has a timestamp that the other doesn't, treat it as a change
+            # If one series has a timestamp that the other doesn't, treat it as a change.
             # Change block goes from the raw timestamp that is missing in the edit to the
             # next value in the edit, i.e. the entire gap.
             if start_index is None:
