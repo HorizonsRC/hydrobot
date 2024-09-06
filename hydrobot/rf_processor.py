@@ -356,7 +356,7 @@ class RFProcessor(Processor):
                 y=self.ramped_standard.to_numpy().cumsum(),
                 mode="lines",
                 name="Ramped Standard",
-                line=dict(color="blue", dash="dash"),
+                line=dict(color="grey", dash="dash"),
             )
         )
         return fig

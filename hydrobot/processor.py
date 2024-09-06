@@ -631,8 +631,10 @@ class Processor:
                     else:
                         # infer_frequency is explicitly set to false and frequency is None
                         # Assuming irregular data
-                        raw_standard_data = raw_standard_data.asfreq(
-                            frequency, fill_value=np.nan
+                        warnings.warn(
+                            "No frequency provided and infer_frequency is set to False. "
+                            "Assuming irregular data.",
+                            stacklevel=1,
                         )
 
             if self.raw_standard_blob is not None:
