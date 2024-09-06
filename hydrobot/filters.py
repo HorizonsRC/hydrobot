@@ -259,7 +259,7 @@ def flatline_value_remover(
     Returns
     -------
     pd.Series
-        Data with the flatlined values NaN'ed
+        Data with the flatlined values replaced with np.nan
     """
     # pandas bad day
     consecutive_values = (
