@@ -350,7 +350,6 @@ def series_export_to_csv(
 def hilltop_export(
     file_location: str,
     site_name: str,
-    measurement_name: str,
     std_series: pd.Series,
     check_series: pd.Series,
     qc_series: pd.Series,
@@ -364,8 +363,6 @@ def hilltop_export(
         Where the files are exported to
     site_name : str
         Site name
-    measurement_name : str
-        measurement name
     std_series : pd.Series
         Standard series
     check_series : pd.Series

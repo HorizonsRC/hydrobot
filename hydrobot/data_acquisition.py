@@ -85,12 +85,6 @@ def get_time_range(
         The site name or location.
     measurement : str
         The type of measurement to retrieve.
-    from_date : str
-        The start date and time for data retrieval
-        in the format 'YYYY-MM-DD HH:mm'.
-    to_date : str
-        The end date and time for data retrieval
-        in the format 'YYYY-MM-DD HH:mm'.
     tstype : str
         Type of data that is sought
         (default is Standard, can be Standard, Check, or Quality)

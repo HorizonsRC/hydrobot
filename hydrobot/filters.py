@@ -144,7 +144,7 @@ def remove_spikes(
 
 
 def remove_range(
-    input_series: pd.Series,
+    input_series: pd.Series | pd.DataFrame,
     from_date: str | None,
     to_date: str | None,
     min_gap_length: int = 1,
@@ -163,8 +163,8 @@ def remove_range(
 
     Parameters
     ----------
-    input_series : pd.Series
-        The series to have a section removed
+    input_series : pd.Series | pd.DataFrame
+        The series or dataframe to have a section removed
     from_date : str | None
         Start of removed section
     to_date : str | None
@@ -259,11 +259,11 @@ def flatline_value_remover(
     Returns
     -------
     pd.Series
-        Data with the flatlined values NaN'ed
+        Data with the flatlined values replaced with np.nan
     """
     # pandas bad day
     consecutive_values = (
-        series.groupby((series != series.shift()).cumsum()).cumcount() + 1
+        series.groupby((series.ne(series.shift())).cumsum()).cumcount() + 1
     )
     working_step = consecutive_values.loc[~consecutive_values.between(2, span)]
     length_filter = working_step.reindex(consecutive_values.index).bfill()

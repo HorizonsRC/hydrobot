@@ -11,17 +11,17 @@ MOWSECS_OFFSET = 946771200
 
 def mowsecs_to_timestamp(mowsecs):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert MOWSECS (Ministry of Works Seconds) to timestamp.
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    mowsecs : str | int
+        Number of seconds since MOWSECS epoch.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    pd.Timestamp
+        The converted datetime.
 
     Notes
     -----
@@ -47,17 +47,17 @@ def mowsecs_to_timestamp(mowsecs):
 
 def timestamp_to_mowsecs(timestamp):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert timestamp to MOWSECS (Ministry of Works Seconds).
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    timestamp : pd.Timestamp | np.datetime64
+        The input timestamp.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    int
+        Number of seconds since MOWSECS epoch.
 
     Notes
     -----
@@ -217,7 +217,7 @@ def change_blocks(raw_series, changed_series):
         if raw_date != changed_date:
             # If one series has a timestamp that the other doesn't, treat it as a change
             # Change block goes from the raw timestamp that is missing in the edit to the
-            # next value in the edit, i.e the entire gap.
+            # next value in the edit, i.e. the entire gap.
             if start_index is None:
                 start_index = raw_date
         elif raw_val != changed_val:
@@ -347,7 +347,7 @@ def compare_qc_list_take_min(list_of_qc_series):
 
     Parameters
     ----------
-    list_of_qc_series : list of pd.Series
+    list_of_qc_series : [pd.Series]
         Each element of this list is a QC_series to combine (via min)
 
     Returns
@@ -412,6 +412,7 @@ def series_rounder(series: pd.Series, round_frequency: str = "6min"):
         The series with index rounded
     """
     rounded_series = series.copy()
+    # noinspection PyUnresolvedReferences
     if not isinstance(rounded_series.index, pd.core.indexes.datetimes.DatetimeIndex):
         warnings.warn(
             "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
@@ -547,6 +548,7 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     points12 = ~((scada_difference >= 0.8) & (scada_difference <= 1.2))
 
     # Either QC 600 or 400
+    # noinspection PyUnresolvedReferences
     quality_code = (
         points0.astype(np.float64) * 0
         + points3.astype(np.float64) * 3
@@ -589,29 +591,6 @@ def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
     std_series = std_series.sort_index()
 
     return std_series
-
-
-def cumulative_check_adjust(std_series: pd.Series, check_series: pd.Series):
-    """
-    Modify check data to fit with cumulative data.
-
-    Rainfall check data is done by taking the cumulative total since the last
-    check. As such, the standard cumulative total at the previous check time
-    should be added to the check data.
-
-    Parameters
-    ----------
-    std_series : pd.Series
-        Cumulative data to adjust check data to
-    check_series : pd.Series
-        Check data which should be adjusted to add std_series cumulative total
-
-    Returns
-    -------
-    pd.Series
-        check_series with cumulative totals added
-    """
-    pass
 
 
 def infer_frequency(index: pd.DatetimeIndex, method="strict"):

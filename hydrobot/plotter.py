@@ -36,7 +36,7 @@ def qc_colour(qc):
     return qc_dict[qc]
 
 
-def plot_raw_data(standard_data, fig=None, **kwargs):
+def plot_raw_data(standard_data, fig=None, **kwargs: int):
     """
     Plot the raw data with a grey line.
 
@@ -130,7 +130,7 @@ def add_qc_limit_bars(
     qc400,
     qc500,
     fig=None,
-    **kwargs,
+    **kwargs: int,
 ):
     """
     Add horizontal lines to the plot for the QC limits.
@@ -238,7 +238,7 @@ def plot_check_data(
     diffs=False,
     align_checks=False,
     fig=None,
-    **kwargs,
+    **kwargs: int,
 ):
     """
     Plot the check data.
@@ -291,7 +291,6 @@ def plot_check_data(
             timestamps = standards.index
         else:
             timestamps = tag_check.index
-            standards = None
         if diffs:
             checks = (
                 tag_check["Value"].to_numpy() - standard_data["Value"].loc[timestamps]
@@ -330,20 +329,20 @@ def plot_check_data(
             )
 
             # Add arrows that point from where check is to where it is used
-            for oldstamp, shiftstamp, checkval in zip(
+            for old_stamp, shift_stamp, check_value in zip(
                 tag_check.index,
                 timestamps,
                 checks,
                 strict=True,
             ):
                 # If the timestamps are not the same
-                if shiftstamp != oldstamp and not pd.isna(checkval):
+                if shift_stamp != old_stamp and not pd.isna(check_value):
                     arrow_annotations.append(
                         dict(
-                            ax=oldstamp,
-                            ay=checkval,
-                            x=shiftstamp,
-                            y=checkval,
+                            ax=old_stamp,
+                            ay=check_value,
+                            x=shift_stamp,
+                            y=check_value,
                             axref="x",
                             ayref="y",
                             xref="x",
@@ -392,8 +391,8 @@ def plot_processing_overview_chart(
         The tags of the check data
     check_names : list[str]
         The names of the check data
-    fig : go.Figure
-        The figure to add the plot to
+    fig : go.Figure, optional
+        The figure to add the plot to, will make a new one if none
     kwargs : dict
         Additional arguments to pass to the plot
 
@@ -401,8 +400,6 @@ def plot_processing_overview_chart(
     -------
     go.Figure
     """
-    if fig is None:
-        fig = go.Figure()
     if tag_list is None:
         tag_list = list(set(check_data["Source"]))
     if check_names is None:
@@ -414,6 +411,7 @@ def plot_processing_overview_chart(
         shared_xaxes=True,
         row_heights=(0.7, 0.3),
         vertical_spacing=0.02,
+        figure=fig,
     )
 
     fig = plot_raw_data(standard_data, fig=fig, row=1, col=1)

@@ -108,9 +108,9 @@ class ItemInfo:
         item_format = str(root.findtext("ItemFormat"))
         divisor = str(root.findtext("Divisor"))
         units = str(root.findtext("Units"))
-        format = str(root.findtext("Format"))
+        _format = str(root.findtext("Format"))
 
-        return cls(item_number, item_name, item_format, divisor, units, format)
+        return cls(item_number, item_name, item_format, divisor, units, _format)
 
     def to_xml_tree(self):
         """
@@ -156,7 +156,7 @@ class ItemInfo:
 
     def __repr__(self):
         """Overwriting the __repr__ to mimic xml tree structure."""
-        repr = f"""
+        _repr = f"""
         <ItemInfo ItemNumber="{self.item_number}">
             <ItemName>{self.item_name}</ItemName>
             <ItemFormat>{self.item_format}</ItemFormat>
@@ -165,7 +165,7 @@ class ItemInfo:
             <Format>{self.format}</Format>
         </ItemInfo>
         """
-        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+        return re.sub(r"^\s*\n", "", _repr, flags=re.MULTILINE)
 
 
 class DataSource:
@@ -334,13 +334,13 @@ class DataSource:
         Examples
         --------
         >>> name = "Example"
-        >>> num_items = 2
+        >>> num_item = 2
         >>> ts_type = "..."
         >>> data_type = "..."
         >>> interpolation = "..."
         >>> item_format = "..."
         >>> item_info = [ItemInfo(...), ItemInfo(...)]  # Replace '...' with appropriate arguments
-        >>> data_source_instance = DataSource(name, num_items, ts_type, data_type, interpolation, item_format, item_info)
+        >>> data_source_instance = DataSource(name, num_item, ts_type, data_type, interpolation, item_format, item_info)
         >>> xml_tree = data_source_instance.to_xml_tree()
         >>> isinstance(xml_tree, ElementTree.Element)
         True
@@ -372,7 +372,7 @@ class DataSource:
 
     def __repr__(self):
         """Overwriting the __repr__ to mimic xml tree structure."""
-        repr = f"""
+        _repr = f"""
     <DataSource Name="{self.name}" NumItems="{self.num_items}">
         <TSType>{self.ts_type}</TSType>
         <DataType>{self.data_type}</DataType>
@@ -380,13 +380,13 @@ class DataSource:
         <ItemFormat>{self.item_format}</ItemFormat>
         """
         for item in self.item_info:
-            repr += f"""
+            _repr += f"""
 {item}
             """
-        repr += """
+        _repr += """
     </DataSource>
         """
-        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+        return re.sub(r"^\s*\n", "", _repr, flags=re.MULTILINE)
 
 
 class Data:
@@ -396,7 +396,7 @@ class Data:
         self,
         date_format: str,
         num_items: int,
-        timeseries: pd.DataFrame,
+        timeseries: pd.DataFrame | pd.Series,
     ):
         """
         Initialize a Data instance.
@@ -537,7 +537,7 @@ class Data:
         for date, row in self.timeseries.iterrows():
             if (pd.isna(row).sum() == len(row)) or (sum(row.to_numpy() == "nan") > 0):
                 # If all values in a row are NaNs, insert a Gap.
-                element = ElementTree.SubElement(data_root, "Gap")
+                ElementTree.SubElement(data_root, "Gap")
             else:
                 element = ElementTree.SubElement(data_root, "E")
                 timestamp = ElementTree.SubElement(element, "T")
@@ -565,60 +565,60 @@ class Data:
 
     def __repr__(self):
         """Overwriting the __repr__ to mimic xml tree structure."""
-        repr = f"""
+        _repr = f"""
     <Data DateFormat="{self.date_format}" NumItems="{self.num_items}">
         """
         time = self.timeseries.index
         if isinstance(self.timeseries, pd.Series):
-            repr += f"""
+            _repr += f"""
         <E>
             <T>{time[0]}</T>
             <I1>{self.timeseries.iloc[0]}</I1>
         </E>
             """
             if len(self.timeseries) > 2:
-                repr += f"""
+                _repr += f"""
         ... [{len(self.timeseries) - 2} values omitted]
                 """
             if len(self.timeseries) > 1:
-                repr += f"""
+                _repr += f"""
         <E>
             <T>{time[-1]}</T>
             <I1>{self.timeseries.iloc[-1]}</I1>
         </E>
                 """
         elif isinstance(self.timeseries, pd.DataFrame):
-            repr += f"""
+            _repr += f"""
         <E>
             <T>{time[0]}</T>
             """
             for i in range(len(self.timeseries.columns)):
-                repr += f"""
+                _repr += f"""
             <I{i+1}>{self.timeseries.iloc[0, i]}</I{i+1}>
                 """
-            repr += """
+            _repr += """
         </E>
             """
             if len(self.timeseries) > 2:
-                repr += f"""
+                _repr += f"""
             ... [{len(self.timeseries) - 2} values omitted]
                 """
             if len(self.timeseries) > 1:
-                repr += f"""
+                _repr += f"""
         <E>
             <T>{time[-1]}</T>
                 """
                 for i in range(len(self.timeseries.columns)):
-                    repr += f"""
+                    _repr += f"""
             <I{i+1}>{self.timeseries.iloc[-1, i]}</I{i+1}>
                     """
-            repr += """
+            _repr += """
         </E>
             """
-        repr += """
+        _repr += """
     </Data>
         """
-        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+        return re.sub(r"^\s*\n", "", _repr, flags=re.MULTILINE)
 
 
 class DataSourceBlob:
@@ -737,7 +737,7 @@ class DataSourceBlob:
 
         Examples
         --------
-        >>> data_source_blob = DataSourceBlob("Example", data_source, data, "123")
+        >>> data_source_blob = DataSourceBlob("Example", DataSource(), Data(), "123")
         >>> xml_tree = data_source_blob.to_xml_tree()
         >>> isinstance(xml_tree, ElementTree.Element)
         True
@@ -757,13 +757,13 @@ class DataSourceBlob:
 
     def __repr__(self):
         """Overwriting the __repr__ to mimic xml tree structure."""
-        repr = f"""
+        _repr = f"""
 <DataSourceBlob[Measurement] SiteName="{self.site_name}">
 {self.data_source}
 {self.data}
 </DataSourceBlob[Measurement]">
         """
-        return re.sub(r"^\s*\n", "", repr, flags=re.MULTILINE)
+        return re.sub(r"^\s*\n", "", _repr, flags=re.MULTILINE)
 
 
 def parse_xml(source) -> list[DataSourceBlob]:
@@ -925,7 +925,7 @@ def write_hilltop_xml(data_source_blob_list, output_path):
 
     Examples
     --------
-    >>> blob_list = [dataSourceBlob1, dataSourceBlob2, dataSourceBlob3]
+    >>> blob_list = [DataSourceBlob(), DataSourceBlob(), DataSourceBlob()]
     >>> write_hilltop_xml(blob_list, "output.xml")
 
     The above example writes a Hilltop XML file named "output.xml" based on the provided
