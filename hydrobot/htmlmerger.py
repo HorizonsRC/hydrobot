@@ -98,10 +98,7 @@ class HtmlMerger:
             self.files = list(self.input_directory.glob("*.html"))
             self.files.sort()
 
-        self.files = [
-            f if not isinstance(f, str) or type(f) == Path else Path(f)
-            for f in self.files
-        ]
+        self.files = [f if not isinstance(f, str) else Path(f) for f in self.files]
 
         if self.output_file is None:
             self.output_file = Path("merged.html")
