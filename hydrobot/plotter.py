@@ -43,7 +43,7 @@ def plot_raw_data(standard_data, fig=None, **kwargs: int):
     Parameters
     ----------
     standard_data : pd.Series
-        The data to be plotted
+        The data to be plotted. Needs to have a "Raw" column.
     fig : go.Figure
         The figure to add the plot to
     kwargs : dict

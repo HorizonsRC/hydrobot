@@ -4,6 +4,7 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import plotly.graph_objects as go
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
@@ -349,15 +350,13 @@ class RFProcessor(Processor):
             **kwargs,
         )
 
-        # fig = go.Figure()
-        #
-        # # fig.add_trace(
-        # #     go.Scatter(
-        # #         x = self.ramped_standard.index,
-        # #         y = self.ramped_standard.to_numpy().cumsum(),
-        # #         mode = "lines",
-        # #         name="Ramped Standard",
-        # #         line=dict(color="blue", dash="dash"),
-        # #     )
-        # # )
+        fig.add_trace(
+            go.Scatter(
+                x=self.ramped_standard.index,
+                y=self.ramped_standard.to_numpy().cumsum(),
+                mode="lines",
+                name="Ramped Standard",
+                line=dict(color="blue", dash="dash"),
+            )
+        )
         return fig

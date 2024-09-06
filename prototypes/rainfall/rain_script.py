@@ -162,6 +162,8 @@ data.filter_manual_tips(rainfall_checks)
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+st.dataframe(data.standard_data["Value"])
+
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
@@ -191,6 +193,8 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
     file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
+
+st.plotly_chart(fig)
 
 st.dataframe(data.processing_issues, use_container_width=True)
 st.dataframe(all_checks, use_container_width=True)

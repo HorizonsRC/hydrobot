@@ -533,7 +533,7 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
         raise KeyError("Check data times not found in the standard series") from e
 
     # Multiplier of difference between check and scada
-    scada_difference = check_series / recorded_totals.diff()
+    scada_difference = check_series / recorded_totals.diff().replace(0, np.nan)
     # Fill out to all scada events
     multiplier = scada_difference.reindex(std_series.index, method="bfill")
 
