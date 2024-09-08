@@ -1621,10 +1621,10 @@ class Processor:
             stacklevel=1,
         )
         if gap_limit is None:
-            if "gap_limit" not in self._defaults:
-                raise ValueError("gap_limit value required, no value found in defaults")
-            else:
+            if "gap_limit" in self._defaults:
                 gap_limit = self._defaults["gap_limit"]
+            else:
+                raise ValueError("gap_limit value required, no value found in defaults")
 
         if tstype_standard:
             self.standard_data = filters.remove_range(
@@ -1937,7 +1937,6 @@ class Processor:
             if standard_item_info.item_format == "F":
                 pattern = re.compile(r"#+\.?(#*)")
                 match = pattern.match(standard_item_info.format)
-                float_format = "{:.1f}"
                 if match:
                     group = match.group(1)
                     dp = len(group)
@@ -2016,7 +2015,6 @@ class Processor:
             if check_item_info.item_format == "F":
                 pattern = re.compile(r"#+\.?(#*)")
                 match = pattern.match(check_item_info.format)
-                float_format = "{:.1f}"
                 if match:
                     group = match.group(1)
                     dp = len(group)
