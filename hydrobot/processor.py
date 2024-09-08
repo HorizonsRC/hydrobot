@@ -1590,6 +1590,8 @@ class Processor:
             Flag to delete data from the check series, by default False.
         tstype_quality : bool, optional
             Flag to delete data from the quality series, by default False.
+        gap_limit : int, optional
+            How big missing data is required to insert a gap.
 
         Returns
         -------
