@@ -896,7 +896,6 @@ class Processor:
             to_date,
             tstype="Check",
         )
-        import_data = EMPTY_QUALITY_DATA.copy()
         raw_check_data = EMPTY_CHECK_DATA.copy()
         raw_check_blob = None
         raw_check_xml = None
@@ -999,6 +998,10 @@ class Processor:
 
         Parameters
         ----------
+        from_date : str or None, optional
+            start of data to be imported, if None will use defaults
+        to_date : str or None, optional
+            end of data to be imported, if None will use defaults
         standard : bool, optional
             Whether to import standard data, by default True.
         check : bool, optional
@@ -1367,7 +1370,7 @@ class Processor:
         both_none_mask = pd.isna(dataframe["Value"]) & pd.isna(changed_values)
 
         # Create a mask for cases where values are different excluding both being None-like
-        diffs_mask = (dataframe["Value"] != changed_values) & ~(both_none_mask)
+        diffs_mask = (dataframe["Value"] != changed_values) & ~both_none_mask
 
         if mark_remove:
             dataframe.loc[diffs_mask, "Remove"] = mark_remove
