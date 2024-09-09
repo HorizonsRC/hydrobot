@@ -49,6 +49,27 @@ class RFProcessor(Processor):
             constant_check_shift=constant_check_shift,
             **kwargs,
         )
+        self.standard_item_info = {
+            "ItemName": self.standard_item_name,
+            "ItemFormat": "I",
+            "Divisor": 1000,
+            "Units": "mm",
+            "Format": "#.###",
+        }
+        self.check_item_info = {
+            "ItemName": self.check_item_name,
+            "ItemFormat": "140",
+            "Divisor": 1000,
+            "Units": "mm",
+            "Format": "#.#",
+        }
+        self.standard_data_source = {
+            "num_items": 1,
+            "ts_type": "StdSeries",
+            "data_type": "SimpleTimeSeries",
+            "interpolation": "Instant",
+            "item_format": "1",
+        }
         self.ramped_standard = None
 
     def import_data(

@@ -250,6 +250,13 @@ class Processor:
             "Units": "",
             "Format": "$$$",
         }
+        self.standard_data_source_info = {
+            "num_items": 1,
+            "ts_type": "StdSeries",
+            "data_type": "SimpleTimeSeries",
+            "interpolation": "Instant",
+            "item_format": "1",
+        }
         self._base_url = base_url
         self._standard_hts = standard_hts
         self._check_hts = check_hts
@@ -1931,11 +1938,11 @@ class Processor:
             )
             standard_data_source = data_structure.DataSource(
                 name=self.standard_data_source_name,
-                num_items=1,
-                ts_type="StdSeries",
-                data_type="SimpleTimeSeries",
-                interpolation="Instant",
-                item_format="1",
+                num_items=self.standard_data_source_info["num_items"],
+                ts_type=self.standard_data_source_info["ts_type"],
+                data_type=self.standard_data_source_info["data_type"],
+                interpolation=self.standard_data_source_info["interpolation"],
+                item_format=self.standard_data_source_info["item_format"],
                 item_info=[standard_item_info],
             )
             formatted_std_timeseries = self.standard_data["Value"].astype(str)
