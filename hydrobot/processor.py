@@ -251,7 +251,6 @@ class Processor:
             "Format": "$$$",
         }
         self.standard_data_source_info = {
-            "num_items": 1,
             "ts_type": "StdSeries",
             "data_type": "SimpleTimeSeries",
             "interpolation": "Instant",
@@ -1928,60 +1927,16 @@ class Processor:
 
         # If standard data is present, add it to the list of data blobs
         if standard:
-            standard_item_info = data_structure.ItemInfo(
-                item_number=1,
-                item_name=self.standard_item_info["ItemName"],
-                item_format=self.standard_item_info["ItemFormat"],
-                divisor=self.standard_item_info["Divisor"],
-                units=self.standard_item_info["Units"],
-                number_format=self.standard_item_info["Format"],
-            )
-            standard_data_source = data_structure.DataSource(
-                name=self.standard_data_source_name,
-                num_items=self.standard_data_source_info["num_items"],
-                ts_type=self.standard_data_source_info["ts_type"],
-                data_type=self.standard_data_source_info["data_type"],
-                interpolation=self.standard_data_source_info["interpolation"],
-                item_format=self.standard_data_source_info["item_format"],
-                item_info=[standard_item_info],
-            )
-            formatted_std_timeseries = self.standard_data["Value"].astype(str)
-            if standard_item_info.item_format == "F":
-                pattern = re.compile(r"#+\.?(#*)")
-                match = pattern.match(standard_item_info.format)
-                if match:
-                    group = match.group(1)
-                    dp = len(group)
-                    float_format = "{:." + str(dp) + "f}"
-                    formatted_std_timeseries = (
-                        self.standard_data["Value"]
-                        .astype(np.float64)
-                        .map(lambda x, f=float_format: f.format(x))
-                    )
-
-            actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
-
-            # If gap limit is not in the defaults, do not pass it to the gap closer
-            if "gap_limit" not in self._defaults:
-                standard_timeseries = actual_nan_timeseries
-            else:
-                standard_timeseries = evaluator.small_gap_closer(
-                    actual_nan_timeseries,
-                    gap_limit=self._defaults["gap_limit"],
+            data_blob_list += [
+                data_structure.standard_to_xml_structure(
+                    self.standard_item_info,
+                    self.standard_data_source_name,
+                    self.standard_data_source_info,
+                    self.standard_data["Value"],
+                    self.site,
+                    self._defaults.get("gap_limit"),
                 )
-
-            standard_data = data_structure.Data(
-                date_format="Calendar",
-                num_items=3,
-                timeseries=standard_timeseries.to_frame(),
-            )
-
-            standard_data_blob = data_structure.DataSourceBlob(
-                site_name=self.site,
-                data_source=standard_data_source,
-                data=standard_data,
-            )
-            data_blob_list += [standard_data_blob]
+            ]
 
         # If check data is present, add it to the list of data blobs
         if check:
@@ -2078,7 +2033,8 @@ class Processor:
     def report_processing_issue(
         self, start_time=None, end_time=None, code=None, comment=None, series_type=None
     ):
-        """Add an issue to be reported for processing usage.
+        """
+        Add an issue to be reported for processing usage.
 
         This method adds an issue to the processing_issues DataFrame.
 

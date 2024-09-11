@@ -3,8 +3,11 @@ import re
 import warnings
 from xml.etree import ElementTree
 
+import numpy as np
 import pandas as pd
 from defusedxml import ElementTree as DefusedElementTree
+
+from hydrobot import evaluator
 
 
 class ItemInfo:
@@ -946,3 +949,87 @@ def write_hilltop_xml(data_source_blob_list, output_path):
 
     # Write the XML file to the specified output path
     etree.write(output_path, encoding="utf-8", xml_declaration=True)
+
+
+def standard_to_xml_structure(
+    standard_item_info: dict,
+    standard_data_source_name: str,
+    standard_data_source_info: dict,
+    standard_series: pd.Series,
+    site: str,
+    gap_limit: int | None,
+):
+    """
+    Give the standard data in format ready to be exported to hilltop xml.
+
+    Parameters
+    ----------
+    standard_item_info: dict
+    standard_data_source_name: str
+    standard_data_source_info : dict
+
+    standard_series : pd.Series
+        Data to export
+    site: str
+        Name of site
+    gap_limit : int | None
+        Size of gaps which will be ignored; if None, no gaps are ignored
+
+
+
+    Returns
+    -------
+    data_structure.DataSourceBlob
+        The data ready to be exported.
+    """
+    item_info_list = [
+        ItemInfo(
+            item_number=1,
+            item_name=standard_item_info["ItemName"],
+            item_format=standard_item_info["ItemFormat"],
+            divisor=standard_item_info["Divisor"],
+            units=standard_item_info["Units"],
+            number_format=standard_item_info["Format"],
+        )
+    ]
+    standard_data_source = DataSource(
+        name=standard_data_source_name,
+        num_items=len(item_info_list),
+        item_info=item_info_list,
+        **standard_data_source_info,
+    )
+    formatted_std_timeseries = standard_series.astype(str)
+    if standard_item_info["ItemFormat"] == "F":
+        pattern = re.compile(r"#+\.?(#*)")
+        match = pattern.match(standard_item_info["Format"])
+        if match:
+            group = match.group(1)
+            dp = len(group)
+            float_format = "{:." + str(dp) + "f}"
+            formatted_std_timeseries = standard_series.astype(np.float64).map(
+                lambda x, f=float_format: f.format(x)
+            )
+
+    actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
+
+    # If gap limit is not in the defaults, do not pass it to the gap closer
+    if gap_limit is None:
+        standard_timeseries = actual_nan_timeseries
+    else:
+        standard_timeseries = evaluator.small_gap_closer(
+            actual_nan_timeseries,
+            gap_limit=gap_limit,
+        )
+
+    standard_data = Data(
+        date_format="Calendar",
+        num_items=3,
+        timeseries=standard_timeseries.to_frame(),
+    )
+
+    standard_data_blob = DataSourceBlob(
+        site_name=site,
+        data_source=standard_data_source,
+        data=standard_data,
+    )
+    return standard_data_blob
