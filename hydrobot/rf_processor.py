@@ -50,18 +50,18 @@ class RFProcessor(Processor):
             **kwargs,
         )
         self.standard_item_info = {
-            "ItemName": self.standard_item_name,
-            "ItemFormat": "I",
-            "Divisor": 1000,
-            "Units": "mm",
-            "Format": "#.###",
+            "item_name": self.standard_item_name,
+            "item_format": "I",
+            "divisor": 1000,
+            "units": "mm",
+            "number_format": "#.###",
         }
         self.check_item_info = {
-            "ItemName": self.check_item_name,
-            "ItemFormat": "140",
-            "Divisor": 1000,
-            "Units": "mm",
-            "Format": "#.#",
+            "item_name": self.check_item_name,
+            "item_format": "140",
+            "divisor": 1000,
+            "units": "mm",
+            "number_format": "#.#",
         }
         self.standard_data_source = {
             "num_items": 1,

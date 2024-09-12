@@ -158,18 +158,18 @@ class DOProcessor(Processor):
             self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
 
         self.ap_standard_item_info = {
-            "ItemName": self.ap_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
+            "item_name": self.ap_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
         }
         self.wt_standard_item_info = {
-            "ItemName": self.wt_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
+            "item_name": self.wt_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
         }
 
         self.ap_standard_data = EMPTY_STANDARD_DATA.copy()

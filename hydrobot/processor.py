@@ -237,24 +237,30 @@ class Processor:
                 self.check_data_source_name = self.check_item_name
 
         self.standard_item_info = {
-            "ItemName": self.standard_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
+            "item_name": self.standard_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
         }
         self.check_item_info = {
-            "ItemName": self.check_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "$$$",
+            "item_name": self.check_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "$$$",
         }
         self.standard_data_source_info = {
             "ts_type": "StdSeries",
             "data_type": "SimpleTimeSeries",
             "interpolation": "Instant",
             "item_format": "1",
+        }
+        self.check_data_source_info = {
+            "ts_type": "CheckSeries",
+            "data_type": "SimpleTimeSeries",
+            "interpolation": "Discrete",
+            "item_format": "45",
         }
         self._base_url = base_url
         self._standard_hts = standard_hts
@@ -586,21 +592,21 @@ class Processor:
                         blob_found = True
                         raw_standard_blob = blob
                         raw_standard_xml = xml_tree
-                        standard_item_info["ItemName"] = blob.data_source.item_info[
+                        standard_item_info["item_name"] = blob.data_source.item_info[
                             0
                         ].item_name
-                        standard_item_info["ItemFormat"] = blob.data_source.item_info[
+                        standard_item_info["item_format"] = blob.data_source.item_info[
                             0
                         ].item_format
-                        standard_item_info["Divisor"] = blob.data_source.item_info[
+                        standard_item_info["divisor"] = blob.data_source.item_info[
                             0
                         ].divisor
-                        standard_item_info["Units"] = blob.data_source.item_info[
+                        standard_item_info["units"] = blob.data_source.item_info[
                             0
                         ].units
-                        standard_item_info["Format"] = blob.data_source.item_info[
-                            0
-                        ].format
+                        standard_item_info[
+                            "number_format"
+                        ] = blob.data_source.item_info[0].number_format
             if not blob_found:
                 raise ValueError(
                     f"Standard Data Not Found under name "
@@ -646,8 +652,8 @@ class Processor:
                         )
 
             if self.raw_standard_blob is not None:
-                fmt = standard_item_info["ItemFormat"]
-                div = standard_item_info["Divisor"]
+                fmt = standard_item_info["item_format"]
+                div = standard_item_info["divisor"]
             else:
                 warnings.warn(
                     "Could not extract standard data format from data source. "
@@ -930,17 +936,19 @@ class Processor:
                         raw_check_blob = blob
                         raw_check_xml = xml_tree
                         raw_check_data = import_data
-                        check_item_info["ItemName"] = blob.data_source.item_info[
+                        check_item_info["item_name"] = blob.data_source.item_info[
                             0
                         ].item_name
-                        check_item_info["ItemFormat"] = blob.data_source.item_info[
+                        check_item_info["item_format"] = blob.data_source.item_info[
                             0
                         ].item_format
-                        check_item_info["Divisor"] = blob.data_source.item_info[
+                        check_item_info["divisor"] = blob.data_source.item_info[
                             0
                         ].divisor
-                        check_item_info["Units"] = blob.data_source.item_info[0].units
-                        check_item_info["Format"] = blob.data_source.item_info[0].format
+                        check_item_info["units"] = blob.data_source.item_info[0].units
+                        check_item_info["number_format"] = blob.data_source.item_info[
+                            0
+                        ].number_format
             if not blob_found:
                 warnings.warn(
                     f"Check data {check_data_source_name} not found in server "
@@ -1940,94 +1948,45 @@ class Processor:
 
         # If check data is present, add it to the list of data blobs
         if check:
-            check_item_info = data_structure.ItemInfo(
-                item_number=1,
-                item_name=self.check_item_info["ItemName"],
-                item_format=self.check_item_info["ItemFormat"],
-                divisor=self.check_item_info["Divisor"],
-                units=self.check_item_info["Units"],
-                number_format=self.check_item_info["Format"],
-            )
-            recorder_time_item_info = data_structure.ItemInfo(
-                item_number=2,
-                item_name="Recorder Time",
-                item_format="D",
-                divisor="1",
-                units="",
-                number_format="###",
-            )
-            comment_item_info = data_structure.ItemInfo(
-                item_number=3,
-                item_name="Comment",
-                item_format="F",
-                divisor="1",
-                units="",
-                number_format="###",
-            )
+            recorder_time_item_info = {
+                "item_name": "Recorder Time",
+                "item_format": "D",
+                "divisor": "1",
+                "units": "",
+                "number_format": "###",
+            }
+            comment_item_info = {
+                "item_name": "Comment",
+                "item_format": "F",
+                "divisor": "1",
+                "units": "",
+                "number_format": "###",
+            }
 
-            check_data_source = data_structure.DataSource(
-                name=self.check_data_source_name,
-                num_items=3,
-                ts_type="CheckSeries",
-                data_type="SimpleTimeSeries",
-                interpolation="Discrete",
-                item_format="45",
-                item_info=[
-                    check_item_info,
-                    recorder_time_item_info,
-                    comment_item_info,
-                ],
-            )
-
-            if check_item_info.item_format == "F":
-                pattern = re.compile(r"#+\.?(#*)")
-                match = pattern.match(check_item_info.format)
-                if match:
-                    group = match.group(1)
-                    dp = len(group)
-                    float_format = "{:." + str(dp) + "f}"
-                    self.check_data.loc[:, "Value"] = self.check_data.loc[
-                        :, "Value"
-                    ].map(lambda x, f=float_format: f.format(x))
-
-            check_data = self.check_data.copy()
-            check_data["Recorder Time"] = check_data.index
-            check_data = data_structure.Data(
-                date_format="Calendar",
-                num_items=3,
-                timeseries=check_data[["Value", "Recorder Time", "Comment"]],
-            )
-
-            check_data_blob = data_structure.DataSourceBlob(
-                site_name=self.site,
-                data_source=check_data_source,
-                data=check_data,
-            )
-            data_blob_list += [check_data_blob]
+            data_blob_list += [
+                data_structure.check_to_xml_structure(
+                    item_info_dicts=[
+                        self.check_item_info,
+                        recorder_time_item_info,
+                        comment_item_info,
+                    ],
+                    check_data_source_name=self.check_data_source_name,
+                    check_data_source_info=self.check_data_source_info,
+                    check_item_info=self.check_item_info,
+                    check_data=self.check_data,
+                    site=self.site,
+                )
+            ]
 
         # If quality data is present, add it to the list of data blobs
         if quality:
-            quality_data_source = data_structure.DataSource(
-                name=self.standard_data_source_name,
-                num_items=1,
-                ts_type="StdQualSeries",
-                data_type="SimpleTimeSeries",
-                interpolation="Event",
-                item_format="0",
-            )
-
-            quality_data = data_structure.Data(
-                date_format="Calendar",
-                num_items=3,
-                timeseries=self.quality_data["Value"].to_frame(),
-            )
-
-            quality_data_blob = data_structure.DataSourceBlob(
-                site_name=self.site,
-                data_source=quality_data_source,
-                data=quality_data,
-            )
-            data_blob_list += [quality_data_blob]
+            data_blob_list += [
+                data_structure.quality_to_xml_structure(
+                    data_source_name=self.standard_data_source_name,
+                    quality_series=self.quality_data["Value"],
+                    site=self.site,
+                )
+            ]
         return data_blob_list
 
     def report_processing_issue(

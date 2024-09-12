@@ -49,7 +49,7 @@ class ItemInfo:
         self.item_format = item_format
         self.divisor = divisor
         self.units = units
-        self.format = number_format
+        self.number_format = number_format
 
     @classmethod
     def from_xml(cls, source):
@@ -90,7 +90,7 @@ class ItemInfo:
             # If the source is an ElementTree object, use it directly
             root = source
         elif isinstance(source, bytes | bytearray):
-            # If the source is a bytes or bytearray, assume it's
+            # If the source is a bytes or bytearray, assume it is
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
         elif hasattr(source, "read"):
@@ -153,7 +153,7 @@ class ItemInfo:
         units_element.text = str(self.units)
 
         format_element = ElementTree.SubElement(item_info_root, "Format")
-        format_element.text = str(self.format)
+        format_element.text = str(self.number_format)
 
         return item_info_root
 
@@ -165,7 +165,7 @@ class ItemInfo:
             <ItemFormat>{self.item_format}</ItemFormat>
             <Divisor>{self.divisor}</Divisor>
             <Units>{self.units}</Units>
-            <Format>{self.format}</Format>
+            <Format>{self.number_format}</Format>
         </ItemInfo>
         """
         return re.sub(r"^\s*\n", "", _repr, flags=re.MULTILINE)
@@ -259,7 +259,7 @@ class DataSource:
             # If the source is an ElementTree object, use it directly
             root = source
         elif isinstance(source, bytes | bytearray):
-            # If the source is a bytes or bytearray, assume it's
+            # If the source is a bytes or bytearray, assume it is
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
         elif hasattr(source, "read"):
@@ -461,7 +461,7 @@ class Data:
             # If the source is an ElementTree object, use it directly
             root = source
         elif isinstance(source, bytes | bytearray):
-            # If the source is a bytes or bytearray, assume it's
+            # If the source is a bytes or bytearray, assume it is
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
         elif hasattr(source, "read"):
@@ -696,7 +696,7 @@ class DataSourceBlob:
             # If the source is an ElementTree object, use it directly
             root = source
         elif isinstance(source, bytes | bytearray):
-            # If the source is a bytes or bytearray, assume it's
+            # If the source is a bytes or bytearray, assume it is
             # XML content and decode it.
             root = DefusedElementTree.fromstring(source.decode())
         elif hasattr(source, "read"):
@@ -813,7 +813,7 @@ def parse_xml(source) -> list[DataSourceBlob]:
         # If the source is an ElementTree object, get the root
         root = source.getroot()
     elif isinstance(source, bytes | bytearray):
-        # If the source is a bytes or bytearray, assume it's
+        # If the source is a bytes or bytearray, assume it is
         # XML content and decode it.
         root = DefusedElementTree.fromstring(source.decode())
     elif hasattr(source, "read"):
@@ -887,7 +887,7 @@ def parse_xml(source) -> list[DataSourceBlob]:
                     data_source_blob.data.timeseries.rename(columns=cols)
                 )
             else:
-                # It seems that if iteminfo is missing it's always a QC
+                # It seems that if item_info is missing it's always a QC
                 data_source_blob.data.timeseries = (
                     data_source_blob.data.timeseries.rename(columns={"I1": "Value"})
                 )
@@ -985,11 +985,7 @@ def standard_to_xml_structure(
     item_info_list = [
         ItemInfo(
             item_number=1,
-            item_name=standard_item_info["ItemName"],
-            item_format=standard_item_info["ItemFormat"],
-            divisor=standard_item_info["Divisor"],
-            units=standard_item_info["Units"],
-            number_format=standard_item_info["Format"],
+            **standard_item_info,
         )
     ]
     standard_data_source = DataSource(
@@ -999,9 +995,9 @@ def standard_to_xml_structure(
         **standard_data_source_info,
     )
     formatted_std_timeseries = standard_series.astype(str)
-    if standard_item_info["ItemFormat"] == "F":
+    if standard_item_info["item_format"] == "F":
         pattern = re.compile(r"#+\.?(#*)")
-        match = pattern.match(standard_item_info["Format"])
+        match = pattern.match(standard_item_info["number_format"])
         if match:
             group = match.group(1)
             dp = len(group)
@@ -1012,7 +1008,7 @@ def standard_to_xml_structure(
 
     actual_nan_timeseries = formatted_std_timeseries.replace("nan", np.nan)
 
-    # If gap limit is not in the defaults, do not pass it to the gap closer
+    # If gap limit is not there, do not pass it to the gap closer
     if gap_limit is None:
         standard_timeseries = actual_nan_timeseries
     else:
@@ -1033,3 +1029,107 @@ def standard_to_xml_structure(
         data=standard_data,
     )
     return standard_data_blob
+
+
+def check_to_xml_structure(
+    item_info_dicts: [dict],
+    check_data_source_name: str,
+    check_data_source_info: dict,
+    check_item_info: dict,
+    check_data: pd.DataFrame,
+    site: str,
+):
+    """
+    Give the check data in format ready to be exported to hilltop xml.
+
+    Parameters
+    ----------
+    item_info_dicts
+    check_data_source_name
+    check_data_source_info
+    check_item_info
+    check_data
+    site
+
+    Returns
+    -------
+    DataSourceBlob
+    """
+    check_data = check_data.copy()
+
+    list_of_item_infos = []
+    for count, item_info_dict in enumerate(item_info_dicts):
+        list_of_item_infos += [ItemInfo(item_number=count + 1, **item_info_dict)]
+
+    check_data_source = DataSource(
+        name=check_data_source_name,
+        num_items=len(list_of_item_infos),
+        item_info=list_of_item_infos,
+        **check_data_source_info,
+    )
+
+    if check_item_info["item_format"] == "F":
+        pattern = re.compile(r"#+\.?(#*)")
+        match = pattern.match(check_item_info["number_format"])
+        if match:
+            group = match.group(1)
+            dp = len(group)
+            float_format = "{:." + str(dp) + "f}"
+            check_data.loc[:, "Value"] = check_data.loc[:, "Value"].map(
+                lambda x, f=float_format: f.format(x)
+            )
+
+    check_data["Recorder Time"] = check_data.index
+    check_data = Data(
+        date_format="Calendar",
+        num_items=3,
+        timeseries=check_data[["Value", "Recorder Time", "Comment"]],
+    )
+
+    check_data_blob = DataSourceBlob(
+        site_name=site,
+        data_source=check_data_source,
+        data=check_data,
+    )
+
+    return check_data_blob
+
+
+def quality_to_xml_structure(
+    data_source_name: str, quality_series: pd.Series, site: str
+):
+    """
+    Give the quality data in format ready to be exported to hilltop xml.
+
+    Parameters
+    ----------
+    data_source_name
+    quality_series
+    site
+
+    Returns
+    -------
+    DataSourceBlob
+    """
+    quality_data_source = DataSource(
+        name=data_source_name,
+        num_items=1,
+        ts_type="StdQualSeries",
+        data_type="SimpleTimeSeries",
+        interpolation="Event",
+        item_format="0",
+    )
+
+    quality_data = Data(
+        date_format="Calendar",
+        num_items=3,
+        timeseries=quality_series.to_frame(),
+    )
+
+    quality_data_blob = DataSourceBlob(
+        site_name=site,
+        data_source=quality_data_source,
+        data=quality_data,
+    )
+
+    return quality_data_blob
