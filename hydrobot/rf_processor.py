@@ -10,7 +10,7 @@ from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot import plotter
-from hydrobot.processor import Processor, evaluator, utils
+from hydrobot.processor import Processor, data_structure, evaluator, utils
 
 annalizer = Annalist()
 
@@ -54,21 +54,45 @@ class RFProcessor(Processor):
             "item_format": "I",
             "divisor": 1000,
             "units": "mm",
+            "number_format": "####.#",
+        }
+        self.ramped_standard_item_info = {
+            "item_name": self.standard_item_name,
+            "item_format": "I",
+            "divisor": 1000,
+            "units": "mm",
             "number_format": "#.###",
         }
         self.check_item_info = {
             "item_name": self.check_item_name,
-            "item_format": "140",
+            "item_format": "I",
             "divisor": 1000,
             "units": "mm",
             "number_format": "#.#",
         }
-        self.standard_data_source = {
-            "num_items": 1,
+        self.check_data_source_info = {
+            "ts_type": "CheckSeries",
+            "data_type": "Rain6",
+            "interpolation": "Discrete",
+            "item_format": "140",
+        }
+        self.ramped_check_data_source_info = {
+            "ts_type": "CheckSeries",
+            "data_type": "SimpleTimeSeries",
+            "interpolation": "Discrete",
+            "item_format": "140",
+        }
+        self.standard_data_source_info = {
+            "ts_type": "StdSeries",
+            "data_type": "Rain6",
+            "interpolation": "Incremental",
+            "item_format": "0",
+        }
+        self.ramped_standard_data_source_info = {
             "ts_type": "StdSeries",
             "data_type": "SimpleTimeSeries",
-            "interpolation": "Instant",
-            "item_format": "1",
+            "interpolation": "Incremental",
+            "item_format": "0",
         }
         self.ramped_standard = None
 
@@ -381,3 +405,147 @@ class RFProcessor(Processor):
             )
         )
         return fig
+
+    def to_xml_data_structure(self, standard=True, quality=True, check=True):
+        """
+        Convert Processor object data to a list of XML data structures.
+
+        Returns
+        -------
+        list of data_structure.DataSourceBlob
+            List of DataSourceBlob instances representing the data in the Processor
+            object.
+
+        Notes
+        -----
+        This method converts the data in the Processor object, including standard,
+        check, and quality series, into a list of DataSourceBlob instances. Each
+        DataSourceBlob contains information about the site, data source, and associated
+        data.
+
+        Examples
+        --------
+        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
+        >>> processor.import_data()
+        >>> xml_data_list = processor.to_xml_data_structure()
+        >>> # Convert Processor data to a list of XML data structures.
+        """
+        data_blob_list = []
+
+        # If standard data is present, add it to the list of data blobs
+        if standard:
+            # scada
+            data_blob_list += [
+                data_structure.standard_to_xml_structure(
+                    standard_item_info=self.standard_item_info,
+                    standard_data_source_name=self.standard_data_source_name,
+                    standard_data_source_info=self.standard_data_source_info,
+                    standard_series=self.standard_data["Value"] * 1000,
+                    site=self.site,
+                    gap_limit=self._defaults.get("gap_limit"),
+                )
+            ]
+            # ramped
+            data_blob_list += [
+                data_structure.standard_to_xml_structure(
+                    standard_item_info=self.ramped_standard_item_info,
+                    standard_data_source_name="Rainfall",
+                    standard_data_source_info=self.ramped_standard_data_source_info,
+                    standard_series=self.standard_data["Value"] * 1000,
+                    site=self.site,
+                    gap_limit=self._defaults.get("gap_limit"),
+                )
+            ]
+
+        # If check data is present, add it to the list of data blobs
+        if check:
+            recorder_time_item_info = {
+                "item_name": "Recorder Time",
+                "item_format": "D",
+                "divisor": "1",
+                "units": "",
+                "number_format": "###",
+            }
+            recorder_total_item_info = {
+                "item_name": "Recorder Total",
+                "item_format": "I",
+                "divisor": "1",
+                "units": "",
+                "number_format": "###",
+            }
+            comment_item_info = {
+                "item_name": "Comment",
+                "item_format": "S",
+                "divisor": "1",
+                "units": "",
+                "number_format": "###",
+            }
+
+            # scada
+            scaled_check_data = self.check_data.copy()
+            scaled_check_data["Value"] = scaled_check_data["Value"] * 1000
+            scaled_check_data["Recorder Total"] = scaled_check_data["Value"]
+            data_blob_list += [
+                data_structure.check_to_xml_structure(
+                    item_info_dicts=[
+                        self.check_item_info,
+                        recorder_time_item_info,
+                        recorder_total_item_info,
+                        comment_item_info,
+                    ],
+                    check_data_source_name="SCADA Rainfall",
+                    check_data_source_info=self.check_data_source_info,
+                    check_item_info=self.check_item_info,
+                    check_data=scaled_check_data,
+                    site=self.site,
+                    check_data_selector=[
+                        "Value",
+                        "Recorder Time",
+                        "Recorder Total",
+                        "Comment",
+                    ],
+                )
+            ]
+
+            # ramped
+            data_blob_list += [
+                data_structure.check_to_xml_structure(
+                    item_info_dicts=[
+                        self.check_item_info,
+                        recorder_time_item_info,
+                        recorder_total_item_info,
+                        comment_item_info,
+                    ],
+                    check_data_source_name="Rainfall",
+                    check_data_source_info=self.ramped_check_data_source_info,
+                    check_item_info=self.check_item_info,
+                    check_data=scaled_check_data,
+                    site=self.site,
+                    check_data_selector=[
+                        "Value",
+                        "Recorder Time",
+                        "Recorder Total",
+                        "Comment",
+                    ],
+                )
+            ]
+
+        # If quality data is present, add it to the list of data blobs
+        if quality:
+            # scada
+            data_blob_list += [
+                data_structure.quality_to_xml_structure(
+                    data_source_name=self.standard_data_source_name,
+                    quality_series=self.quality_data["Value"] * 1000,
+                    site=self.site,
+                )
+            ]
+            # ramped
+            data_blob_list += [
+                data_structure.quality_to_xml_structure(
+                    data_source_name="Rainfall",
+                    quality_series=self.quality_data["Value"] * 1000,
+                    site=self.site,
+                )
+            ]
+        return data_blob_list

@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 from defusedxml import ElementTree as DefusedElementTree
 
-from hydrobot import evaluator
+from hydrobot import evaluator, utils
 
 
 class ItemInfo:
@@ -1038,18 +1038,27 @@ def check_to_xml_structure(
     check_item_info: dict,
     check_data: pd.DataFrame,
     site: str,
+    check_data_selector: [str],
 ):
     """
     Give the check data in format ready to be exported to hilltop xml.
 
     Parameters
     ----------
-    item_info_dicts
-    check_data_source_name
-    check_data_source_info
-    check_item_info
-    check_data
-    site
+    item_info_dicts: [dict]
+        Tags for additional ItemInfo xml
+    check_data_source_name: str
+        Data source name for xml
+    check_data_source_info: dict
+        Tags for DataSource xml
+    check_item_info: dict
+        Tags for the ItemInfo xml
+    check_data: pd.DataFrame
+        The data to be exported
+    site: str
+        Name of site
+    check_data_selector: [str]
+        Which columns of the check data are displayed, e.g. ["Value", "Recorder Time", "Comment"]
 
     Returns
     -------
@@ -1079,11 +1088,11 @@ def check_to_xml_structure(
                 lambda x, f=float_format: f.format(x)
             )
 
-    check_data["Recorder Time"] = check_data.index
+    check_data["Recorder Time"] = utils.datetime_index_to_mowsecs(check_data.index)
     check_data = Data(
         date_format="Calendar",
         num_items=3,
-        timeseries=check_data[["Value", "Recorder Time", "Comment"]],
+        timeseries=check_data[check_data_selector],
     )
 
     check_data_blob = DataSourceBlob(

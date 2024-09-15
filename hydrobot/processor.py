@@ -1957,7 +1957,7 @@ class Processor:
             }
             comment_item_info = {
                 "item_name": "Comment",
-                "item_format": "F",
+                "item_format": "S",
                 "divisor": "1",
                 "units": "",
                 "number_format": "###",
@@ -1975,6 +1975,7 @@ class Processor:
                     check_item_info=self.check_item_info,
                     check_data=self.check_data,
                     site=self.site,
+                    check_data_selector=["Value", "Recorder Time", "Comment"],
                 )
             ]
 
