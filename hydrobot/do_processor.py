@@ -27,17 +27,17 @@ class DOProcessor(Processor):
         site: str,
         standard_hts: str,
         standard_measurement_name: str,
-        frequency: str,
+        frequency: str | None,
         site_altitude: float,
-        water_temperature_site: str,
-        atmospheric_pressure_site: str,
-        water_temperature_hts: str,
-        atmospheric_pressure_hts: str,
+        water_temperature_site: str | None,
+        atmospheric_pressure_site: str | None,
+        water_temperature_hts: str | None,
+        atmospheric_pressure_hts: str | None,
         atmospheric_pressure_frequency: str,
         water_temperature_frequency: str,
         atmospheric_pressure_site_altitude: float | None,
-        water_temperature_measurement_name: str = "Water Temperature",
-        atmospheric_pressure_measurement_name: str = "Atmospheric Pressure",
+        water_temperature_measurement_name: str | None = "Water Temperature",
+        atmospheric_pressure_measurement_name: str | None = "Atmospheric Pressure",
         from_date: str | None = None,
         to_date: str | None = None,
         check_hts: str | None = None,
@@ -45,6 +45,8 @@ class DOProcessor(Processor):
         defaults: dict | None = None,
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
+        fetch_quality: bool = False,
+        export_file_name: str | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -60,6 +62,8 @@ class DOProcessor(Processor):
             defaults=defaults,
             interval_dict=interval_dict,
             constant_check_shift=constant_check_shift,
+            fetch_quality=fetch_quality,
+            export_file_name=export_file_name,
             **kwargs,
         )
 
@@ -154,18 +158,18 @@ class DOProcessor(Processor):
             self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
 
         self.ap_standard_item_info = {
-            "ItemName": self.ap_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
+            "item_name": self.ap_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
         }
         self.wt_standard_item_info = {
-            "ItemName": self.wt_item_name,
-            "ItemFormat": "F",
-            "Divisor": 1,
-            "Units": "",
-            "Format": "###.##",
+            "item_name": self.wt_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
         }
 
         self.ap_standard_data = EMPTY_STANDARD_DATA.copy()
@@ -255,7 +259,7 @@ class DOProcessor(Processor):
         interval_dict: dict | None = None,
     ):
         """
-        DO verison of quality encoder.
+        DO version of quality encoder.
 
         Parameters
         ----------
@@ -319,7 +323,7 @@ class DOProcessor(Processor):
         # self._apply_quality(cap_frame)
 
     @classmethod
-    def from_config_yaml(cls, config_path):
+    def from_config_yaml(cls, config_path, fetch_quality=False):
         """
         Initialises a Processor class given a config file.
 
@@ -327,6 +331,8 @@ class DOProcessor(Processor):
         ----------
         config_path : string
             Path to config.yaml.
+        fetch_quality : bool, optional
+            Whether to fetch any existing quality data, default false
 
         Returns
         -------

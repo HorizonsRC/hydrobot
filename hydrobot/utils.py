@@ -11,17 +11,17 @@ MOWSECS_OFFSET = 946771200
 
 def mowsecs_to_timestamp(mowsecs):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert MOWSECS (Ministry of Works Seconds) to timestamp.
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    mowsecs : str | int
+        Number of seconds since MOWSECS epoch.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    pd.Timestamp
+        The converted datetime.
 
     Notes
     -----
@@ -47,17 +47,17 @@ def mowsecs_to_timestamp(mowsecs):
 
 def timestamp_to_mowsecs(timestamp):
     """
-    Convert MOWSECS (Ministry of Works Seconds) index to datetime index.
+    Convert timestamp to MOWSECS (Ministry of Works Seconds).
 
     Parameters
     ----------
-    index : pd.Index
-        The input index in MOWSECS format.
+    timestamp : pd.Timestamp | np.datetime64
+        The input timestamp.
 
     Returns
     -------
-    pd.DatetimeIndex
-        The converted datetime index.
+    int
+        Number of seconds since MOWSECS epoch.
 
     Notes
     -----
@@ -179,7 +179,8 @@ def merge_series(series_a, series_b, tolerance=1e-09):
 
 
 def change_blocks(raw_series, changed_series):
-    """Find the blocks of changes between two series.
+    """
+    Find the blocks of changes between two series.
 
     Parameters
     ----------
@@ -215,9 +216,9 @@ def change_blocks(raw_series, changed_series):
         changed_date, changed_val = changed_next if changed_next else (None, None)
 
         if raw_date != changed_date:
-            # If one series has a timestamp that the other doesn't, treat it as a change
+            # If one series has a timestamp that the other doesn't, treat it as a change.
             # Change block goes from the raw timestamp that is missing in the edit to the
-            # next value in the edit, i.e the entire gap.
+            # next value in the edit, i.e. the entire gap.
             if start_index is None:
                 start_index = raw_date
         elif raw_val != changed_val:
@@ -347,7 +348,7 @@ def compare_qc_list_take_min(list_of_qc_series):
 
     Parameters
     ----------
-    list_of_qc_series : list of pd.Series
+    list_of_qc_series : [pd.Series]
         Each element of this list is a QC_series to combine (via min)
 
     Returns
@@ -394,24 +395,25 @@ def correct_dissolved_oxygen(diss_ox, atm_pres, ap_altitude, do_altitude):
     return corr_diss_ox
 
 
-def series_rounder(series: pd.Series, round_frequency: str = "6min"):
+def series_rounder(series: pd.Series | pd.DataFrame, round_frequency: str = "6min"):
     """
-    Rounds series to be on the 6-minute mark (or other interval).
+    Rounds pandas data to be on the 6-minute mark (or other interval).
 
     Parameters
     ----------
-    series : pd.Series
-        The series to have index rounded. Gives warning if index is not a DatetimeIndex
+    series : pd.Series | pd.DataFrame
+        The data to have index rounded. Gives warning if index is not a DatetimeIndex
     round_frequency : str
         Frequency alias, default is 6 minutes. See:
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
 
     Returns
     -------
-    pd.Series
-        The series with index rounded
+    pd.Series | pd.DataFrame
+        The data with index rounded
     """
     rounded_series = series.copy()
+    # noinspection PyUnresolvedReferences
     if not isinstance(rounded_series.index, pd.core.indexes.datetimes.DatetimeIndex):
         warnings.warn(
             "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
@@ -495,7 +497,10 @@ def rainfall_six_minute_repacker(series: pd.Series):
     rainfall_series = pd.concat([case1, case2, case3])
     rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
 
-    return rainfall_series.astype(np.int64)
+    # fill it up with zeroes
+    rainfall_series = rainfall_series.asfreq(freq="6min", fill_value=0.0)
+
+    return rainfall_series
 
 
 def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
@@ -529,21 +534,30 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
         raise KeyError("Check data times not found in the standard series") from e
 
     # Multiplier of difference between check and scada
-    scada_difference = check_series / recorded_totals.diff()
+    scada_difference = check_series / recorded_totals.diff().replace(0, np.nan)
     # Fill out to all scada events
     multiplier = scada_difference.reindex(std_series.index, method="bfill")
 
     # Multiply to find std_data
-    std_series = std_series * multiplier.fillna(0)
+    std_series = std_series * multiplier.astype(np.float64).fillna(0.0)
 
     # Boolean whether it meets qc 600 standard
-    qc_600 = (scada_difference > 0.9) & (scada_difference < 1.1)
+    points0 = (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    points3 = ((scada_difference >= 0.8) & (scada_difference <= 1.2)) & ~(
+        (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    )
+    points12 = ~((scada_difference >= 0.8) & (scada_difference <= 1.2))
 
     # Either QC 600 or 400
-    quality_code = qc_600.astype(np.float64) * 200 + 400
+    # noinspection PyUnresolvedReferences
+    quality_code = (
+        points0.astype(np.float64) * 0
+        + points3.astype(np.float64) * 3
+        + points12.astype(np.float64) * 12
+    )
     # Shift quality codes for hilltop convention
     quality_code = quality_code.shift(periods=-1)
-    quality_code = quality_code.fillna(0).astype(np.int64)
+    quality_code = quality_code.fillna(-1000).astype(np.int64)
 
     return std_series, quality_code
 
@@ -604,14 +618,19 @@ def infer_frequency(index: pd.DatetimeIndex, method="strict"):
             "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
             stacklevel=2,
         )
-        index = pd.DatetimeIndex(index)
+        try:
+            index = pd.DatetimeIndex(index)
+        except ValueError as e:
+            print(index)
+            raise ValueError("Could not convert index to DatetimeIndex") from e
     freq = pd.infer_freq(index)
 
     if freq is None and method == "strict":
         return None
     if freq is None and method == "raise":
         raise ValueError(
-            "Could not infer frequency of the series. Either specify the frequency or remove non-regular timestamps."
+            "Could not infer frequency of the series. "
+            "Either specify the frequency or remove non-regular timestamps."
         )
     elif freq is None and method == "mode":
         # Calculate the intervals between all DatetimeIndex timestamps in the series
@@ -624,3 +643,76 @@ def infer_frequency(index: pd.DatetimeIndex, method="strict"):
         return to_offset(pd.Timedelta(mode_freq)).freqstr
     else:
         return pd.infer_freq(index)
+
+
+def find_nearest_indices(base_series, check_series):
+    """
+    Find the nearest timestamp from another series or dataframe.
+
+    Given two series/dataframes, this function finds the indices of
+    the first data that is closest to the indices in the second data.
+
+    e.g. index of 1,2,3,4,5 and 1.2, 3.7 would give 1,4
+
+    Parameters
+    ----------
+    base_series : pd.Series | pd.DataFrame
+        The series to have values drawn from
+    check_series : pd.Series | pd.DataFrame
+        The series of values to have rounded to the base series
+
+    Returns
+    -------
+    list[indices]
+        A list of indices of the periodic series that are closest to the check series
+
+    """
+    nearest_indices = []
+    for check_index in check_series.index:
+        # Calculate the difference between the check_index and every periodic index
+        time_diff = np.abs(base_series.index - check_index)
+
+        # Find the index in standard_series with the minimum time difference
+        nearest_index = np.argmin(time_diff)
+
+        nearest_indices.append(nearest_index)
+
+    return nearest_indices
+
+
+def find_last_indices(base_series, check_series):
+    """
+    Find the nearest timestamp from another series or dataframe rounding down.
+
+    Given two series/dataframes, this function finds the indices of
+    the first series that is closest to the indices in the second series.
+
+    e.g. index of 1,2,3,4,5 and 1.2, 3.7 would give 1,3
+
+    Parameters
+    ----------
+    base_series : pd.Series | pd.DataFrame
+        The series to have values drawn from
+    check_series : pd.Series | pd.DataFrame
+        The series of values to have rounded
+
+    Returns
+    -------
+    list[indices]
+        A list of indices of the periodic series that are closest to the check series
+
+    """
+    nearest_indices = []
+    for check_index in check_series.index:
+        # Calculate the difference between the check_index and every periodic index
+        time_diff = check_index - base_series.index[base_series.index <= check_index]
+
+        # Find the index in standard_series with the minimum time difference
+        if not time_diff.empty:
+            nearest_index = np.argmin(time_diff)
+        else:
+            nearest_index = base_series.index[0]
+
+        nearest_indices.append(nearest_index)
+
+    return nearest_indices

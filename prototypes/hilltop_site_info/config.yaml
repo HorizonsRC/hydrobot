@@ -4,8 +4,8 @@ hts_filename: "Archive.hts"
 
 # Data Source Configuration
 site: "Ahuahu at Te Tuhi Junction"
-standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
-check_measurement_name: "DO saturation check"
+standard_measurement_name: "Rainfall [SCADA Rainfall]"
+check_measurement_name: "Check Gauge Total [Rainfall]"
 quality_measurement_name: "DO Saturation"
 
 # Processing Configuration

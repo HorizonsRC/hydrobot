@@ -128,3 +128,10 @@ History
 ----------------------------------
 
 * Adding support for infer frequency and missing record prototype
+
+0.7.0 (2024-09-18)
+----------------------------------
+
+* Rainfall processing
+* Lots of minor documentation upgrades
+* Start of "processing issues", a place to store warnings for the hydrobot user

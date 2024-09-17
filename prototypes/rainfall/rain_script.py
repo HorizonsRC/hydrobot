@@ -2,30 +2,27 @@ r"""Script to run through a processing task with the processor class.
 
 Run command:
 
-cd .\prototypes\dissolved_oxygen
-streamlit run .\do_script.py
+cd .\prototypes\rainfall
+streamlit run .\rain_script.py
 
 """
 
+import platform
+
 import pandas as pd
+import pyodbc
+import sqlalchemy as db
 import streamlit as st
+from sqlalchemy.engine import URL
 
 import hydrobot
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
-from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
-from hydrobot.utils import merge_all_comments
+from hydrobot.rf_processor import RFProcessor
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
-data, ann = DOProcessor.from_config_yaml("do_config.yaml")
+data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 
 st.set_page_config(
     page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
@@ -33,62 +30,122 @@ st.set_page_config(
 st.title(f"{data.site}")
 st.header(f"{data.standard_measurement_name}")
 
+st.dataframe(data.standard_data, use_container_width=True)
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
-
 check_col = "Value"
 logger_col = "Logger"
 
-inspections = import_inspections(
-    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
+st.write(pyodbc.drivers())
+
+if platform.system() == "Windows":
+    hostname = "SQL3.horizons.govt.nz"
+elif platform.system() == "Linux":
+    # Nic's WSL support (with apologies). THIS IS NOT STABLE.
+    hostname = "PNT-DB30.horizons.govt.nz"
+else:
+    raise OSError("What is this, a mac? Get up on out of here, capitalist pig.")
+
+connection_url = URL.create(
+    "mssql+pyodbc",
+    host=hostname,
+    database="survey123",
+    query={"driver": "ODBC Driver 17 for SQL Server"},
 )
-prov_wq = import_prov_wq(
-    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+engine = db.create_engine(connection_url)
+
+query = """SELECT TOP (10) Hydro_Inspection.arrival_time,
+            Hydro_Inspection.weather,
+            Hydro_Inspection.notes,
+            Hydro_Inspection.departure_time,
+            Hydro_Inspection.creator,
+            Rainfall_Inspection.dipstick,
+            Rainfall_Inspection.flask,
+            Rainfall_Inspection.gauge_emptied,
+            Rainfall_Inspection.primary_total,
+            Manual_Tips.start_time,
+            Manual_Tips.end_time,
+            Manual_Tips.primary_manual_tips,
+            Manual_Tips.backup_manual_tips,
+            RainGauge_Validation.pass
+        FROM [dbo].RainGauge_Validation
+        RIGHT JOIN ([dbo].Manual_Tips
+            RIGHT JOIN ([dbo].Rainfall_Inspection
+                INNER JOIN [dbo].Hydro_Inspection
+                ON Rainfall_Inspection.inspection_id = Hydro_Inspection.id)
+            ON Manual_Tips.inspection_id = Hydro_Inspection.id)
+        ON RainGauge_Validation.inspection_id = Hydro_Inspection.id
+        WHERE Hydro_Inspection.arrival_time >= ?
+            AND Hydro_Inspection.arrival_time <= ?
+            AND Hydro_Inspection.sitename = ?
+        ORDER BY Hydro_Inspection.arrival_time ASC
+        """
+rainfall_checks = pd.read_sql(
+    query, engine, params=(data.from_date, data.to_date, data.site)
 )
-ncrs = import_ncr("DO_non-conformance_reports.csv")
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+# columns are:
+# 'arrival_time', 'weather', 'notes', 'departure_time', 'creator',
+# 'dipstick', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
+# 'end_time', 'primary_manual_tips', 'backup_manual_tips', 'pass'
 
-all_checks_list = [data.check_data, inspections, prov_wq]
-all_checks_list = [i for i in all_checks_list if not i.empty]
-
-all_checks = pd.concat(all_checks_list).sort_index()
-
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+rainfall_checks = rainfall_checks.loc[
+    (rainfall_checks.arrival_time >= data.from_date)
+    & (rainfall_checks.arrival_time <= data.to_date)
 ]
 
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
-check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-check_data_list = [i for i in check_data_list if not i.empty]
-data.check_data = pd.concat(check_data_list).sort_index()
+check_data = pd.DataFrame(rainfall_checks[["arrival_time", "flask", "notes"]].copy())
 
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
+check_data["Recorder Time"] = check_data.loc[:, "arrival_time"]
+check_data = check_data.set_index("arrival_time")
+check_data.index = pd.to_datetime(check_data.index)
+check_data.index.name = None
+
+check_data = check_data.rename(columns={"flask": "Raw", "notes": "Comment"})
+check_data["Value"] = check_data.loc[:, "Raw"]
+check_data["Time"] = pd.to_datetime(check_data["Recorder Time"], format="%H:%M:%S")
+check_data["Changes"] = ""
+check_data["Source"] = "INS"
+check_data["QC"] = True
+
+check_data = check_data[
+    [
+        "Time",
+        "Raw",
+        "Value",
+        "Changes",
+        "Recorder Time",
+        "Comment",
+        "Source",
+        "QC",
+    ]
 ]
 
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
+data.check_data = check_data
+
+all_checks = rainfall_checks.rename(
+    columns={"primary_total": "Logger", "flask": "Value"}
+)
+all_checks = all_checks.set_index("arrival_time")
+all_checks["Source"] = "INS"
+all_checks.index = pd.to_datetime(all_checks.index)
+all_checks.loc[pd.Timestamp(data.from_date), "Value"] = 0
+all_checks.loc[pd.Timestamp(data.from_date), "Logger"] = 0
+all_checks["Value"] = all_checks["Value"].cumsum()
+all_checks["Logger"] = all_checks["Logger"].cumsum()
 
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
 
-data.insert_missing_nans()
-
 # Clipping all data outside of low_clip and high_clip
 data.clip()
-
-# Remove obvious spikes using FBEWMA algorithm
-data.remove_spikes()
-
-#######################################################################################
-# DO specific operation
-#######################################################################################
-
-data.correct_do()
+# Remove manual tips
+data.filter_manual_tips(rainfall_checks)
+# Rainfall is cumulative
+# data.standard_data.Value = data.standard_data.Value.cumsum()
+# data.standard_data.Raw = data.standard_data.Raw.cumsum()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
@@ -105,12 +162,12 @@ data.correct_do()
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
 )
-
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
 #     "the temperature sensor reading."
@@ -129,17 +186,17 @@ data.data_exporter()
 # Known issues:
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
-fig = data.plot_qc_series(show=False)
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    all_checks,
-)
+fig = data.plot_processing_overview_chart()
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_html()))
 
-st.plotly_chart(fig_subplots, use_container_width=True)
+st.plotly_chart(fig)
 
-st.dataframe(all_comments, use_container_width=True)
-# st.dataframe(data.standard_data, use_container_width=True)
+st.dataframe(data.processing_issues, use_container_width=True)
+st.dataframe(all_checks, use_container_width=True)
 st.dataframe(data.check_data, use_container_width=True)
 st.dataframe(data.quality_data, use_container_width=True)
+st.dataframe(data.standard_data, use_container_width=True)

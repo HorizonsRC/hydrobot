@@ -33,7 +33,6 @@ class HtmlMerger:
 
     Examples
     --------
-    >>> from htmlmerger import HtmlMerger
     >>> merger = HtmlMerger(input_directory="my_htmls/")  # result will be in my_htmls/merged.html
     >>> merger.merge(clean=True)  # or clean=False to keep the individual files (default behavior)
 
@@ -99,10 +98,7 @@ class HtmlMerger:
             self.files = list(self.input_directory.glob("*.html"))
             self.files.sort()
 
-        self.files = [
-            f if not isinstance(f, str) or type(f) == Path else Path(f)
-            for f in self.files
-        ]
+        self.files = [f if not isinstance(f, str) else Path(f) for f in self.files]
 
         if self.output_file is None:
             self.output_file = Path("merged.html")

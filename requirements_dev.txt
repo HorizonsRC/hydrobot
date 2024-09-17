@@ -85,6 +85,7 @@ nest-asyncio==1.5.8
 nh3==0.2.14
 nodeenv==1.8.0
 numpy==1.26.4
+openpyxl==3.1.5
 orjson==3.9.7
 packaging==23.1
 pandas==2.2.2
@@ -184,3 +185,6 @@ wcwidth==0.2.8
 Werkzeug==3.0.1
 widgetsnbextension==4.0.9
 zipp==3.17.0
+
+SQLAlchemy~=2.0.30
+setuptools~=65.5.1

@@ -1,15 +1,16 @@
 """Tools for displaying potentially problematic data."""
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from hydrobot.evaluator import splitter
+from hydrobot.utils import find_nearest_indices
 
 
 def qc_colour(qc):
-    """Give the colour of the QC.
+    """
+    Give the colour of the QC.
 
     Parameters
     ----------
@@ -35,14 +36,14 @@ def qc_colour(qc):
     return qc_dict[qc]
 
 
-def plot_raw_data(standard_data, fig=None, **kwargs):
+def plot_raw_data(raw_standard_series, fig=None, **kwargs: int):
     """
     Plot the raw data with a grey line.
 
     Parameters
     ----------
-    standard_data : pd.Series
-        The data to be plotted
+    raw_standard_series : pd.Series
+        The data to be plotted.
     fig : go.Figure
         The figure to add the plot to
     kwargs : dict
@@ -56,8 +57,8 @@ def plot_raw_data(standard_data, fig=None, **kwargs):
         fig = go.Figure()
     fig.add_trace(
         go.Scatter(
-            x=standard_data["Raw"].index,
-            y=standard_data["Raw"].to_numpy(),
+            x=raw_standard_series.index,
+            y=raw_standard_series.to_numpy(),
             mode="lines",
             name="Raw data",
             line=dict(color="darkgray", width=0.5),
@@ -69,9 +70,8 @@ def plot_raw_data(standard_data, fig=None, **kwargs):
 
 
 def plot_qc_codes(
-    standard_data,
-    quality_data,
-    frequency,
+    standard_series,
+    quality_series,
     fig=None,
     **kwargs,
 ):
@@ -79,30 +79,26 @@ def plot_qc_codes(
 
     Parameters
     ----------
-    base_series : pd.Series
+    standard_series : pd.Series
         Data to be sorted by colour
-    check_series : pd.Series
-        Check data to plot
-    qc_series : pd.Series
-        QC ranges for colour coding
-    frequency : DateOffset or str
-        Frequency to which the data gets set to
-    show : bool
-        Whether to show the plot directly when called
+    quality_series : pd.Series
+        Data to use to determine colour
+    fig : go.Figure | None, optional
+        The figure to add info to, will make a figure if None
 
     Returns
     -------
     go.Figure
 
     """
-    split_data = splitter(standard_data["Value"], quality_data["Value"], frequency)
+    split_data = splitter(standard_series, quality_series)
     if fig is None:
         fig = go.Figure()
     for qc in split_data:
         fig.add_trace(
             go.Scatter(
-                x=split_data[qc].index,
-                y=split_data[qc],
+                x=standard_series.index,
+                y=split_data[qc].reindex(standard_series.index),
                 mode="lines",
                 name=f"QC{qc}",
                 line=dict(color=qc_colour(qc)),
@@ -134,7 +130,7 @@ def add_qc_limit_bars(
     qc400,
     qc500,
     fig=None,
-    **kwargs,
+    **kwargs: int,
 ):
     """
     Add horizontal lines to the plot for the QC limits.
@@ -200,40 +196,8 @@ def add_qc_limit_bars(
     return fig
 
 
-def find_nearest_periodic_indices(periodic_series, check_series):
-    """Find the nearest periodic timestamp.
-
-    Given a periodic and non-periodic series, this function finds the indices of
-    the periodic series that is closest to the points in the non-periodic series.
-
-    Parameters
-    ----------
-    periodic_series : pd.Series
-        The series that has periodic timestamps
-    check_series : pd.Series
-        The series that does not have periodic timestamps
-
-    Returns
-    -------
-    list[int]
-        A list of indices of the periodic series that are closest to the check series
-
-    """
-    nearest_periodic_indices = []
-    for check_index in check_series.index:
-        # Calculate the difference between the check_index and every periodic index
-        time_diff = np.abs(periodic_series.index - check_index)
-
-        # Find the index in standard_series with the minimum time difference
-        nearest_index = np.argmin(time_diff)
-
-        nearest_periodic_indices.append(nearest_index)
-
-    return nearest_periodic_indices
-
-
 def plot_check_data(
-    standard_data,
+    standard_series,
     check_data,
     constant_check_shift,
     tag_list=None,
@@ -242,16 +206,16 @@ def plot_check_data(
     diffs=False,
     align_checks=False,
     fig=None,
-    **kwargs,
+    **kwargs: int,
 ):
     """
     Plot the check data.
 
     Parameters
     ----------
-    standard_data : pd.Series
-        The data to be plotted
-    check_data : pd.Series
+    standard_series : pd.Series
+        The series to be plotted
+    check_data : pd.DataFrame
         The data to be plotted on top of the standard data
     constant_check_shift : float
         The shift between the check data and the standard data
@@ -290,16 +254,13 @@ def plot_check_data(
     for i, tag in enumerate(tag_list):
         tag_check = check_data[check_data["Source"] == tag]
         if align_checks or ghosts or diffs:
-            nearest_standards = find_nearest_periodic_indices(standard_data, tag_check)
-            standards = standard_data["Value"].iloc[nearest_standards]
+            nearest_standards = find_nearest_indices(standard_series, tag_check)
+            standards = standard_series.iloc[nearest_standards]
             timestamps = standards.index
         else:
             timestamps = tag_check.index
-            standards = None
         if diffs:
-            checks = (
-                tag_check["Value"].to_numpy() - standard_data["Value"].loc[timestamps]
-            )
+            checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
         else:
             checks = tag_check["Value"].to_numpy()
 
@@ -334,20 +295,20 @@ def plot_check_data(
             )
 
             # Add arrows that point from where check is to where it is used
-            for oldstamp, shiftstamp, checkval in zip(
+            for old_stamp, shift_stamp, check_value in zip(
                 tag_check.index,
                 timestamps,
                 checks,
                 strict=True,
             ):
                 # If the timestamps are not the same
-                if shiftstamp != oldstamp and not pd.isna(checkval):
+                if shift_stamp != old_stamp and not pd.isna(check_value):
                     arrow_annotations.append(
                         dict(
-                            ax=oldstamp,
-                            ay=checkval,
-                            x=shiftstamp,
-                            y=checkval,
+                            ax=old_stamp,
+                            ay=check_value,
+                            x=shift_stamp,
+                            y=check_value,
                             axref="x",
                             ayref="y",
                             xref="x",
@@ -367,7 +328,6 @@ def plot_processing_overview_chart(
     standard_data,
     quality_data,
     check_data,
-    frequency,
     constant_check_shift,
     qc_500_limit,
     qc_600_limit,
@@ -381,14 +341,12 @@ def plot_processing_overview_chart(
 
     Parameters
     ----------
-    standard_data : pd.Series
+    standard_data : pd.DataFrame
         The data to be plotted
-    quality_data : pd.Series
+    quality_data : pd.DataFrame
         The quality data to be plotted
-    check_data : pd.Series
+    check_data : pd.DataFrame
         The check data to be plotted
-    frequency : DateOffset or str
-        The frequency to which the data is set to
     constant_check_shift : float
         The shift between the check data and the standard data
     qc_500_limit : float
@@ -399,8 +357,8 @@ def plot_processing_overview_chart(
         The tags of the check data
     check_names : list[str]
         The names of the check data
-    fig : go.Figure
-        The figure to add the plot to
+    fig : go.Figure, optional
+        The figure to add the plot to, will make a new one if none
     kwargs : dict
         Additional arguments to pass to the plot
 
@@ -408,8 +366,6 @@ def plot_processing_overview_chart(
     -------
     go.Figure
     """
-    if fig is None:
-        fig = go.Figure()
     if tag_list is None:
         tag_list = list(set(check_data["Source"]))
     if check_names is None:
@@ -421,13 +377,13 @@ def plot_processing_overview_chart(
         shared_xaxes=True,
         row_heights=(0.7, 0.3),
         vertical_spacing=0.02,
+        figure=fig,
     )
 
-    fig = plot_raw_data(standard_data, fig=fig, row=1, col=1)
+    fig = plot_raw_data(standard_data["Raw"], fig=fig, row=1, col=1)
     fig = plot_qc_codes(
-        standard_data,
-        quality_data,
-        frequency,
+        standard_data["Value"],
+        quality_data["Value"],
         fig=fig,
         row=1,
         col=1,
@@ -435,7 +391,7 @@ def plot_processing_overview_chart(
     )
 
     fig = plot_check_data(
-        standard_data,
+        standard_data["Value"],
         check_data,
         constant_check_shift,
         tag_list=tag_list,
@@ -448,7 +404,7 @@ def plot_processing_overview_chart(
     )
 
     fig = plot_check_data(
-        standard_data,
+        standard_data["Value"],
         check_data,
         constant_check_shift,
         tag_list=tag_list,
