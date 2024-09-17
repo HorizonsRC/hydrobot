@@ -843,6 +843,20 @@ class Processor:
 
         Parameters
         ----------
+        check_hts : str or None, optional
+            Where to get check data from
+        site : str or None, optional
+            Which site to get data from
+        check_measurement_name : str or None, optional
+            Name for measurement to get
+        check_data_source_name : str or None, optional
+            Name for data source to get
+        check_item_info : dict or None, optional
+            ItemInfo to be used in hilltop xml
+        check_item_name : str or None, optional
+            ItemName to be used in hilltop xml
+        check_data : pd.DataFrame or None, optional
+            data which just gets overwritten I think? should maybe be removed
         from_date : str or None, optional
             The start date for data retrieval. If None, defaults to the earliest available
             data.
@@ -852,7 +866,10 @@ class Processor:
 
         Returns
         -------
-        None
+        check_data: pd.DataFrame
+        raw_check_data: pd.DataFrame
+        raw_check_xml: xml.etree.ElementTree
+        raw_check_blob: DataSourceBlob
 
         Raises
         ------

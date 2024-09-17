@@ -1,11 +1,11 @@
 """Tools for displaying potentially problematic data."""
 
-import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
 from hydrobot.evaluator import splitter
+from hydrobot.utils import find_nearest_indices
 
 
 def qc_colour(qc):
@@ -196,38 +196,6 @@ def add_qc_limit_bars(
     return fig
 
 
-def find_nearest_periodic_indices(periodic_series, check_series):
-    """Find the nearest periodic timestamp.
-
-    Given a periodic and non-periodic series, this function finds the indices of
-    the periodic series that is closest to the points in the non-periodic series.
-
-    Parameters
-    ----------
-    periodic_series : pd.Series | pd.DataFrame
-        The series that has periodic timestamps
-    check_series : pd.Series | pd.DataFrame
-        The series that does not have periodic timestamps
-
-    Returns
-    -------
-    list[indices]
-        A list of indices of the periodic series that are closest to the check series
-
-    """
-    nearest_periodic_indices = []
-    for check_index in check_series.index:
-        # Calculate the difference between the check_index and every periodic index
-        time_diff = np.abs(periodic_series.index - check_index)
-
-        # Find the index in standard_series with the minimum time difference
-        nearest_index = np.argmin(time_diff)
-
-        nearest_periodic_indices.append(nearest_index)
-
-    return nearest_periodic_indices
-
-
 def plot_check_data(
     standard_series,
     check_data,
@@ -286,9 +254,7 @@ def plot_check_data(
     for i, tag in enumerate(tag_list):
         tag_check = check_data[check_data["Source"] == tag]
         if align_checks or ghosts or diffs:
-            nearest_standards = find_nearest_periodic_indices(
-                standard_series, tag_check
-            )
+            nearest_standards = find_nearest_indices(standard_series, tag_check)
             standards = standard_series.iloc[nearest_standards]
             timestamps = standards.index
         else:

@@ -179,7 +179,8 @@ def merge_series(series_a, series_b, tolerance=1e-09):
 
 
 def change_blocks(raw_series, changed_series):
-    """Find the blocks of changes between two series.
+    """
+    Find the blocks of changes between two series.
 
     Parameters
     ----------
@@ -394,22 +395,22 @@ def correct_dissolved_oxygen(diss_ox, atm_pres, ap_altitude, do_altitude):
     return corr_diss_ox
 
 
-def series_rounder(series: pd.Series, round_frequency: str = "6min"):
+def series_rounder(series: pd.Series | pd.DataFrame, round_frequency: str = "6min"):
     """
-    Rounds series to be on the 6-minute mark (or other interval).
+    Rounds pandas data to be on the 6-minute mark (or other interval).
 
     Parameters
     ----------
-    series : pd.Series
-        The series to have index rounded. Gives warning if index is not a DatetimeIndex
+    series : pd.Series | pd.DataFrame
+        The data to have index rounded. Gives warning if index is not a DatetimeIndex
     round_frequency : str
         Frequency alias, default is 6 minutes. See:
         https://pandas.pydata.org/pandas-docs/stable/user_guide/timeseries.html#timeseries-offset-aliases
 
     Returns
     -------
-    pd.Series
-        The series with index rounded
+    pd.Series | pd.DataFrame
+        The data with index rounded
     """
     rounded_series = series.copy()
     # noinspection PyUnresolvedReferences
@@ -642,3 +643,76 @@ def infer_frequency(index: pd.DatetimeIndex, method="strict"):
         return to_offset(pd.Timedelta(mode_freq)).freqstr
     else:
         return pd.infer_freq(index)
+
+
+def find_nearest_indices(base_series, check_series):
+    """
+    Find the nearest timestamp from another series or dataframe.
+
+    Given two series/dataframes, this function finds the indices of
+    the first data that is closest to the indices in the second data.
+
+    e.g. index of 1,2,3,4,5 and 1.2, 3.7 would give 1,4
+
+    Parameters
+    ----------
+    base_series : pd.Series | pd.DataFrame
+        The series to have values drawn from
+    check_series : pd.Series | pd.DataFrame
+        The series of values to have rounded to the base series
+
+    Returns
+    -------
+    list[indices]
+        A list of indices of the periodic series that are closest to the check series
+
+    """
+    nearest_indices = []
+    for check_index in check_series.index:
+        # Calculate the difference between the check_index and every periodic index
+        time_diff = np.abs(base_series.index - check_index)
+
+        # Find the index in standard_series with the minimum time difference
+        nearest_index = np.argmin(time_diff)
+
+        nearest_indices.append(nearest_index)
+
+    return nearest_indices
+
+
+def find_last_indices(base_series, check_series):
+    """
+    Find the nearest timestamp from another series or dataframe rounding down.
+
+    Given two series/dataframes, this function finds the indices of
+    the first series that is closest to the indices in the second series.
+
+    e.g. index of 1,2,3,4,5 and 1.2, 3.7 would give 1,3
+
+    Parameters
+    ----------
+    base_series : pd.Series | pd.DataFrame
+        The series to have values drawn from
+    check_series : pd.Series | pd.DataFrame
+        The series of values to have rounded
+
+    Returns
+    -------
+    list[indices]
+        A list of indices of the periodic series that are closest to the check series
+
+    """
+    nearest_indices = []
+    for check_index in check_series.index:
+        # Calculate the difference between the check_index and every periodic index
+        time_diff = check_index - base_series.index[base_series.index <= check_index]
+
+        # Find the index in standard_series with the minimum time difference
+        if not time_diff.empty:
+            nearest_index = np.argmin(time_diff)
+        else:
+            nearest_index = base_series.index[0]
+
+        nearest_indices.append(nearest_index)
+
+    return nearest_indices

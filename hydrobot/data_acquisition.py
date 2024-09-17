@@ -45,8 +45,10 @@ def get_data(
 
     Returns
     -------
-    pandas.DataFrame
-        A DataFrame containing the acquired time series data.
+    xml.etree.ElementTree
+        An XML tree containing the acquired time series data.
+    [DataSourceBlob]
+        XML tree parsed to DataSourceBlobs
     """
     url = build_url(
         base_url,

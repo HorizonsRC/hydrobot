@@ -9,7 +9,7 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
-from hydrobot import plotter
+from hydrobot import filters, plotter
 from hydrobot.processor import Processor, data_structure, evaluator, utils
 
 annalizer = Annalist()
@@ -186,6 +186,91 @@ class RFProcessor(Processor):
                 from_date=from_date,
                 to_date=to_date,
             )
+
+    @ClassLogger
+    def import_check(
+        self,
+        check_hts: str | None = None,
+        site: str | None = None,
+        check_measurement_name: str | None = None,
+        check_data_source_name: str | None = None,
+        check_item_info: dict | None = None,
+        check_item_name: str | None = None,
+        check_data: pd.DataFrame | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+    ):
+        """
+        Replacement for generic import check data.
+
+        Parameters
+        ----------
+        check_hts : str or None, optional
+            Where to get check data from
+        site : str or None, optional
+            Which site to get data from
+        check_measurement_name : str or None, optional
+            Name for measurement to get
+        check_data_source_name : str or None, optional
+            Name for data source to get
+        check_item_info : dict or None, optional
+            ItemInfo to be used in hilltop xml
+        check_item_name : str or None, optional
+            ItemName to be used in hilltop xml
+        check_data : pd.DataFrame or None, optional
+            data which just gets overwritten I think? should maybe be removed
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to the earliest available
+            data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available
+            data.
+
+        Returns
+        -------
+        check_data: pd.DataFrame
+        raw_check_data: pd.DataFrame
+        raw_check_xml: xml.etree.ElementTree
+        raw_check_blob: DataSourceBlob
+
+        Raises
+        ------
+        TypeError
+            If the parsed Check data is not a pandas.DataFrame.
+
+        Warnings
+        --------
+        UserWarning
+            - If the existing Check Data is not a pandas.DataFrame, it is set to an
+                empty DataFrame.
+            - If no Check data is available for the specified date range.
+            - If the Check data source is not found in the server response.
+
+        Notes
+        -----
+        This method imports Check data from the specified server based on the provided
+        parameters. It retrieves data using the `data_acquisition.get_data` function.
+        The data is parsed and formatted according to the item_info in the data source.
+
+        """
+        (
+            check_data,
+            raw_check_data,
+            raw_check_xml,
+            raw_check_blob,
+        ) = super().import_check(
+            check_hts,
+            site,
+            check_measurement_name,
+            check_data_source_name,
+            check_item_info,
+            check_item_name,
+            check_data,
+            from_date,
+            to_date,
+        )
+        check_data = utils.series_rounder(check_data)
+        return check_data, raw_check_data, raw_check_xml, raw_check_blob
 
     @ClassLogger
     def quality_encoder(
@@ -446,12 +531,17 @@ class RFProcessor(Processor):
                 )
             ]
             # ramped
+            ramped_standard = filters.trim_series(
+                self.ramped_standard, self.check_data["Value"]
+            )
+            ramped_standard *= 1000
+
             data_blob_list += [
                 data_structure.standard_to_xml_structure(
                     standard_item_info=self.ramped_standard_item_info,
                     standard_data_source_name="Rainfall",
                     standard_data_source_info=self.ramped_standard_data_source_info,
-                    standard_series=self.standard_data["Value"] * 1000,
+                    standard_series=ramped_standard,
                     site=self.site,
                     gap_limit=self._defaults.get("gap_limit"),
                 )
@@ -484,7 +574,13 @@ class RFProcessor(Processor):
             # scada
             scaled_check_data = self.check_data.copy()
             scaled_check_data["Value"] = scaled_check_data["Value"] * 1000
-            scaled_check_data["Recorder Total"] = scaled_check_data["Value"]
+
+            scaled_check_data["Recorder Total"] = (
+                self.ramped_standard[
+                    utils.find_last_indices(self.ramped_standard, scaled_check_data)
+                ].diff()
+                * 1000
+            )
             data_blob_list += [
                 data_structure.check_to_xml_structure(
                     item_info_dicts=[
@@ -536,7 +632,7 @@ class RFProcessor(Processor):
             data_blob_list += [
                 data_structure.quality_to_xml_structure(
                     data_source_name=self.standard_data_source_name,
-                    quality_series=self.quality_data["Value"] * 1000,
+                    quality_series=self.quality_data["Value"],
                     site=self.site,
                 )
             ]
@@ -544,7 +640,7 @@ class RFProcessor(Processor):
             data_blob_list += [
                 data_structure.quality_to_xml_structure(
                     data_source_name="Rainfall",
-                    quality_series=self.quality_data["Value"] * 1000,
+                    quality_series=self.quality_data["Value"],
                     site=self.site,
                 )
             ]
