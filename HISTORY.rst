@@ -139,4 +139,4 @@ History
 0.7.1 (?)
 ----------------------------------
 
-* Added pyodbc dependency
+* Added pyodbc & SQL alchemy dependency
