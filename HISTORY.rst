@@ -135,3 +135,9 @@ History
 * Rainfall processing
 * Lots of minor documentation upgrades
 * Start of "processing issues", a place to store warnings for the hydrobot user
+
+0.7.1 (2024-09-19)
+----------------------------------
+
+* Fixing installation dependencies
+* Fixing ramped display
