@@ -10,12 +10,9 @@ streamlit run .\rain_script.py
 import platform
 
 import pandas as pd
-import pyodbc
 import sqlalchemy as db
-import streamlit as st
 from sqlalchemy.engine import URL
 
-import hydrobot
 from hydrobot.filters import trim_series
 from hydrobot.rf_processor import RFProcessor
 
@@ -24,21 +21,12 @@ from hydrobot.rf_processor import RFProcessor
 #######################################################################################
 data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-
-st.dataframe(data.standard_data, use_container_width=True)
 #######################################################################################
 # Importing all check data that is not obtainable from Hilltop
 # (So far Hydrobot only speaks to Hilltop)
 #######################################################################################
 check_col = "Value"
 logger_col = "Logger"
-
-st.write(pyodbc.drivers())
 
 if platform.system() == "Windows":
     hostname = "SQL3.horizons.govt.nz"
@@ -192,11 +180,3 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
     file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
-
-st.plotly_chart(fig)
-
-st.dataframe(data.processing_issues, use_container_width=True)
-st.dataframe(all_checks, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
-st.dataframe(data.standard_data, use_container_width=True)
