@@ -534,7 +534,7 @@ class RFProcessor(Processor):
             ramped_standard = filters.trim_series(
                 self.ramped_standard, self.check_data["Value"]
             )
-            ramped_standard *= 1000
+            ramped_standard = ramped_standard.copy() * 1000
 
             data_blob_list += [
                 data_structure.standard_to_xml_structure(
