@@ -44,7 +44,7 @@ connection_url = URL.create(
 )
 engine = db.create_engine(connection_url)
 
-query = """SELECT TOP (10) Hydro_Inspection.arrival_time,
+query = """SELECT Hydro_Inspection.arrival_time,
             Hydro_Inspection.weather,
             Hydro_Inspection.notes,
             Hydro_Inspection.departure_time,
@@ -83,8 +83,11 @@ rainfall_checks = rainfall_checks.loc[
     & (rainfall_checks.arrival_time <= data.to_date)
 ]
 
-check_data = pd.DataFrame(rainfall_checks[["arrival_time", "flask", "notes"]].copy())
+check_data = pd.DataFrame(
+    rainfall_checks[["arrival_time", "flask", "notes", "primary_total"]].copy()
+)
 
+check_data["Recorder Total"] = check_data.loc[:, "primary_total"]
 check_data["Recorder Time"] = check_data.loc[:, "arrival_time"]
 check_data = check_data.set_index("arrival_time")
 check_data.index = pd.to_datetime(check_data.index)
@@ -104,6 +107,7 @@ check_data = check_data[
         "Value",
         "Changes",
         "Recorder Time",
+        "Recorder Total",
         "Comment",
         "Source",
         "QC",

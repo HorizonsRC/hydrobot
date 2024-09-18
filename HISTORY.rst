@@ -141,3 +141,8 @@ History
 
 * Fixing installation dependencies
 * Fixing ramped display
+
+0.7.2 (2024-09-19)
+----------------------------------
+
+* Accurately representing the inaccurate recorder totals.
