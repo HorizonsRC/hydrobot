@@ -575,12 +575,6 @@ class RFProcessor(Processor):
             scaled_check_data = self.check_data.copy()
             scaled_check_data["Value"] = scaled_check_data["Value"] * 1000
 
-            scaled_check_data["Recorder Total"] = (
-                self.ramped_standard[
-                    utils.find_last_indices(self.ramped_standard, scaled_check_data)
-                ].diff()
-                * 1000
-            )
             data_blob_list += [
                 data_structure.check_to_xml_structure(
                     item_info_dicts=[
