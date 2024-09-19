@@ -181,7 +181,6 @@ def rainfall_nems_site_matrix(site):
         if output_dict[key] > 2:
             three_point_sum += 1
 
-    print(output_dict)
     return matrix_sum, three_point_sum, comment, output_dict
 
 
@@ -341,7 +340,6 @@ def points_to_qc(
         (points_series >= 0) & (points_series < 3) & (three_series < 3)
     ).astype(int) * 600
 
-    print(qc_series)
     return qc_series
 
 
