@@ -146,3 +146,8 @@ History
 ----------------------------------
 
 * Accurately representing the inaccurate recorder totals.
+
+0.7.3 (2024-09-19)
+----------------------------------
+
+* Fixing the defusedxml dependency version
