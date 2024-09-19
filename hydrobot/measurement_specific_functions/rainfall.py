@@ -181,6 +181,7 @@ def rainfall_nems_site_matrix(site):
         if output_dict[key] > 2:
             three_point_sum += 1
 
+    print(output_dict)
     return matrix_sum, three_point_sum, comment, output_dict
 
 
@@ -318,10 +319,12 @@ def points_to_qc(
     pd.Series
         The series with quality codes
     """
-    points_series = points_combiner(list_of_points_series)
+    points_series = points_combiner(list_of_points_series) + static_points
 
-    greater_than_3_list = [i.astype(int) for i in list_of_points_series]
+    # noinspection PyUnresolvedReferences
+    greater_than_3_list = [(i >= 3).astype(int) for i in list_of_points_series]
     three_series = points_combiner(greater_than_3_list) + three_points_total
+    three_series = three_series.reindex(points_series.index, method="ffill")
 
     qc_series = pd.Series(0, index=points_series.index)
 
@@ -329,11 +332,16 @@ def points_to_qc(
     qc_series += ((points_series >= 12) | (three_series >= 3)).astype(int) * 400
 
     # qc500
-    qc_series += ((points_series >= 3) & (points_series < 12)).astype(int) * 500
+    qc_series += (
+        (points_series >= 3) & (points_series < 12) & (three_series < 3)
+    ).astype(int) * 500
 
     # qc600, needs to be >0 because qc0 is approx -1000 points
-    qc_series += ((points_series >= 0) & (points_series < 3)).astype(int) * 600
+    qc_series += (
+        (points_series >= 0) & (points_series < 3) & (three_series < 3)
+    ).astype(int) * 600
 
+    print(qc_series)
     return qc_series
 
 
