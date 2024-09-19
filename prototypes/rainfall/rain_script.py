@@ -87,7 +87,7 @@ check_data = pd.DataFrame(
     rainfall_checks[["arrival_time", "flask", "notes", "primary_total"]].copy()
 )
 
-check_data["Recorder Total"] = check_data.loc[:, "primary_total"]
+check_data["Recorder Total"] = check_data.loc[:, "primary_total"] * 1000
 check_data["Recorder Time"] = check_data.loc[:, "arrival_time"]
 check_data = check_data.set_index("arrival_time")
 check_data.index = pd.to_datetime(check_data.index)
