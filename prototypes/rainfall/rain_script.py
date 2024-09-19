@@ -13,6 +13,7 @@ import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
 
+from hydrobot import utils
 from hydrobot.filters import trim_series
 from hydrobot.rf_processor import RFProcessor
 
@@ -114,7 +115,7 @@ check_data = check_data[
     ]
 ]
 
-data.check_data = check_data
+data.check_data = utils.series_rounder(check_data)
 
 all_checks = rainfall_checks.rename(
     columns={"primary_total": "Logger", "flask": "Value"}

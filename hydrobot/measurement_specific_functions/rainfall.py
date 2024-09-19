@@ -368,7 +368,7 @@ def manual_tip_filter(
         Issue to report, if any
     """
     std_series = std_series.copy()
-    threshold = pd.Timedelta("00:00:20")
+    mode = std_series.astype(float).replace(0, np.nan).mode().item()
 
     if not isinstance(std_series.index, pd.DatetimeIndex):
         warnings.warn(
@@ -381,7 +381,7 @@ def manual_tip_filter(
         (std_series.index > arrival_time) & (std_series.index < departure_time)
     ]
 
-    if len(inspection_data) < manual_tips:
+    if inspection_data.sum() < (manual_tips * mode):
         # Manual tips presumed to be in inspection mode, no further action
         return std_series, None
     elif manual_tips == 0:
@@ -389,10 +389,9 @@ def manual_tip_filter(
         return std_series, None
     else:
         if weather in ["Fine", "Overcast"]:
-            if abs(manual_tips - len(inspection_data)) <= 1:
+            if abs(manual_tips * mode - inspection_data.sum()) <= mode:
                 # Off by 1 is probably just a typo, delete it all
                 std_series[inspection_data.index] = 0
-
                 return std_series, None
             else:
                 issue = {
@@ -410,12 +409,11 @@ def manual_tip_filter(
                 # All this does is find the first element of the shortest period
                 first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
 
-                if differences[first_manual_tip_index] < threshold:
-                    # Sufficiently intense
-                    inspection_data[
-                        first_manual_tip_index : first_manual_tip_index + manual_tips
-                    ] = 0
-                    std_series[inspection_data.index] = inspection_data
+                # Sufficiently intense
+                inspection_data[
+                    first_manual_tip_index : first_manual_tip_index + manual_tips
+                ] = 0
+                std_series[inspection_data.index] = inspection_data
 
                 return std_series, issue
         else:
@@ -437,11 +435,10 @@ def manual_tip_filter(
             # All this does is find the first element of the shortest period
             first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
 
-            if differences[first_manual_tip_index] < threshold or manual_tips > 30:
-                # Sufficiently intense or calibration
-                inspection_data[
-                    first_manual_tip_index : first_manual_tip_index + manual_tips
-                ] = 0
-                std_series[inspection_data.index] = inspection_data
+            # Sufficiently intense or calibration
+            inspection_data[
+                first_manual_tip_index : first_manual_tip_index + manual_tips
+            ] = 0
+            std_series[inspection_data.index] = inspection_data
 
             return std_series, issue

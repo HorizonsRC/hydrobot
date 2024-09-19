@@ -434,6 +434,7 @@ class RFProcessor(Processor):
                 check["start_time"],
                 check["end_time"],
                 check["primary_manual_tips"],
+                check["weather"],
             )
             if issue is not None:
                 self.report_processing_issue(**issue)

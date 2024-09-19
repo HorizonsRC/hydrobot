@@ -151,3 +151,8 @@ History
 ----------------------------------
 
 * Fixing the defusedxml dependency version
+
+0.7.4 (2024-09-19)
+----------------------------------
+
+* Making manual tip filter work better
