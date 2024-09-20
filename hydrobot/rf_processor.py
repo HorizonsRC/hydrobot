@@ -368,8 +368,8 @@ class RFProcessor(Processor):
         (
             site_survey_points,
             three_point_sum,
-            comment,
-            output_dict,
+            _,
+            _,
         ) = rf.rainfall_nems_site_matrix(self.site)
 
         quality_series = rf.points_to_qc(

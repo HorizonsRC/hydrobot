@@ -84,8 +84,14 @@ def rainfall_nems_site_matrix(site):
 
     Returns
     -------
-    int
-        The static poitns from the site survey
+    matrix_sum : int
+        Sum of points for NEMS matrix
+    three_point_sum : int
+        How many 3 points categories there are for NEMS matrix
+    comment : string
+        Comment from matrix
+    output_dict: dict
+        Keys are rows of NEMS matrix, values are the points contributed
     """
     site_surveys = rainfall_site_survey(site)
     most_recent_survey = site_surveys[
@@ -178,7 +184,7 @@ def rainfall_nems_site_matrix(site):
 
     for key in output_dict:
         matrix_sum += output_dict[key]
-        if output_dict[key] > 2:
+        if output_dict[key] >= 3:
             three_point_sum += 1
 
     return matrix_sum, three_point_sum, comment, output_dict
