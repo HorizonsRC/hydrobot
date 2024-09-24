@@ -257,7 +257,11 @@ def rainfall_time_since_inspection_points(
 
 def points_combiner(list_of_points_series: list[pd.Series]):
     """
-    Combines a number of points with potentially different indices.
+    Sums a number of points with potentially different indices.
+
+    e.g. series_a has index [a,c,f,g] with values [100,200,300,400]
+    series_b has index [b,e,f] with values [10,20,30]
+    the sum should be a series with index [a,b,c,e,f,g] with values [100,110,210,220,330,430]
 
     Parameters
     ----------
