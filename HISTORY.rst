@@ -146,3 +146,13 @@ History
 ----------------------------------
 
 * Accurately representing the inaccurate recorder totals.
+
+0.7.3 (2024-09-19)
+----------------------------------
+
+* Fixing the defusedxml dependency version
+
+0.7.4 (2024-09-19)
+----------------------------------
+
+* Making manual tip filter work better

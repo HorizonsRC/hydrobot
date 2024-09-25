@@ -19,6 +19,7 @@ check_backup: "Check Gauge Total [Rainfall]"
 export_file_name: "processed_rf.xml"
 
 # Processing Configuration
+
 defaults:
   high_clip: 2.1
   low_clip: -0.1
