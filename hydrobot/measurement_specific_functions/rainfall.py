@@ -84,110 +84,137 @@ def rainfall_nems_site_matrix(site):
 
     Returns
     -------
-    matrix_sum : int
-        Sum of points for NEMS matrix
-    three_point_sum : int
-        How many 3 points categories there are for NEMS matrix
-    comment : string
-        Comment from matrix
-    output_dict: dict
-        Keys are rows of NEMS matrix, values are the points contributed
+    pd.DataFrame
+        Indexed by arrival time.
+        Contains the following columns:
+
+        matrix_sum : int
+            Sum of points for NEMS matrix
+        three_point_sum : int
+            How many 3 points categories there are for NEMS matrix
+        comment : string
+            Comment from matrix
+        output_dict: dict
+            Keys are rows of NEMS matrix, values are the points contributed
     """
-    site_surveys = rainfall_site_survey(site)
-    most_recent_survey = site_surveys[
-        site_surveys["Arrival Time"] == site_surveys["Arrival Time"].max()
-    ]
+    all_site_surveys = rainfall_site_survey(site)
+    survey_points_dict = {
+        "matrix_sum": [],
+        "three_point_sum": [],
+        "comment": [],
+        "output_dict": [],
+    }
+    survey_points_index = []
+    for survey in all_site_surveys.index:
+        pass
+        site_surveys = all_site_surveys[
+            all_site_surveys["Arrival Time"] <= all_site_surveys["Arrival Time"][survey]
+        ]
+        most_recent_survey = site_surveys[
+            site_surveys["Arrival Time"] == site_surveys["Arrival Time"].max()
+        ]
 
-    # Gets the usable index in cases where more recent surveys omit some info
-    valid_indices = site_surveys.apply(pd.Series.last_valid_index).fillna(
-        most_recent_survey.index[0]
-    )
-
-    # Turn those indices into usable info
-    matrix_dict = {}
-    for index in valid_indices.index:
-        matrix_dict[index] = site_surveys[index][valid_indices[index]]
-
-    # Fill out NEMS point values from matrix
-    output_dict = {}
-
-    # Topography
-    output_dict["Topography"] = (
-        int(matrix_dict["Topography"]) if not np.isnan(matrix_dict["Topography"]) else 3
-    )
-    # Average annual windspeed
-    output_dict["Average annual windspeed"] = (
-        int(matrix_dict["Average annual windspeed"])
-        if not np.isnan(matrix_dict["Average annual windspeed"])
-        else 3
-    )
-    # Obstructed Horizon
-    output_dict["Obstructed Horizon"] = (
-        int(matrix_dict["Obstructed Horizon"])
-        if not np.isnan(matrix_dict["Obstructed Horizon"])
-        else 3
-    )
-    # Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)
-    dist = matrix_dict[
-        "Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)"
-    ]
-    if 600 <= dist <= 2000:
-        output_dict["Distance Between Gauges"] = 0
-    else:
-        output_dict["Distance Between Gauges"] = 3  # including nan
-    # Orifice Height - Primary Reference Gauge
-    splash = matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] > 2
-    height = matrix_dict[
-        "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-    ]
-    if splash or (285 <= height <= 325):
-        output_dict["Orifice Height - Primary Reference Gauge"] = 0
-    else:
-        output_dict["Orifice Height - Primary Reference Gauge"] = 3
-    # Orifice Diameter - Primary Reference Gauge
-    dist = matrix_dict[
-        "Orifice diameter of the Primary Reference Gauge (Check Gauge)(mm)"
-    ]
-    if 125 <= dist <= 205:
-        output_dict["Orifice Diameter"] = 0
-    else:
-        output_dict["Orifice Diameter"] = 3  # including nan
-    # Orifice height - Intensity Gauge
-    height = matrix_dict[
-        "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-    ]
-    if splash or (285 <= height <= 600):
-        output_dict["Orifice height - Intensity Gauge"] = 0
-    elif height <= 1000:
-        height_diff = np.abs(
-            height
-            - matrix_dict[
-                "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-            ]
+        # Gets the usable index in cases where more recent surveys omit some info
+        valid_indices = site_surveys.apply(pd.Series.last_valid_index).fillna(
+            most_recent_survey.index[0]
         )
-        if height_diff <= 50:
-            output_dict["Orifice height - Intensity Gauge"] = 1
+
+        # Turn those indices into usable info
+        matrix_dict = {}
+        for index in valid_indices.index:
+            matrix_dict[index] = site_surveys[index][valid_indices[index]]
+
+        # Fill out NEMS point values from matrix
+        output_dict = {}
+
+        # Topography
+        output_dict["Topography"] = (
+            int(matrix_dict["Topography"])
+            if not np.isnan(matrix_dict["Topography"])
+            else 3
+        )
+        # Average annual windspeed
+        output_dict["Average annual windspeed"] = (
+            int(matrix_dict["Average annual windspeed"])
+            if not np.isnan(matrix_dict["Average annual windspeed"])
+            else 3
+        )
+        # Obstructed Horizon
+        output_dict["Obstructed Horizon"] = (
+            int(matrix_dict["Obstructed Horizon"])
+            if not np.isnan(matrix_dict["Obstructed Horizon"])
+            else 3
+        )
+        # Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)
+        dist = matrix_dict[
+            "Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)"
+        ]
+        if 600 <= dist <= 2000:
+            output_dict["Distance Between Gauges"] = 0
+        else:
+            output_dict["Distance Between Gauges"] = 3  # including nan
+        # Orifice Height - Primary Reference Gauge
+        splash = (
+            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] > 2
+        )
+        height = matrix_dict[
+            "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
+        ]
+        if splash or (285 <= height <= 325):
+            output_dict["Orifice Height - Primary Reference Gauge"] = 0
+        else:
+            output_dict["Orifice Height - Primary Reference Gauge"] = 3
+        # Orifice Diameter - Primary Reference Gauge
+        dist = matrix_dict[
+            "Orifice diameter of the Primary Reference Gauge (Check Gauge)(mm)"
+        ]
+        if 125 <= dist <= 205:
+            output_dict["Orifice Diameter"] = 0
+        else:
+            output_dict["Orifice Diameter"] = 3  # including nan
+        # Orifice height - Intensity Gauge
+        height = matrix_dict[
+            "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
+        ]
+        if splash or (285 <= height <= 600):
+            output_dict["Orifice height - Intensity Gauge"] = 0
+        elif height <= 1000:
+            height_diff = np.abs(
+                height
+                - matrix_dict[
+                    "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
+                ]
+            )
+            if height_diff <= 50:
+                output_dict["Orifice height - Intensity Gauge"] = 1
+            else:
+                output_dict["Orifice height - Intensity Gauge"] = 3
         else:
             output_dict["Orifice height - Intensity Gauge"] = 3
-    else:
-        output_dict["Orifice height - Intensity Gauge"] = 3
-    # Orifice Diameter - Intensity  Gauge
-    dist = matrix_dict["Orifice Diameter of the Intensity Gauge (mm)"]
-    if 125 <= dist <= 205:
-        output_dict["Orifice Diameter Intensity"] = 0
-    else:
-        output_dict["Orifice Diameter Intensity"] = 3  # including nan
+        # Orifice Diameter - Intensity  Gauge
+        dist = matrix_dict["Orifice Diameter of the Intensity Gauge (mm)"]
+        if 125 <= dist <= 205:
+            output_dict["Orifice Diameter Intensity"] = 0
+        else:
+            output_dict["Orifice Diameter Intensity"] = 3  # including nan
 
-    matrix_sum = 0
-    three_point_sum = 0
-    comment = matrix_dict["Potential effects on Data"]
+        matrix_sum = 0
+        three_point_sum = 0
+        comment = matrix_dict["Potential effects on Data"]
 
-    for key in output_dict:
-        matrix_sum += output_dict[key]
-        if output_dict[key] >= 3:
-            three_point_sum += 1
+        for key in output_dict:
+            matrix_sum += output_dict[key]
+            if output_dict[key] >= 3:
+                three_point_sum += 1
+        survey_points_dict["matrix_sum"].append(matrix_sum)
+        survey_points_dict["three_point_sum"].append(three_point_sum)
+        survey_points_dict["comment"].append(comment)
+        survey_points_dict["output_dict"].append(output_dict)
+        survey_points_index.append(
+            most_recent_survey["Arrival Time"][most_recent_survey.index[0]]
+        )
 
-    return matrix_sum, three_point_sum, comment, output_dict
+    return pd.DataFrame(data=survey_points_dict, index=survey_points_index)
 
 
 def rainfall_time_since_inspection_points(
@@ -307,9 +334,7 @@ def points_combiner(list_of_points_series: list[pd.Series]):
 
 
 def points_to_qc(
-    list_of_points_series: list[pd.Series],
-    static_points: int,
-    three_points_total: int,
+    list_of_points_series: list[pd.Series], site_survey_frame: pd.DataFrame
 ):
     """
     Convert a points series to a quality code series.
@@ -318,21 +343,23 @@ def points_to_qc(
     ----------
     list_of_points_series : List of pd.Series
         The series of points to be combined
-    static_points : int
-        How many points from the site survey
-    three_points_total : int
-        Number of values which hit the 3 point threshold
+    site_survey_frame : pd.DataFrame
+        output of rainfall_nems_site_matrix()
 
     Returns
     -------
     pd.Series
         The series with quality codes
     """
-    points_series = points_combiner(list_of_points_series) + static_points
+    points_series = points_combiner(
+        list_of_points_series + [site_survey_frame["matrix_sum"]]
+    )
 
     # noinspection PyUnresolvedReferences
     greater_than_3_list = [(i >= 3).astype(int) for i in list_of_points_series]
-    three_series = points_combiner(greater_than_3_list) + three_points_total
+    three_series = points_combiner(
+        greater_than_3_list + [site_survey_frame["three_point_sum"]]
+    )
     three_series = three_series.reindex(points_series.index, method="ffill")
 
     qc_series = pd.Series(0, index=points_series.index)
