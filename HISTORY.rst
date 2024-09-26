@@ -161,3 +161,4 @@ History
 ----------------------------------
 
 * Correctly accounting for multiple site inspections
+* Manual tip now deals with multiple tips in the same second

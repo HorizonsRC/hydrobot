@@ -431,57 +431,45 @@ def manual_tip_filter(
         # No manual tips to remove
         return std_series, None
     else:
-        if weather in ["Fine", "Overcast"]:
-            if abs(manual_tips * mode - inspection_data.sum()) <= mode:
-                # Off by 1 is probably just a typo, delete it all
-                std_series[inspection_data.index] = 0
-                return std_series, None
-            else:
-                issue = {
-                    "start_time": arrival_time,
-                    "end_time": departure_time,
-                    "code": "RMT",
-                    "comment": "Weather dry, but more tips recorded than manual tips reported",
-                    "series_type": "Standard and Check",
-                }
-                differences = (
-                    inspection_data.index[manual_tips - 1 :]
-                    - inspection_data.index[: -manual_tips + 1]
-                )
-                # Pandas do be pandering
-                # All this does is find the first element of the shortest period
-                first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
+        # Count the actual amount of events, which may be grouped in a single second bucket
+        events = (inspection_data[inspection_data > 0].copy() / mode).astype(int)
+        while not events[events > 1].empty:
+            events = pd.concat(
+                [events - 1, events[events > 1].apply(lambda x: 1)]
+            ).sort_index()
+        events = events.astype(np.float64)
+        events[events <= 1] = mode
 
-                # Sufficiently intense
-                inspection_data[
-                    first_manual_tip_index : first_manual_tip_index + manual_tips
-                ] = 0
-                std_series[inspection_data.index] = inspection_data
-
-                return std_series, issue
+        if weather in ["Fine", "Overcast"] and np.abs(len(events) - manual_tips) <= 1:
+            # Off by 1 is probably just a typo, delete it all
+            std_series[inspection_data.index] = 0
+            return std_series, None
         else:
             if not weather:
                 weather = "NULL"
+            if weather in ["Fine", "Overcast"]:
+                comment = f"Weather {weather}, but more tips recorded than manual tips reported"
+            else:
+                comment = f"Inspection while weather is {weather}, verify manual tips removed were not real tips"
             issue = {
                 "start_time": arrival_time,
                 "end_time": departure_time,
                 "code": "RMT",
-                "comment": f"Inspection while weather is {weather}, verify manual tips removed were not real tips",
+                "comment": comment,
                 "series_type": "Standard and Check",
             }
 
             differences = (
-                inspection_data.index[manual_tips - 1 :]
-                - inspection_data.index[: -manual_tips + 1]
+                events.index[manual_tips - 1 :] - events.index[: -manual_tips + 1]
             )
             # Pandas do be pandering
             # All this does is find the first element of the shortest period
             first_manual_tip_index = pd.DataFrame(differences).idxmin().iloc[0]
 
-            # Sufficiently intense or calibration
-            inspection_data[
-                first_manual_tip_index : first_manual_tip_index + manual_tips
-            ] = 0
-            std_series[inspection_data.index] = inspection_data
+            # Sufficiently intense
+            events[first_manual_tip_index : first_manual_tip_index + manual_tips] = 0
+            events = events.groupby(level=0).sum()
+
+            std_series[inspection_data.index] = events
 
             return std_series, issue
