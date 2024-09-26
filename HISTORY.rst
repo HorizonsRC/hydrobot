@@ -155,4 +155,10 @@ History
 0.7.4 (2024-09-19)
 ----------------------------------
 
-* Making manual tip filter work better
+* Making manual tip filter more sensitive
+
+0.7.5 (2024-09-26)
+----------------------------------
+
+* Correctly accounting for multiple site inspections
+* Manual tip now deals with multiple tips in the same second

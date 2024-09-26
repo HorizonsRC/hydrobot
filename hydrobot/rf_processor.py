@@ -365,15 +365,10 @@ class RFProcessor(Processor):
 
         time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
 
-        (
-            site_survey_points,
-            three_point_sum,
-            comment,
-            output_dict,
-        ) = rf.rainfall_nems_site_matrix(self.site)
+        site_survey_frame = rf.rainfall_nems_site_matrix(self.site)
 
         quality_series = rf.points_to_qc(
-            [deviation_points, time_points], site_survey_points, three_point_sum
+            [deviation_points, time_points], site_survey_frame
         )
 
         self.ramped_standard = ramped_standard

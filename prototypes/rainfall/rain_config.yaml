@@ -1,6 +1,6 @@
-site: "Tiraumea at Ngaturi"
+site: "Kumeti at Rua Roa"
 analyst_name: "Sam Irvine"
-from_date: "2023-03-16 08:54"
+from_date: "2022-07-07 08:54"
 to_date: "2024-09-19 14:00"
 
 # Hilltop Server Configuration
@@ -26,7 +26,6 @@ defaults:
   max_qc: 600
 
 # Annalist Configuration
-
 logfile: "hydrobot_logs.csv"
 format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
