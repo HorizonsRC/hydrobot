@@ -157,7 +157,7 @@ History
 
 * Making manual tip filter more sensitive
 
-0.7.5 (2024-09-25)
+0.7.5 (2024-09-26)
 ----------------------------------
 
 * Correctly accounting for multiple site inspections
