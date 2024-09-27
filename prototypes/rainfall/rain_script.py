@@ -170,6 +170,19 @@ data.standard_data["Value"] = trim_series(
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
+
+# Put in zeroes at checks where there is no scada event
+empty_check_values = data.check_data[["Raw", "Value", "Changes"]].copy()
+empty_check_values["Value"] = 0
+empty_check_values["Raw"] = 0.0
+empty_check_values["Changes"] = "RFZ"
+
+# exclude values which are already in scada
+empty_check_values = empty_check_values.loc[
+    ~empty_check_values.index.isin(data.standard_data.index)
+]
+data.standard_data = pd.concat([data.standard_data, empty_check_values]).sort_index()
+
 data.data_exporter()
 # data.data_exporter("hilltop_csv", ftype="hilltop_csv")
 # data.data_exporter("processed.csv", ftype="csv")
