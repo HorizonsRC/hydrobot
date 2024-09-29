@@ -69,6 +69,7 @@ query = """SELECT Hydro_Inspection.arrival_time,
         WHERE Hydro_Inspection.arrival_time >= ?
             AND Hydro_Inspection.arrival_time <= ?
             AND Hydro_Inspection.sitename = ?
+            AND Rainfall_Inspection.flask IS NOT NULL
         ORDER BY Hydro_Inspection.arrival_time ASC
         """
 rainfall_checks = pd.read_sql(
