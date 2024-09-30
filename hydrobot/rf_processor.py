@@ -473,6 +473,7 @@ class RFProcessor(Processor):
             tag_list=tag_list,
             check_names=check_names,
             fig=fig,
+            rain_control=True,
             **kwargs,
         )
 
