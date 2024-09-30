@@ -206,6 +206,7 @@ def plot_check_data(
     diffs=False,
     align_checks=False,
     fig=None,
+    rain_control=False,
     **kwargs: int,
 ):
     """
@@ -231,6 +232,8 @@ def plot_check_data(
         Whether to align the check data to the standard data
     fig : go.Figure
         The figure to add the plot to
+    rain_control : bool
+        Adjustment for rain control plot
     kwargs : dict
         Additional arguments to be passed to the plot
 
@@ -259,7 +262,15 @@ def plot_check_data(
             timestamps = standards.index
         else:
             timestamps = tag_check.index
-        if diffs:
+
+        if rain_control:
+            checks = (
+                tag_check["Value"].diff().to_numpy()
+                / standard_series.loc[timestamps].diff()
+                * 100
+                - 100
+            ).fillna(0)
+        elif diffs:
             checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
         else:
             checks = tag_check["Value"].to_numpy()
@@ -334,6 +345,7 @@ def plot_processing_overview_chart(
     tag_list=None,
     check_names=None,
     fig=None,
+    rain_control=False,
     **kwargs,
 ):
     """
@@ -359,6 +371,8 @@ def plot_processing_overview_chart(
         The names of the check data
     fig : go.Figure, optional
         The figure to add the plot to, will make a new one if none
+    rain_control : bool
+        Adjustment for rain control plot
     kwargs : dict
         Additional arguments to pass to the plot
 
@@ -412,12 +426,12 @@ def plot_processing_overview_chart(
         ghosts=True,
         diffs=True,
         fig=fig,
+        rain_control=rain_control,
         row=2,
         col=1,
         **kwargs,
     )
 
-    #
     fig = add_qc_limit_bars(
         qc_500_limit,
         qc_600_limit,

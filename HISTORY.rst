@@ -162,3 +162,9 @@ History
 
 * Correctly accounting for multiple site inspections
 * Manual tip now deals with multiple tips in the same second
+
+0.7.6 (2024-09-30)
+----------------------------------
+
+* Fix for Null manual tips
+* Rainfall control plot now implemented correctly

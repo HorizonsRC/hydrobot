@@ -411,6 +411,8 @@ def manual_tip_filter(
         Issue to report, if any
     """
     std_series = std_series.copy()
+    if pd.isna(manual_tips):
+        manual_tips = 0
     mode = std_series.astype(float).replace(0, np.nan).mode().item()
 
     if not isinstance(std_series.index, pd.DatetimeIndex):
@@ -420,15 +422,17 @@ def manual_tip_filter(
         )
         std_series.index = pd.DatetimeIndex(std_series.index)
 
+    offset = pd.Timedelta(minutes=5)
     inspection_data = std_series[
-        (std_series.index > arrival_time) & (std_series.index < departure_time)
+        (std_series.index > arrival_time - offset)
+        & (std_series.index < departure_time + offset)
     ]
 
-    if inspection_data.sum() < (manual_tips * mode):
-        # Manual tips presumed to be in inspection mode, no further action
-        return std_series, None
-    elif manual_tips == 0:
+    if manual_tips == 0:
         # No manual tips to remove
+        return std_series, None
+    elif inspection_data.sum() <= ((manual_tips - 1) * mode):
+        # Manual tips presumed to be in inspection mode, no further action
         return std_series, None
     else:
         # Count the actual amount of events, which may be grouped in a single second bucket

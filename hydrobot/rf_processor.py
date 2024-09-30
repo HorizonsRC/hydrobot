@@ -345,7 +345,7 @@ class RFProcessor(Processor):
             self.standard_data = pd.concat(
                 [
                     pd.DataFrame(
-                        [[0.0, 0.0, "SRT", "Starting date added for ramping"]],
+                        [[0.0, 0, "SRT", "Starting date added for ramping"]],
                         index=[start_date],
                         columns=self.standard_data.columns,
                     ),
@@ -473,6 +473,7 @@ class RFProcessor(Processor):
             tag_list=tag_list,
             check_names=check_names,
             fig=fig,
+            rain_control=True,
             **kwargs,
         )
 

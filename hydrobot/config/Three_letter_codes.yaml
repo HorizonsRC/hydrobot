@@ -12,6 +12,7 @@ CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, 
 HTP: "Site inspections, imported from hilltop"
 INS: "Site Inspections, imported via R or similar process"
 SOE: "State of the environment checks"
+RFZ: "Rainfall zero: used for when zeroes are inserted into rainfall"
 
 # Issue codes
 RMT: "Rainfall manual tips issue: automatic removal of manual tips ran into problems"
