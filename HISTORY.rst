@@ -168,3 +168,8 @@ History
 
 * Fix for Null manual tips
 * Rainfall control plot now implemented correctly
+
+0.7.7 ()
+----------------------------------
+
+* Fix for when the period passed to manual tip filter contains a nan.
