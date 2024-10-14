@@ -136,6 +136,9 @@ all_checks["Logger"] = all_checks["Logger"].cumsum()
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 # Remove manual tips
+rainfall_checks["primary_manual_tips"] = (
+    rainfall_checks["primary_manual_tips"].fillna(0).astype(int)
+)
 data.filter_manual_tips(rainfall_checks)
 # Rainfall is cumulative
 # data.standard_data.Value = data.standard_data.Value.cumsum()
