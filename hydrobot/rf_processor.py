@@ -278,6 +278,7 @@ class RFProcessor(Processor):
         gap_limit: int | None = None,
         max_qc: int | float | None = None,
         supplemental_data: pd.Series | None = None,
+        manual_additional_points: pd.Series | None = None,
     ):
         """
         Encode quality information in the quality series for a rainfall dataset.
@@ -298,6 +299,10 @@ class RFProcessor(Processor):
             used to find any gaps in periods where no rainfall is collected,
             and it is unclear whether the SCADA meter is inactive or the
             weather is just dry.
+        manual_additional_points : pd.Series or None, optional
+            Used for capping the qc of given time points
+            e.g. if dipstick is used or snow is present
+            If None no points are added
 
         Returns
         -------
@@ -326,6 +331,10 @@ class RFProcessor(Processor):
             )
         if max_qc is None:
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+        if manual_additional_points is None:
+            manual_additional_points = pd.Series({})
+        else:
+            manual_additional_points = utils.series_rounder(manual_additional_points)
 
         # Select all check data values that are marked to be used for QC purposes
         checks_for_qcing = self.check_data[self.check_data["QC"]]
@@ -368,7 +377,7 @@ class RFProcessor(Processor):
         site_survey_frame = rf.rainfall_nems_site_matrix(self.site)
 
         quality_series = rf.points_to_qc(
-            [deviation_points, time_points], site_survey_frame
+            [deviation_points, time_points, manual_additional_points], site_survey_frame
         )
         # filter to apply codes only to dates in start-end-range
         if self.from_date not in quality_series.index:
@@ -397,7 +406,6 @@ class RFProcessor(Processor):
             )
 
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
-        pass
         self._apply_quality(lim_frame)
 
     @property  # type: ignore

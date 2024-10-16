@@ -161,8 +161,11 @@ data.filter_manual_tips(rainfall_checks)
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+dipstick_checks = pd.Series(
+    data=12, index=rainfall_checks[rainfall_checks["flask"].isna()]["arrival_time"]
+)
 
-data.quality_encoder()
+data.quality_encoder(manual_additional_points=dipstick_checks)
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
