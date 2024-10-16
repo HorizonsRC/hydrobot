@@ -370,6 +370,11 @@ class RFProcessor(Processor):
         quality_series = rf.points_to_qc(
             [deviation_points, time_points], site_survey_frame
         )
+        # filter to apply codes only to dates in start-end-range
+        if self.from_date not in quality_series.index:
+            quality_series[self.from_date] = np.nan
+            quality_series = quality_series.sort_index().ffill()
+            quality_series = quality_series[quality_series.index >= self.from_date]
 
         self.ramped_standard = ramped_standard
         qc_frame = quality_series.to_frame(name="Value")
@@ -392,6 +397,7 @@ class RFProcessor(Processor):
             )
 
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
+        pass
         self._apply_quality(lim_frame)
 
     @property  # type: ignore
