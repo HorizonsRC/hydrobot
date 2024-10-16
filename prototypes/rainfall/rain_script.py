@@ -51,6 +51,7 @@ query = """SELECT Hydro_Inspection.arrival_time,
             Hydro_Inspection.departure_time,
             Hydro_Inspection.creator,
             Rainfall_Inspection.dipstick,
+            ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) as 'check',
             Rainfall_Inspection.flask,
             Rainfall_Inspection.gauge_emptied,
             Rainfall_Inspection.primary_total,
@@ -67,26 +68,27 @@ query = """SELECT Hydro_Inspection.arrival_time,
             ON Manual_Tips.inspection_id = Hydro_Inspection.id)
         ON RainGauge_Validation.inspection_id = Hydro_Inspection.id
         WHERE Hydro_Inspection.arrival_time >= ?
-            AND Hydro_Inspection.arrival_time <= ?
+            AND Hydro_Inspection.arrival_time < ?
             AND Hydro_Inspection.sitename = ?
-            AND Rainfall_Inspection.flask IS NOT NULL
+            AND ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) IS NOT NULL
         ORDER BY Hydro_Inspection.arrival_time ASC
         """
 rainfall_checks = pd.read_sql(
-    query, engine, params=(data.from_date, data.to_date, data.site)
+    query,
+    engine,
+    params=(
+        pd.Timestamp(data.from_date) - pd.Timedelta("3min"),
+        pd.Timestamp(data.to_date) + pd.Timedelta("3min"),
+        data.site,
+    ),
 )
 # columns are:
 # 'arrival_time', 'weather', 'notes', 'departure_time', 'creator',
-# 'dipstick', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
+# 'dipstick', 'check', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
 # 'end_time', 'primary_manual_tips', 'backup_manual_tips', 'pass'
 
-rainfall_checks = rainfall_checks.loc[
-    (rainfall_checks.arrival_time >= data.from_date)
-    & (rainfall_checks.arrival_time <= data.to_date)
-]
-
 check_data = pd.DataFrame(
-    rainfall_checks[["arrival_time", "flask", "notes", "primary_total"]].copy()
+    rainfall_checks[["arrival_time", "check", "notes", "primary_total"]].copy()
 )
 
 check_data["Recorder Total"] = check_data.loc[:, "primary_total"] * 1000
@@ -95,7 +97,7 @@ check_data = check_data.set_index("arrival_time")
 check_data.index = pd.to_datetime(check_data.index)
 check_data.index.name = None
 
-check_data = check_data.rename(columns={"flask": "Raw", "notes": "Comment"})
+check_data = check_data.rename(columns={"check": "Raw", "notes": "Comment"})
 check_data["Value"] = check_data.loc[:, "Raw"]
 check_data["Time"] = pd.to_datetime(check_data["Recorder Time"], format="%H:%M:%S")
 check_data["Changes"] = ""
@@ -119,7 +121,7 @@ check_data = check_data[
 data.check_data = utils.series_rounder(check_data)
 
 all_checks = rainfall_checks.rename(
-    columns={"primary_total": "Logger", "flask": "Value"}
+    columns={"primary_total": "Logger", "check": "Value"}
 )
 all_checks = all_checks.set_index("arrival_time")
 all_checks["Source"] = "INS"
