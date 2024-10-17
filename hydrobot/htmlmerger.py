@@ -49,6 +49,7 @@ class HtmlMerger:
         input_directory: Path | str = None,
         output_file: Path | str = Path("merged.html"),
         encoding: str = None,
+        header: str = "",
     ):
         """
         init.
@@ -73,7 +74,7 @@ class HtmlMerger:
         self.input_directory = input_directory
         self.output_file = output_file
         self.encoding = encoding
-        self.header = ""
+        self.header = header
         self.tail = ""
         self.contents = {}
         self.loaded = False
@@ -152,7 +153,7 @@ class HtmlMerger:
         with open(self.output_file, "w", encoding=self.encoding) as ofile:
             ofile.write(f"{self.header}\n")
             for name in self.contents:
-                ofile.write(f"{self.contents[name]}\n")
+                ofile.write(f"{self.contents[name]}\n</p>\n")
             ofile.write(f"{self.tail}")
         if clean:
             self.clean_files()
