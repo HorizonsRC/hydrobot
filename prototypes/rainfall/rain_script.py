@@ -53,6 +53,7 @@ inspection_query = """SELECT Hydro_Inspection.arrival_time,
             Hydro_Inspection.departure_time,
             Hydro_Inspection.creator,
             Rainfall_Inspection.dipstick,
+            ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) as 'check',
             Rainfall_Inspection.flask,
             Rainfall_Inspection.gauge_emptied,
             Rainfall_Inspection.primary_total,
@@ -69,26 +70,27 @@ inspection_query = """SELECT Hydro_Inspection.arrival_time,
             ON Manual_Tips.inspection_id = Hydro_Inspection.id)
         ON RainGauge_Validation.inspection_id = Hydro_Inspection.id
         WHERE Hydro_Inspection.arrival_time >= ?
-            AND Hydro_Inspection.arrival_time <= ?
+            AND Hydro_Inspection.arrival_time < ?
             AND Hydro_Inspection.sitename = ?
-            AND Rainfall_Inspection.flask IS NOT NULL
+            AND ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) IS NOT NULL
         ORDER BY Hydro_Inspection.arrival_time ASC
         """
 rainfall_checks = pd.read_sql(
-    inspection_query, s123_engine, params=(data.from_date, data.to_date, data.site)
+    inspection_query,
+    s123_engine,
+    params=(
+        pd.Timestamp(data.from_date) - pd.Timedelta("3min"),
+        pd.Timestamp(data.to_date) + pd.Timedelta("3min"),
+        data.site,
+    ),
 )
 # columns are:
 # 'arrival_time', 'weather', 'notes', 'departure_time', 'creator',
-# 'dipstick', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
+# 'dipstick', 'check', 'flask', 'gauge_emptied', 'primary_total', 'start_time',
 # 'end_time', 'primary_manual_tips', 'backup_manual_tips', 'pass'
 
-rainfall_checks = rainfall_checks.loc[
-    (rainfall_checks.arrival_time >= data.from_date)
-    & (rainfall_checks.arrival_time <= data.to_date)
-]
-
 check_data = pd.DataFrame(
-    rainfall_checks[["arrival_time", "flask", "notes", "primary_total"]].copy()
+    rainfall_checks[["arrival_time", "check", "notes", "primary_total"]].copy()
 )
 
 check_data["Recorder Total"] = check_data.loc[:, "primary_total"] * 1000
@@ -97,7 +99,7 @@ check_data = check_data.set_index("arrival_time")
 check_data.index = pd.to_datetime(check_data.index)
 check_data.index.name = None
 
-check_data = check_data.rename(columns={"flask": "Raw", "notes": "Comment"})
+check_data = check_data.rename(columns={"check": "Raw", "notes": "Comment"})
 check_data["Value"] = check_data.loc[:, "Raw"]
 check_data["Time"] = pd.to_datetime(check_data["Recorder Time"], format="%H:%M:%S")
 check_data["Changes"] = ""
@@ -121,7 +123,7 @@ check_data = check_data[
 data.check_data = utils.series_rounder(check_data)
 
 all_checks = rainfall_checks.rename(
-    columns={"primary_total": "Logger", "flask": "Value"}
+    columns={"primary_total": "Logger", "check": "Value"}
 )
 all_checks = all_checks.set_index("arrival_time")
 all_checks["Source"] = "INS"
@@ -155,6 +157,9 @@ calibration_df = pd.read_sql(calibration_query, ht_engine, params={"site": data.
 # Clipping all data outside of low_clip and high_clip
 data.clip()
 # Remove manual tips
+rainfall_checks["primary_manual_tips"] = (
+    rainfall_checks["primary_manual_tips"].fillna(0).astype(int)
+)
 data.filter_manual_tips(rainfall_checks)
 # Rainfall is cumulative
 # data.standard_data.Value = data.standard_data.Value.cumsum()
@@ -175,8 +180,11 @@ data.filter_manual_tips(rainfall_checks)
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+dipstick_checks = pd.Series(
+    data=12, index=rainfall_checks[rainfall_checks["flask"].isna()]["arrival_time"]
+)
 
-data.quality_encoder()
+data.quality_encoder(manual_additional_points=dipstick_checks)
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
@@ -225,6 +233,8 @@ with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
     calibration_df.to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    data.processing_issues.to_html(file)
 
 merger = HtmlMerger(
     [
@@ -232,8 +242,10 @@ merger = HtmlMerger(
         "check_table.html",
         "quality_table.html",
         "calibration_table.html",
+        "potential_processing_issues.html",
     ],
     encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
 merger.merge()

@@ -475,11 +475,6 @@ def manual_tip_filter(
             events[first_manual_tip_index : first_manual_tip_index + manual_tips] = 0
             events = events.groupby(level=0).sum()
 
-            print(arrival_time)
-            print("index")
-            print(inspection_data)
-            print("events")
-            print(events)
             std_series[inspection_data.index] = events
 
             return std_series, issue
