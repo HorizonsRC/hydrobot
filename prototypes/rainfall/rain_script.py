@@ -7,6 +7,7 @@ streamlit run .\rain_script.py
 
 """
 
+import importlib.resources as pkg_resources
 import platform
 
 import pandas as pd
@@ -15,6 +16,7 @@ from sqlalchemy.engine import URL
 
 from hydrobot import utils
 from hydrobot.filters import trim_series
+from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.rf_processor import RFProcessor
 
 #######################################################################################
@@ -37,15 +39,15 @@ elif platform.system() == "Linux":
 else:
     raise OSError("What is this, a mac? Get up on out of here, capitalist pig.")
 
-connection_url = URL.create(
+s123_connection_url = URL.create(
     "mssql+pyodbc",
     host=hostname,
     database="survey123",
     query={"driver": "ODBC Driver 17 for SQL Server"},
 )
-engine = db.create_engine(connection_url)
+s123_engine = db.create_engine(s123_connection_url)
 
-query = """SELECT Hydro_Inspection.arrival_time,
+inspection_query = """SELECT Hydro_Inspection.arrival_time,
             Hydro_Inspection.weather,
             Hydro_Inspection.notes,
             Hydro_Inspection.departure_time,
@@ -74,8 +76,8 @@ query = """SELECT Hydro_Inspection.arrival_time,
         ORDER BY Hydro_Inspection.arrival_time ASC
         """
 rainfall_checks = pd.read_sql(
-    query,
-    engine,
+    inspection_query,
+    s123_engine,
     params=(
         pd.Timestamp(data.from_date) - pd.Timedelta("3min"),
         pd.Timestamp(data.to_date) + pd.Timedelta("3min"),
@@ -130,6 +132,23 @@ all_checks.loc[pd.Timestamp(data.from_date), "Value"] = 0
 all_checks.loc[pd.Timestamp(data.from_date), "Logger"] = 0
 all_checks["Value"] = all_checks["Value"].cumsum()
 all_checks["Logger"] = all_checks["Logger"].cumsum()
+
+#######################################################################################
+# Getting the calibration data from the Assets database
+#######################################################################################
+
+ht_connection_url = URL.create(
+    "mssql+pyodbc",
+    host=hostname,
+    database="hilltop",
+    query={"driver": "ODBC Driver 17 for SQL Server"},
+)
+ht_engine = db.create_engine(ht_connection_url)
+
+with pkg_resources.open_text("hydrobot.config", "calibration_query.sql") as f:
+    calibration_query = db.text(f.read())
+
+calibration_df = pd.read_sql(calibration_query, ht_engine, params={"site": data.site})
 
 #######################################################################################
 # Common auto-processing steps
@@ -207,3 +226,22 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
     file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
+
+with open("check_table.html", "w", encoding="utf-8") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w", encoding="utf-8") as file:
+    data.quality_data.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    calibration_df.to_html(file)
+
+merger = HtmlMerger(
+    [
+        "pyplot.html",
+        "check_table.html",
+        "quality_table.html",
+        "calibration_table.html",
+    ],
+    encoding="utf-8",
+)
+
+merger.merge()

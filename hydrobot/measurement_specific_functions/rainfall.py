@@ -35,7 +35,7 @@ def rainfall_site_survey(site: str):
         hostname = "SQL3.horizons.govt.nz"
     elif platform.system() == "Linux":
         # Support for Nic's personal WSL setup! Not generic linux support! Sorry!
-        survey_excel_sheet = r"/mnt/ares_software/Survey 123/RainfallSiteSurvey20220510_Pull/RainfallSiteSurvey20220510.xlsx"
+        survey_excel_sheet = r"/mnt/ares_hydro_software/Survey 123/RainfallSiteSurvey20220510_Pull/RainfallSiteSurvey20220510.xlsx"
         hostname = "PNT-DB30.horizons.govt.nz"
     else:
         raise OSError("What is this, a mac? We don't do that here.")
