@@ -169,7 +169,7 @@ History
 * Fix for Null manual tips
 * Rainfall control plot now implemented correctly
 
-0.7.7 ()
+0.7.7 (2024-10-17)
 ----------------------------------
 
 * Fix for when the period passed to manual tip filter contains a nan
@@ -177,3 +177,4 @@ History
 * Fixed quality series adding values from before start date
 * Fixed rainfall script skipping values that would round up to an arrival time within the given time range
 * Dipstick used when flask is not recorded, downgraded to qc400
+* Updating the dashboard with additional info
