@@ -176,3 +176,4 @@ History
 * Another edge case fix for Null manual tips (caused floats)
 * Fixed quality series adding values from before start date
 * Fixed rainfall script skipping values that would round up to an arrival time within the given time range
+* Dipstick used when flask is not recorded, downgraded to qc400
