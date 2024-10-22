@@ -32,6 +32,7 @@ class RFProcessor(Processor):
         defaults: dict | None = None,
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
+        fetch_quality: bool = False,
         **kwargs,
     ):
         super().__init__(
@@ -47,6 +48,7 @@ class RFProcessor(Processor):
             defaults=defaults,
             interval_dict=interval_dict,
             constant_check_shift=constant_check_shift,
+            fetch_quality=fetch_quality,
             **kwargs,
         )
         self.standard_item_info = {
@@ -650,3 +652,29 @@ class RFProcessor(Processor):
                 )
             ]
         return data_blob_list
+
+    def calculate_common_offset(self, threshold: int = 0) -> float:
+        """
+        Calculate common offset.
+
+        Parameters
+        ----------
+        threshold : int
+            Quality required to consider the value in the common offset
+
+        Returns
+        -------
+        numeric
+            The common offset
+        """
+        scada_difference = utils.calculate_scada_difference(
+            utils.rainfall_six_minute_repacker(self.standard_data["Value"]),
+            self.check_data["Value"],
+        )
+        check_quality = self.quality_data["Value"].reindex(
+            scada_difference.index + pd.Timedelta(minutes=6), method="bfill"
+        )
+        # print(check_quality.to_string())
+        usable_checks = scada_difference[check_quality >= threshold]
+        # print(usable_checks)
+        return usable_checks.mean()

@@ -178,3 +178,8 @@ History
 * Fixed rainfall script skipping values that would round up to an arrival time within the given time range
 * Dipstick used when flask is not recorded, downgraded to qc400
 * Updating the dashboard with additional info
+
+0.7.8 ()
+----------------------------------
+
+* LTCO calculation supported

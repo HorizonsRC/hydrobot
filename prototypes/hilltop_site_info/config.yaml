@@ -6,7 +6,7 @@ hts_filename: "Archive.hts"
 site: "Ahuahu at Te Tuhi Junction"
 standard_measurement_name: "Rainfall [SCADA Rainfall]"
 check_measurement_name: "Check Gauge Total [Rainfall]"
-quality_measurement_name: "DO Saturation"
+quality_measurement_name: "Rainfall [Rainfall]"
 
 # Processing Configuration
 from_date: "2023-06-15 14:45:00"

@@ -524,20 +524,10 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     std_series = std_series.copy()
     check_series = check_series.copy()
 
-    # How much rainfall has occurred according to scada
-    incremental_series = std_series.cumsum()
+    scada_difference = calculate_scada_difference(std_series, check_series)
 
-    # Filter to when checks occur
-    try:
-        recorded_totals = incremental_series[check_series.index]
-    except KeyError as e:
-        raise KeyError("Check data times not found in the standard series") from e
-
-    # Multiplier of difference between check and scada
-    scada_difference = check_series / recorded_totals.diff().replace(0, np.nan)
     # Fill out to all scada events
     multiplier = scada_difference.reindex(std_series.index, method="bfill")
-
     # Multiply to find std_data
     std_series = std_series * multiplier.astype(np.float64).fillna(0.0)
 
@@ -560,6 +550,39 @@ def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
     quality_code = quality_code.fillna(-1000).astype(np.int64)
 
     return std_series, quality_code
+
+
+def calculate_scada_difference(std_series, check_series):
+    """
+    Calculate multiplicative difference between scada totals and check data.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be ramped. Values are required at each check value (can be zero)
+    check_series : pd.Series
+        The data to ramp it to
+
+    Returns
+    -------
+    pd.Series
+        Deviation of check series from scada totals
+    """
+    # Avoid side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # How much rainfall has occurred according to scada
+    incremental_series = std_series.cumsum()
+
+    # Filter to when checks occur
+    try:
+        recorded_totals = incremental_series[check_series.index]
+    except KeyError as e:
+        raise KeyError("Check data times not found in the standard series") from e
+
+    # Multiplier of difference between check and scada
+    return check_series / recorded_totals.diff().replace(0, np.nan)
 
 
 def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):

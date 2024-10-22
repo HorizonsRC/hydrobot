@@ -1,0 +1,23 @@
+site: Ohau at Makahika
+analyst_name: ""
+from_date: "1800-01-01 00:00"
+
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+standard_hts_filename: "HydrobotCheckData.hts"
+check_hts_filename: "HydrobotCheckData.hts"
+
+# Data Source Configuration
+standard_measurement_name: "Rainfall [SCADA Rainfall]"
+check_measurement_name: "Check Gauge Total [Rainfall]"
+standard_backup: "Rainfall [SCADA Rainfall]"
+check_backup: "Check Gauge Total [Rainfall]"
+
+defaults:
+  max_qc: 600
+
+# Annalist Configuration
+logfile: "hydrobot_logs.csv"
+format:
+  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+  stream: "%(asctime)s, %(function_name)s"
