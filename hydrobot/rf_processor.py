@@ -1,6 +1,6 @@
 """Rainfall Processor Class."""
 
-import warnings
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,7 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
+import hydrobot.processor as processor
 from hydrobot import filters, plotter
 from hydrobot.processor import Processor, data_structure, evaluator, utils
 
@@ -97,6 +98,7 @@ class RFProcessor(Processor):
             "item_format": "0",
         }
         self.ramped_standard = None
+        self.ltco = None
 
     def import_data(
         self,
@@ -201,6 +203,7 @@ class RFProcessor(Processor):
         check_data: pd.DataFrame | None = None,
         from_date: str | None = None,
         to_date: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Replacement for generic import check data.
@@ -270,6 +273,7 @@ class RFProcessor(Processor):
             check_data,
             from_date,
             to_date,
+            base_url,
         )
         check_data = utils.series_rounder(check_data)
         return check_data, raw_check_data, raw_check_xml, raw_check_blob
@@ -281,6 +285,7 @@ class RFProcessor(Processor):
         max_qc: int | float | None = None,
         supplemental_data: pd.Series | None = None,
         manual_additional_points: pd.Series | None = None,
+        synthetic_checks: list | None = None,
     ):
         """
         Encode quality information in the quality series for a rainfall dataset.
@@ -305,6 +310,9 @@ class RFProcessor(Processor):
             Used for capping the qc of given time points
             e.g. if dipstick is used or snow is present
             If None no points are added
+        synthetic_checks : list | None
+            list of datetimes (will have pd.Timestamp applied, so can have str)
+             to have synthetic checks to replace recorded checks
 
         Returns
         -------
@@ -338,6 +346,8 @@ class RFProcessor(Processor):
         else:
             manual_additional_points = utils.series_rounder(manual_additional_points)
 
+        if synthetic_checks:
+            self.replace_checks_with_ltco(synthetic_checks)
         # Select all check data values that are marked to be used for QC purposes
         checks_for_qcing = self.check_data[self.check_data["QC"]]
 
@@ -345,6 +355,17 @@ class RFProcessor(Processor):
         checks_for_qcing = (
             checks_for_qcing["Value"] if "Value" in checks_for_qcing else pd.Series({})
         )
+
+        # List of synethic checks to find
+        list_of_replaced_checks = [pd.Timestamp(time) for time in synthetic_checks]
+        list_of_replaced_checks.sort()
+        checks_to_300 = utils.series_rounder(
+            pd.Series(index=list_of_replaced_checks, data=np.nan)
+        )
+        prior_checks_to_300 = pd.Series(
+            data=checks_for_qcing.index, index=checks_for_qcing.index
+        ).shift(1)[checks_to_300.index]
+        prior_checks_to_300 = pd.Series(index=prior_checks_to_300, data=300)
 
         # Round all checks to the nearest 6min
         checks_for_qcing = utils.series_rounder(checks_for_qcing)
@@ -393,6 +414,15 @@ class RFProcessor(Processor):
         qc_frame["Details"] = "Rainfall custom quality encoding"
         self._apply_quality(qc_frame, replace=True)
 
+        checks_to_300 = self.quality_data.reindex(checks_to_300.index, method="ffill")
+        self._apply_quality(checks_to_300, replace=False)
+
+        self.quality_data.loc[prior_checks_to_300.index] = np.nan
+        prior_checks_to_300 = prior_checks_to_300.to_frame(name="Value")
+        prior_checks_to_300["Code"] = "SYN"
+        prior_checks_to_300["Details"] = "LTCO rainfall synthetic data"
+        self._apply_quality(prior_checks_to_300, replace=False)
+
         if supplemental_data is not None:
             msg_frame = evaluator.missing_data_quality_code(
                 supplemental_data,
@@ -401,10 +431,13 @@ class RFProcessor(Processor):
             )
             self._apply_quality(msg_frame)
         else:
-            warnings.warn(
-                "MISSING SUPPLEMENTAL PARAMETER: Rainfall needs a supplemental"
+            self.report_processing_issue(
+                start_time=None,
+                end_time=None,
+                code="MSP",
+                comment="MISSING SUPPLEMENTAL PARAMETER: Rainfall needs a supplemental"
                 " data source to detect missing data.",
-                stacklevel=1,
+                series_type="quality",
             )
 
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
@@ -653,9 +686,9 @@ class RFProcessor(Processor):
             ]
         return data_blob_list
 
-    def calculate_common_offset(self, threshold: int = 0) -> float:
+    def calculate_long_term_common_offset(self, threshold: int = 500):
         """
-        Calculate common offset.
+        Calculate long term common offset (ltco).
 
         Parameters
         ----------
@@ -664,17 +697,86 @@ class RFProcessor(Processor):
 
         Returns
         -------
-        numeric
-            The common offset
+        None
+            Sets self.ltco to the long term common offset
         """
-        scada_difference = utils.calculate_scada_difference(
-            utils.rainfall_six_minute_repacker(self.standard_data["Value"]),
-            self.check_data["Value"],
+        historic_standard, _, _, _ = self.import_standard(
+            standard_hts=self.archive_standard_hts_filename,
+            from_date="1800-01-01 00:00",
+            to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            infer_frequency=False,
+            base_url=self.archive_base_url,
+            standard_data=processor.EMPTY_STANDARD_DATA.copy(),
         )
-        check_quality = self.quality_data["Value"].reindex(
-            scada_difference.index + pd.Timedelta(minutes=6), method="bfill"
+        historic_check, _, _, _ = self.import_check(
+            check_hts=self.archive_check_hts_filename,
+            from_date="1800-01-01 00:00",
+            to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            base_url=self.archive_base_url,
+            check_data=processor.EMPTY_CHECK_DATA.copy(),
         )
-        # print(check_quality.to_string())
-        usable_checks = scada_difference[check_quality >= threshold]
-        # print(usable_checks)
-        return usable_checks.mean()
+        historic_quality, _, _, _ = self.import_quality(
+            standard_hts=self.archive_standard_hts_filename,
+            from_date="1800-01-01 00:00",
+            to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            base_url=self.archive_base_url,
+            quality_data=processor.EMPTY_QUALITY_DATA.copy(),
+        )
+        self.ltco = rf.calculate_common_offset(
+            historic_standard["Value"],
+            historic_check["Value"] * 1000,
+            historic_quality["Value"][historic_quality["Value"] > 0],
+            threshold,
+        )
+        self.report_processing_issue(
+            start_time=None,
+            end_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            code="LCO",
+            comment=f"Long term common offset calculated to be: {self.ltco}",
+            series_type="check",
+        )
+
+    def replace_checks_with_ltco(self, list_of_replaced_checks: [str]):
+        """
+        For each check in the list, replace the check with synthetic ltco check.
+
+        Parameters
+        ----------
+        list_of_replaced_checks : [str]
+
+        Returns
+        -------
+        None
+        """
+        if list_of_replaced_checks:
+            if self.ltco is None:
+                self.calculate_long_term_common_offset()
+            list_of_replaced_checks = [
+                pd.Timestamp(time) for time in list_of_replaced_checks
+            ]
+            list_of_replaced_checks.sort()
+
+            checks_to_replace = utils.series_rounder(
+                pd.Series(index=list_of_replaced_checks)
+            )
+
+            # How much rainfall has occurred according to scada
+            incremental_series = utils.rainfall_six_minute_repacker(
+                self.standard_data["Value"]
+            ).cumsum()
+            try:
+                recorded_totals = incremental_series[
+                    self.check_data["Value"].index
+                ].diff()
+            except KeyError as e:
+                raise KeyError(
+                    "Check data times not found in the standard series"
+                ) from e
+
+            for check in checks_to_replace.index:
+                if check not in recorded_totals.index:
+                    raise KeyError(f"No check to replace at {check}")
+                else:
+                    self.check_data.loc[check, "Value"] = (
+                        recorded_totals.loc[check] * self.ltco
+                    )

@@ -145,8 +145,9 @@ ht_connection_url = URL.create(
 )
 ht_engine = db.create_engine(ht_connection_url)
 
-with pkg_resources.open_text("hydrobot.config", "calibration_query.sql") as f:
-    calibration_query = db.text(f.read())
+calibration_query = db.text(
+    pkg_resources.files("hydrobot.config").joinpath("calibration_query.sql").read_text()
+)
 
 calibration_df = pd.read_sql(calibration_query, ht_engine, params={"site": data.site})
 
@@ -184,7 +185,9 @@ dipstick_checks = pd.Series(
     data=12, index=rainfall_checks[rainfall_checks["flask"].isna()]["arrival_time"]
 )
 
-data.quality_encoder(manual_additional_points=dipstick_checks)
+data.quality_encoder(
+    manual_additional_points=dipstick_checks, synthetic_checks=["2024-03-06 09:32"]
+)
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],

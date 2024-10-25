@@ -8,6 +8,8 @@ import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
 
+import hydrobot.utils as utils
+
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
 
@@ -478,3 +480,37 @@ def manual_tip_filter(
             std_series[inspection_data.index] = events
 
             return std_series, issue
+
+
+def calculate_common_offset(
+    standard_series: pd.Series,
+    check_series: pd.Series,
+    quality_series: pd.Series,
+    threshold: int = 0,
+) -> float:
+    """
+    Calculate common offset.
+
+    Parameters
+    ----------
+    standard_series : pd.Series
+        Standard series
+    check_series : pd.Series
+        Check series
+    quality_series : pd.Series
+        Quality series
+    threshold : int
+        Quality required to consider the value in the common offset
+
+    Returns
+    -------
+    numeric
+        The common offset
+    """
+    scada_difference = utils.calculate_scada_difference(
+        utils.rainfall_six_minute_repacker(standard_series),
+        check_series,
+    )
+    check_quality = quality_series.reindex(scada_difference.index, method="bfill")
+    usable_checks = scada_difference[check_quality >= threshold]
+    return usable_checks.mean()

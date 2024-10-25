@@ -582,7 +582,10 @@ def calculate_scada_difference(std_series, check_series):
         raise KeyError("Check data times not found in the standard series") from e
 
     # Multiplier of difference between check and scada
-    return check_series / recorded_totals.diff().replace(0, np.nan)
+    scada_difference = check_series / recorded_totals.diff().astype(np.float64).replace(
+        0, np.nan
+    )
+    return scada_difference
 
 
 def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):

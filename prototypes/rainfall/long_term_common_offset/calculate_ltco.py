@@ -15,13 +15,14 @@ from hydrobot.rf_processor import RFProcessor
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = RFProcessor.from_config_yaml("ltco_config.yaml", fetch_quality=True)
-data.check_data["Value"] *= 1000
-data.quality_data = data.quality_data[data.quality_data["Value"] > 0]
+
+data.calculate_long_term_common_offset()
+print(data.ltco)
 
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-print("500 ", data.calculate_common_offset(500))
+# print("500 ", data.calculate_common_offset(500))
 #######################################################################################
 # Launch Hydrobot Processing Visualiser (HPV)
 # Known issues:
