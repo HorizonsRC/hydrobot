@@ -716,9 +716,13 @@ def test_infer_frequency(datetime_data):
 
 def test_frequency_switch(freq_switch_data):
     """Test infer_frequency utility on non-regular data."""
-    freq = utils.infer_frequency(freq_switch_data.index, method="mode")
+    freq = utils.infer_frequency(
+        pd.DatetimeIndex(freq_switch_data.index), method="mode"
+    )
     assert freq == "10min", "Frequency not inferred correctly when frequency changes."
-    strict_freq = utils.infer_frequency(freq_switch_data.index, method="strict")
+    strict_freq = utils.infer_frequency(
+        pd.DatetimeIndex(freq_switch_data.index), method="strict"
+    )
     assert (
         strict_freq is None
     ), "Frequency not inferred correctly when frequency changes when method is strict."
@@ -726,9 +730,11 @@ def test_frequency_switch(freq_switch_data):
 
 def test_frequency_gap(freq_gap_data):
     """Test infer_frequency utility on data where there is a gap."""
-    freq = utils.infer_frequency(freq_gap_data.index, method="mode")
+    freq = utils.infer_frequency(pd.DatetimeIndex(freq_gap_data.index), method="mode")
     assert freq == "5min", "Frequency not inferred correctly when there is a gap."
-    strict_freq = utils.infer_frequency(freq_gap_data.index, method="strict")
+    strict_freq = utils.infer_frequency(
+        pd.DatetimeIndex(freq_gap_data.index), method="strict"
+    )
     assert (
         strict_freq is None
     ), "Frequency not inferred correctly when frequency changes when method is strict."

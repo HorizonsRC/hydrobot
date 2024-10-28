@@ -1240,6 +1240,7 @@ class Processor:
         warnings.warn(
             "DEPRECATED: The use of gap_closer is discouraged as it completely "
             "removes rows from the dataframes.",
+            category=DeprecationWarning,
             stacklevel=1,
         )
         if gap_limit is None:
@@ -1696,11 +1697,12 @@ class Processor:
         <check series with specified range deleted>
         """
         warnings.warn(
-            "DEPRECATED: The use of delete_range is discouraged as it completely "
+            message="DEPRECATED: The use of delete_range is discouraged as it completely "
             "removes rows from the dataframes. User is encouraged to use "
             "'remove_range' which marks rows for removal, but retains the timestamp "
             "to be associated with the other values "
             "in the row such as the raw value, reason for removal, etc.",
+            category=DeprecationWarning,
             stacklevel=1,
         )
         if gap_limit is None:

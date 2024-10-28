@@ -1188,7 +1188,8 @@ def test_gap_closer(
     assert pd.to_datetime(end_idx) in pr.standard_data.index
 
     # Make a small gap
-    pr.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        pr.delete_range(start_idx, end_idx)
 
     # Check that gap was made
     assert (
@@ -1210,7 +1211,7 @@ def test_gap_closer(
 
     # "Close" gaps (i.e. remove nan rows)
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(DeprecationWarning):
         pr.gap_closer()
 
     # Check that gap was closed
@@ -1227,7 +1228,8 @@ def test_gap_closer(
     end_idx = "2023-01-05 00:00:00"
     assert pd.to_datetime(start_idx) in pr.standard_data.index
     assert pd.to_datetime(end_idx) in pr.standard_data.index
-    pr.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        pr.delete_range(start_idx, end_idx)
 
     # Check that gap was made
     assert (
@@ -1248,7 +1250,8 @@ def test_gap_closer(
     ), "processor.insert_missing_nans appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
-    pr.gap_closer()
+    with pytest.warns(DeprecationWarning):
+        pr.gap_closer()
 
     # Check that gap was NOT closed
     assert pd.isna(

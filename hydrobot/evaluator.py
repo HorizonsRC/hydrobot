@@ -439,8 +439,8 @@ def splitter(std_series, qc_series):
         if qc == 100:
             return_dict[qc] = (
                 base_data_meets_qc(std_series, qc_series, qc)
+                .astype(np.float64)
                 .fillna(std_series.median())
-                .infer_objects(copy=False)
             )
         else:
             return_dict[qc] = base_data_meets_qc(std_series, qc_series, qc)
