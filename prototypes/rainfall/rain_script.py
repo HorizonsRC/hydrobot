@@ -162,21 +162,13 @@ rainfall_checks["primary_manual_tips"] = (
     rainfall_checks["primary_manual_tips"].fillna(0).astype(int)
 )
 data.filter_manual_tips(rainfall_checks)
-# Rainfall is cumulative
-# data.standard_data.Value = data.standard_data.Value.cumsum()
-# data.standard_data.Raw = data.standard_data.Raw.cumsum()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
-# Remember to add Annalist logging!
+# Can also add Annalist logging!
 #######################################################################################
-
-# Manually removing an erroneous check data point
-# ann.logger.info(
-#     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
-#     "wrong temperature into Survey123 at this site."
-# )
-# data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
+# Example annalist log
+# ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
 
 #######################################################################################
 # Assign quality codes
@@ -192,11 +184,6 @@ data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
 )
-# ann.logger.info(
-#     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
-#     "the temperature sensor reading."
-# )
-# data.quality_series["2023-09-04T11:26:40"] = 500
 
 #######################################################################################
 # Export all data to XML file

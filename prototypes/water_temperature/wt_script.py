@@ -81,7 +81,7 @@ all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 #######################################################################################
 
 
-data.insert_missing_nans()
+data.pad_data_with_nan_to_set_freq()
 
 # Clipping all data outside of low_clip and high_clip
 data.clip()

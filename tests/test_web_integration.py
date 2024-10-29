@@ -355,15 +355,15 @@ def test_processor_integration(tmp_path):
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    data.insert_missing_nans()
+    data.pad_data_with_nan_to_set_freq()
 
     # Check that NaNs are inserted
     assert pd.isna(
         data.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         data.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
     print(data.standard_data.loc[start_idx])
@@ -393,15 +393,15 @@ def test_processor_integration(tmp_path):
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    data.insert_missing_nans()
+    data.pad_data_with_nan_to_set_freq()
 
     # Check that NaNs are inserted
     assert pd.isna(
         data.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         data.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
     print(data.standard_data.loc[start_idx])

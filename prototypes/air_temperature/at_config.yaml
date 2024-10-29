@@ -1,8 +1,8 @@
 # Fields to fill out
 analyst_name: "script_default"
-site: "Waitarere Forest Climate Station"
-from_date: "2018-12-18 12:00"
-to_date: "2018-12-22 12:00"
+site: "Ahuahu at Te Tuhi Junction"
+from_date: "2022-12-18 12:00"
+to_date: "2023-12-22 12:00"
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"

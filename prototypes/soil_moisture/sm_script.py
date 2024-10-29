@@ -32,7 +32,7 @@ st.header(f"{data.standard_measurement_name}")
 #######################################################################################
 
 
-data.insert_missing_nans()
+data.pad_data_with_nan_to_set_freq()
 
 # Clipping all data outside of low_clip and high_clip
 data.clip()

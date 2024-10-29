@@ -1741,7 +1741,7 @@ class Processor:
             )
 
     @ClassLogger
-    def insert_missing_nans(self):
+    def pad_data_with_nan_to_set_freq(self):
         """
         Set the data to the correct frequency, filled with NaNs as appropriate.
 
@@ -1758,7 +1758,7 @@ class Processor:
         Examples
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.insert_missing_nans()
+        >>> processor.pad_data_with_nan_to_set_freq()
         >>> processor.standard_data
         <standard series with missing values filled with NaNs>
         """
@@ -2087,7 +2087,7 @@ class Processor:
         series_type : str | None
             The type of the series the issue is related to.
         message_type : str | None
-            debug or info or warning or error
+            Should be one of: ["debug", "info", "warning", "error"]
 
         """
         self.processing_issues = pd.concat(
