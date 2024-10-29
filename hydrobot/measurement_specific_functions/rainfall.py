@@ -464,6 +464,7 @@ def manual_tip_filter(
                 "code": "RMT",
                 "comment": comment,
                 "series_type": "Standard and Check",
+                "message_type": "warning",
             }
 
             differences = (

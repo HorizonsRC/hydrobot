@@ -1,6 +1,5 @@
 """Test the evaluator module."""
 
-# import warnings
 # pyright: reportGeneralTypeIssues=false
 
 import numpy as np
@@ -203,15 +202,11 @@ def test_find_nearest_valid_time(gap_data, qc_data):
 def test_check_data_quality_code(raw_data, check_data):
     """Test check data quality code function."""
     meas = data_sources.QualityCodeEvaluator(10, 2.0)
-    with pytest.warns(Warning):
-        assert (
-            len(
-                evaluator.check_data_quality_code(
-                    raw_data["Value"], pd.Series({}), meas
-                )
-            )
-            == 0
-        ), "fails for empty check data series"
+    with pytest.raises(ValueError, match="No check data"):
+        # should throw error for empty data
+        evaluator.check_data_quality_code(raw_data["Value"], pd.Series({}), meas)
+
+    "fails for empty check data series"
     output = evaluator.check_data_quality_code(
         raw_data["Value"], check_data["Value"], meas
     )

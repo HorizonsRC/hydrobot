@@ -438,6 +438,7 @@ class RFProcessor(Processor):
                 comment="MISSING SUPPLEMENTAL PARAMETER: Rainfall needs a supplemental"
                 " data source to detect missing data.",
                 series_type="quality",
+                message_type="warning",
             )
 
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
@@ -734,6 +735,7 @@ class RFProcessor(Processor):
             code="LCO",
             comment=f"Long term common offset calculated to be: {self.ltco}",
             series_type="check",
+            message_type="info",
         )
 
     def replace_checks_with_ltco(self, list_of_replaced_checks: [str]):

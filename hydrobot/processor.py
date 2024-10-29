@@ -552,12 +552,6 @@ class Processor:
         TypeError
             If the parsed Standard data is not a pandas.Series.
 
-        Warnings
-        --------
-        UserWarning
-            - If the existing Standard Series is not a pandas.Series, it is set to an
-            empty Series.
-
         Notes
         -----
         This method imports Standard data from the specified server based on the
@@ -613,9 +607,13 @@ class Processor:
         raw_standard_blob = None
         raw_standard_xml = None
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No standard data found within specified date range.",
-                stacklevel=1,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Standard",
+                message_type="error",
+                comment="No standard data found within specified date range.",
+                code="MSD",
             )
         else:
             for blob in blob_list:
@@ -688,6 +686,7 @@ class Processor:
                             code="IRR",
                             comment="No frequency provided and infer_frequency is set to False. "
                             "Assuming irregular data.",
+                            message_type="warning",
                         )
 
             if self.raw_standard_blob is not None:
@@ -699,6 +698,7 @@ class Processor:
                     comment="Could not extract standard data format from data source. "
                     "Defaulting to float format.",
                     series_type="standard",
+                    message_type="error",
                 )
 
                 fmt = "F"
@@ -763,14 +763,6 @@ class Processor:
         TypeError
             If the parsed Quality data is not a pandas.Series.
 
-        Warnings
-        --------
-        UserWarning
-            - If the existing Quality Series is not a pandas.Series, it is set to an
-                empty Series.
-            - If no Quality data is available for the specified date range.
-            - If Quality data is not found in the server response.
-
         Notes
         -----
         This method imports Quality data from the specified server based on the
@@ -818,30 +810,42 @@ class Processor:
         raw_quality_xml = None
 
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No Quality data available for the range specified.",
-                stacklevel=1,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Quality",
+                message_type="error",
+                comment="No quality data found within specified date range, len0",
+                code="MQD",
             )
         else:
             date_format = "Calendar"
             for blob in blob_list:
-                if (blob.data_source.name == standard_data_source_name) and (
-                    blob.data_source.ts_type == "StdQualSeries"
-                ):
-                    # Found it. Now we extract it.
-                    blob_found = True
-
-                    raw_quality_data = blob.data.timeseries
-                    date_format = blob.data.date_format
-                    if raw_quality_data is not None:
+                data_source_options = []
+                if blob.data_source.ts_type == "StdQualSeries":
+                    data_source_options += [blob.data_source.name]
+                    if blob.data_source.name == standard_data_source_name:
                         # Found it. Now we extract it.
                         blob_found = True
-                        raw_quality_blob = blob
-                        raw_quality_xml = xml_tree
+
+                        raw_quality_data = blob.data.timeseries
+                        date_format = blob.data.date_format
+                        if raw_quality_data is not None:
+                            # Found it. Now we extract it.
+                            blob_found = True
+                            raw_quality_blob = blob
+                            raw_quality_xml = xml_tree
             if not blob_found:
-                warnings.warn(
-                    "No Quality data found in the server response.",
-                    stacklevel=2,
+                self.report_processing_issue(
+                    start_time=from_date,
+                    end_time=to_date,
+                    series_type="Quality",
+                    message_type="error",
+                    comment="No quality data found within specified date range "
+                    "and with correct standard data source name"
+                    f"Quality data {standard_data_source_name} not found in server "
+                    f"response. Available options are {data_source_options}",
+                    code="MQD",
                 )
 
             if not isinstance(raw_quality_data, pd.DataFrame):
@@ -921,14 +925,6 @@ class Processor:
         TypeError
             If the parsed Check data is not a pandas.DataFrame.
 
-        Warnings
-        --------
-        UserWarning
-            - If the existing Check Data is not a pandas.DataFrame, it is set to an
-                empty DataFrame.
-            - If no Check data is available for the specified date range.
-            - If the Check data source is not found in the server response.
-
         Notes
         -----
         This method imports Check data from the specified server based on the provided
@@ -978,9 +974,13 @@ class Processor:
         blob_found = False
         date_format = "Calendar"
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No Check data available for the range specified.",
-                stacklevel=2,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Check",
+                message_type="error",
+                comment="No check data found within specified date range.",
+                code="MCD",
             )
         else:
             data_source_options = []
@@ -1014,10 +1014,14 @@ class Processor:
                             0
                         ].number_format
             if not blob_found:
-                warnings.warn(
-                    f"Check data {check_data_source_name} not found in server "
+                self.report_processing_issue(
+                    start_time=from_date,
+                    end_time=to_date,
+                    series_type="Check",
+                    message_type="error",
+                    comment=f"Check data {check_data_source_name} not found in server "
                     f"response. Available options are {data_source_options}",
-                    stacklevel=2,
+                    code="MCD",
                 )
 
             if not isinstance(raw_check_data, pd.DataFrame):
