@@ -515,3 +515,33 @@ def calculate_common_offset(
     check_quality = quality_series.reindex(scada_difference.index, method="bfill")
     usable_checks = scada_difference[check_quality >= threshold]
     return usable_checks.mean()
+
+
+def add_zeroes_at_checks(standard_data: pd.DataFrame, check_data: pd.DataFrame):
+    """
+    Add zeroes in standard data where checks are, if there is no data there.
+
+    Parameters
+    ----------
+    standard_data : pd.DataFrame
+        Standard data that is potentially missing times
+    check_data : pd.DataFrame
+        Check data to potentially add zero values at set times.
+
+    Returns
+    -------
+    pd.DataFrame
+        The standard data with zeroes added
+
+    """
+    empty_check_values = check_data[["Raw", "Value", "Changes"]].copy()
+    empty_check_values["Value"] = 0
+    empty_check_values["Raw"] = 0.0
+    empty_check_values["Changes"] = "RFZ"
+
+    # exclude values which are already in scada
+    empty_check_values = empty_check_values.loc[
+        ~empty_check_values.index.isin(standard_data.index)
+    ]
+    standard_data = pd.concat([standard_data, empty_check_values]).sort_index()
+    return standard_data

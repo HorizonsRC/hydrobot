@@ -19,7 +19,7 @@ data.remove_spikes()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
-# Can also add Annalist logging!
+# Can also add Annalist logging
 #######################################################################################
 # Example annalist log
 # ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
