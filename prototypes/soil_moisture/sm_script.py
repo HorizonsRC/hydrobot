@@ -7,11 +7,7 @@ streamlit run .\sm_script.py
 
 """
 
-import pandas as pd
-import streamlit as st
-
-import hydrobot
-from hydrobot.plotter import make_processing_dash
+from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 
 #######################################################################################
@@ -19,12 +15,6 @@ from hydrobot.processor import Processor
 #######################################################################################
 
 data, ann = Processor.from_config_yaml("sm_config.yaml")
-
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
 
 
 #######################################################################################
@@ -78,28 +68,27 @@ data.data_exporter()
 # - No manual changes to check data points reflected in visualiser at this point
 #######################################################################################
 
-fig = data.plot_qc_series(show=False)
+fig = data.plot_processing_overview_chart()
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    pd.DataFrame(
-        columns=[
-            "Time",
-            "Raw",
-            "Value",
-            "Changes",
-            "Recorder Time",
-            "Comment",
-            "Source",
-            "QC",
-            "Logger",
-        ]
-    ).set_index("Time"),
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_html()))
+
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    data.standard_data.to_html(file)
+with open("check_table.html", "w", encoding="utf-8") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w", encoding="utf-8") as file:
+    data.quality_data.to_html(file)
+
+merger = HtmlMerger(
+    [
+        "pyplot.html",
+        "check_table.html",
+        "quality_table.html",
+    ],
+    encoding="utf-8",
 )
 
-st.plotly_chart(fig_subplots, use_container_width=True)
-
-st.dataframe(data.standard_data, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+merger.merge()

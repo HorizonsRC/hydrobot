@@ -57,7 +57,6 @@ merger = HtmlMerger(
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
-        "standard_table.html",
     ],
     encoding="utf-8",
 )
