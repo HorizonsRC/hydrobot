@@ -1,7 +1,5 @@
 """Tools for checking quality and finding problems in the data."""
 
-import warnings
-
 import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
@@ -105,7 +103,7 @@ def check_data_quality_code(
     series : pd.Series
         Data to be quality coded
     check_series : pd.Series
-        Check data
+        Check data - must not be empty
     qc_evaluator : data_sources.QualityCodeEvaluator
         Handler for QC comparisons
     gap_limit : integer (seconds)
@@ -119,12 +117,7 @@ def check_data_quality_code(
     first_data_date = series.index[0]
     last_data_date = series.index[-1]
     if check_series.empty:
-        # Maybe you should go find that check data
-        warnings.warn("Warning: No check data", stacklevel=2)
-        return pd.DataFrame(
-            columns=["Value", "Code", "Details"],
-            index=[],
-        )
+        raise ValueError("No check data")
     first_check_date = check_series.index[0]
     last_check_date = check_series.index[-1]
     if (
@@ -439,8 +432,8 @@ def splitter(std_series, qc_series):
         if qc == 100:
             return_dict[qc] = (
                 base_data_meets_qc(std_series, qc_series, qc)
+                .astype(np.float64)
                 .fillna(std_series.median())
-                .infer_objects(copy=False)
             )
         else:
             return_dict[qc] = base_data_meets_qc(std_series, qc_series, qc)

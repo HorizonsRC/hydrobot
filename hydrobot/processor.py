@@ -132,6 +132,9 @@ class Processor:
         constant_check_shift: float = 0,
         fetch_quality: bool = False,
         export_file_name: str | None = None,
+        archive_base_url: str | None = None,
+        archive_standard_hts_filename: str | None = None,
+        archive_check_hts_filename: str | None = None,
         **kwargs,
     ):
         """
@@ -166,6 +169,16 @@ class Processor:
         kwargs : dict
             Additional keyword arguments.
         """
+        self.processing_issues = pd.DataFrame(
+            {
+                "start_time": [],
+                "end_time": [],
+                "code": [],
+                "comment": [],
+                "series_type": [],
+                "message_type": [],
+            }
+        ).astype(str)
         self._defaults = defaults
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
@@ -300,25 +313,21 @@ class Processor:
             check=get_check,
             quality=fetch_quality,
         )
-        self.processing_issues = pd.DataFrame(
-            {
-                "start_time": [],
-                "end_time": [],
-                "code": [],
-                "comment": [],
-                "series_type": [],
-            }
-        ).astype(str)
+        self.archive_base_url = archive_base_url
+        self.archive_standard_hts_filename = archive_standard_hts_filename
+        self.archive_check_hts_filename = archive_check_hts_filename
 
     @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False):
+    def from_processing_parameters_dict(
+        cls, processing_parameters, fetch_quality=False
+    ):
         """
         Initialises a Processor class given a config file.
 
         Parameters
         ----------
-        config_path : string
-            Path to config.yaml.
+        processing_parameters : dict
+            Dictionary of processing parameters
         fetch_quality : bool, optional
             Whether to fetch any existing quality data, default false
 
@@ -326,8 +335,6 @@ class Processor:
         -------
         Processor, Annalist
         """
-        processing_parameters = data_acquisition.config_yaml_import(config_path)
-
         ###################################################################################
         # Setting up logging with Annalist
         ###################################################################################
@@ -362,9 +369,36 @@ class Processor:
                 ),
                 fetch_quality=fetch_quality,
                 export_file_name=processing_parameters.get("export_file_name", None),
+                archive_base_url=processing_parameters.get("archive_base_url", None),
+                archive_standard_hts_filename=processing_parameters.get(
+                    "archive_standard_hts_filename", None
+                ),
+                archive_check_hts_filename=processing_parameters.get(
+                    "archive_check_hts_filename", None
+                ),
             ),
             ann,
         )
+
+    @classmethod
+    def from_config_yaml(cls, config_path, fetch_quality=False):
+        """
+        Initialises a Processor class given a config file.
+
+        Parameters
+        ----------
+        config_path : string
+            Path to config.yaml.
+        fetch_quality : bool, optional
+            Whether to fetch any existing quality data, default false
+
+        Returns
+        -------
+        Processor, Annalist
+        """
+        processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+        return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -464,6 +498,7 @@ class Processor:
         to_date: str | None = None,
         frequency: str | None = None,
         infer_frequency: bool = True,
+        base_url: str | None = None,
     ):
         """
         Import standard data.
@@ -501,6 +536,8 @@ class Processor:
             inferred from the data. If False, the frequency is set to None. Only used if
             the frequency is not provided as a parameter AND not specified on the
             processor object.
+        base_url : str or None, optional
+            URL to look for hilltop server. Will use self.base_url if None.
 
         Returns
         -------
@@ -514,12 +551,6 @@ class Processor:
 
         TypeError
             If the parsed Standard data is not a pandas.Series.
-
-        Warnings
-        --------
-        UserWarning
-            - If the existing Standard Series is not a pandas.Series, it is set to an
-            empty Series.
 
         Notes
         -----
@@ -552,12 +583,13 @@ class Processor:
             to_date = self.to_date
         if frequency is None:
             frequency = self._frequency
-
         if standard_data is None:
             standard_data = self._standard_data
+        if base_url is None:
+            base_url = self._base_url
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            base_url,
             standard_hts,
             site,
             standard_measurement_name,
@@ -575,9 +607,13 @@ class Processor:
         raw_standard_blob = None
         raw_standard_xml = None
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No standard data found within specified date range.",
-                stacklevel=1,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Standard",
+                message_type="error",
+                comment="No standard data found within specified date range.",
+                code="MSD",
             )
         else:
             for blob in blob_list:
@@ -586,6 +622,7 @@ class Processor:
                     blob.data_source.ts_type == "StdSeries"
                 ):
                     raw_standard_data = blob.data.timeseries
+
                     date_format = blob.data.date_format
                     if raw_standard_data is not None:
                         # Found it. Now we extract it.
@@ -645,21 +682,25 @@ class Processor:
                     else:
                         # infer_frequency is explicitly set to false and frequency is None
                         # Assuming irregular data
-                        warnings.warn(
-                            "No frequency provided and infer_frequency is set to False. "
+                        self.report_processing_issue(
+                            code="IRR",
+                            comment="No frequency provided and infer_frequency is set to False. "
                             "Assuming irregular data.",
-                            stacklevel=1,
+                            message_type="warning",
                         )
 
             if self.raw_standard_blob is not None:
                 fmt = standard_item_info["item_format"]
                 div = standard_item_info["divisor"]
             else:
-                warnings.warn(
-                    "Could not extract standard data format from data source. "
+                self.report_processing_issue(
+                    code="HXD",
+                    comment="Could not extract standard data format from data source. "
                     "Defaulting to float format.",
-                    stacklevel=1,
+                    series_type="standard",
+                    message_type="error",
                 )
+
                 fmt = "F"
                 div = 1
             if div is None or div == "None":
@@ -699,6 +740,7 @@ class Processor:
         quality_data: pd.DataFrame | None = None,
         from_date: str | None = None,
         to_date: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Import quality data.
@@ -720,14 +762,6 @@ class Processor:
         ------
         TypeError
             If the parsed Quality data is not a pandas.Series.
-
-        Warnings
-        --------
-        UserWarning
-            - If the existing Quality Series is not a pandas.Series, it is set to an
-                empty Series.
-            - If no Quality data is available for the specified date range.
-            - If Quality data is not found in the server response.
 
         Notes
         -----
@@ -757,9 +791,11 @@ class Processor:
             to_date = self.to_date
         if quality_data is None:
             quality_data = self._quality_data
+        if base_url is None:
+            base_url = self._base_url
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            base_url,
             standard_hts,
             site,
             standard_measurement_name,
@@ -774,30 +810,42 @@ class Processor:
         raw_quality_xml = None
 
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No Quality data available for the range specified.",
-                stacklevel=1,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Quality",
+                message_type="error",
+                comment="No quality data found within specified date range, len0",
+                code="MQD",
             )
         else:
             date_format = "Calendar"
             for blob in blob_list:
-                if (blob.data_source.name == standard_data_source_name) and (
-                    blob.data_source.ts_type == "StdQualSeries"
-                ):
-                    # Found it. Now we extract it.
-                    blob_found = True
-
-                    raw_quality_data = blob.data.timeseries
-                    date_format = blob.data.date_format
-                    if raw_quality_data is not None:
+                data_source_options = []
+                if blob.data_source.ts_type == "StdQualSeries":
+                    data_source_options += [blob.data_source.name]
+                    if blob.data_source.name == standard_data_source_name:
                         # Found it. Now we extract it.
                         blob_found = True
-                        raw_quality_blob = blob
-                        raw_quality_xml = xml_tree
+
+                        raw_quality_data = blob.data.timeseries
+                        date_format = blob.data.date_format
+                        if raw_quality_data is not None:
+                            # Found it. Now we extract it.
+                            blob_found = True
+                            raw_quality_blob = blob
+                            raw_quality_xml = xml_tree
             if not blob_found:
-                warnings.warn(
-                    "No Quality data found in the server response.",
-                    stacklevel=2,
+                self.report_processing_issue(
+                    start_time=from_date,
+                    end_time=to_date,
+                    series_type="Quality",
+                    message_type="error",
+                    comment="No quality data found within specified date range "
+                    "and with correct standard data source name"
+                    f"Quality data {standard_data_source_name} not found in server "
+                    f"response. Available options are {data_source_options}",
+                    code="MQD",
                 )
 
             if not isinstance(raw_quality_data, pd.DataFrame):
@@ -837,6 +885,7 @@ class Processor:
         check_data: pd.DataFrame | None = None,
         from_date: str | None = None,
         to_date: str | None = None,
+        base_url: str | None = None,
     ):
         """
         Import Check data.
@@ -876,14 +925,6 @@ class Processor:
         TypeError
             If the parsed Check data is not a pandas.DataFrame.
 
-        Warnings
-        --------
-        UserWarning
-            - If the existing Check Data is not a pandas.DataFrame, it is set to an
-                empty DataFrame.
-            - If no Check data is available for the specified date range.
-            - If the Check data source is not found in the server response.
-
         Notes
         -----
         This method imports Check data from the specified server based on the provided
@@ -915,9 +956,11 @@ class Processor:
             from_date = self._from_date
         if to_date is None:
             to_date = self._to_date
+        if base_url is None:
+            base_url = self._base_url
 
         xml_tree, blob_list = data_acquisition.get_data(
-            self._base_url,
+            base_url,
             check_hts,
             site,
             check_measurement_name,
@@ -931,9 +974,13 @@ class Processor:
         blob_found = False
         date_format = "Calendar"
         if blob_list is None or len(blob_list) == 0:
-            warnings.warn(
-                "No Check data available for the range specified.",
-                stacklevel=2,
+            self.report_processing_issue(
+                start_time=from_date,
+                end_time=to_date,
+                series_type="Check",
+                message_type="error",
+                comment="No check data found within specified date range.",
+                code="MCD",
             )
         else:
             data_source_options = []
@@ -967,10 +1014,14 @@ class Processor:
                             0
                         ].number_format
             if not blob_found:
-                warnings.warn(
-                    f"Check data {check_data_source_name} not found in server "
+                self.report_processing_issue(
+                    start_time=from_date,
+                    end_time=to_date,
+                    series_type="Check",
+                    message_type="error",
+                    comment=f"Check data {check_data_source_name} not found in server "
                     f"response. Available options are {data_source_options}",
-                    stacklevel=2,
+                    code="MCD",
                 )
 
             if not isinstance(raw_check_data, pd.DataFrame):
@@ -1193,6 +1244,7 @@ class Processor:
         warnings.warn(
             "DEPRECATED: The use of gap_closer is discouraged as it completely "
             "removes rows from the dataframes.",
+            category=DeprecationWarning,
             stacklevel=1,
         )
         if gap_limit is None:
@@ -1649,11 +1701,12 @@ class Processor:
         <check series with specified range deleted>
         """
         warnings.warn(
-            "DEPRECATED: The use of delete_range is discouraged as it completely "
+            message="DEPRECATED: The use of delete_range is discouraged as it completely "
             "removes rows from the dataframes. User is encouraged to use "
             "'remove_range' which marks rows for removal, but retains the timestamp "
             "to be associated with the other values "
             "in the row such as the raw value, reason for removal, etc.",
+            category=DeprecationWarning,
             stacklevel=1,
         )
         if gap_limit is None:
@@ -1688,7 +1741,7 @@ class Processor:
             )
 
     @ClassLogger
-    def insert_missing_nans(self):
+    def pad_data_with_nan_to_set_freq(self):
         """
         Set the data to the correct frequency, filled with NaNs as appropriate.
 
@@ -1705,7 +1758,7 @@ class Processor:
         Examples
         --------
         >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.insert_missing_nans()
+        >>> processor.pad_data_with_nan_to_set_freq()
         >>> processor.standard_data
         <standard series with missing values filled with NaNs>
         """
@@ -2008,7 +2061,13 @@ class Processor:
         return data_blob_list
 
     def report_processing_issue(
-        self, start_time=None, end_time=None, code=None, comment=None, series_type=None
+        self,
+        start_time=None,
+        end_time=None,
+        code=None,
+        comment=None,
+        series_type=None,
+        message_type=None,
     ):
         """
         Add an issue to be reported for processing usage.
@@ -2017,22 +2076,24 @@ class Processor:
 
         Parameters
         ----------
-        start_time : str
+        start_time : str | None
             The start time of the issue.
-        end_time : str
+        end_time : str | None
             The end time of the issue.
-        code : str
+        code : str | None
             The code of the issue.
-        comment : str
+        comment : str | None
             The comment of the issue.
-        series_type : str
+        series_type : str | None
             The type of the series the issue is related to.
+        message_type : str | None
+            Should be one of: ["debug", "info", "warning", "error"]
 
         """
         self.processing_issues = pd.concat(
             [
                 pd.DataFrame(
-                    [[start_time, end_time, code, comment, series_type]],
+                    [[start_time, end_time, code, comment, series_type, message_type]],
                     columns=self.processing_issues.columns,
                 ),
                 self.processing_issues,

@@ -49,7 +49,7 @@ some external tools are still required to do a full processing. Importantly,
 the hybrid workflow relies on some R scripts to obtain check data from sources
 other than Hilltop. Further processing using Hilltop manager is also supported.
 
-NOTE: Hydrobot 0.7.7 supports only Water Temperature processing at the moment,
+NOTE: Hydrobot 0.7.7 does not support all NEMs data sources currently,
 but more measurements will be supported in patches as the processing
 progresses.
 
@@ -65,6 +65,7 @@ Initial Setup (Repeat for each release)
    "Hydrobot" folder in the C: drive, which would need the command::
 
     python -m venv C:/Hydrobot/hydrobot0.7.7/
+    cd C:/Hydrobot/hydrobot0.7.7/
 
 #. Activate this virtual environment. In powershell this should be something
    like::

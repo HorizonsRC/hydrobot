@@ -1188,7 +1188,8 @@ def test_gap_closer(
     assert pd.to_datetime(end_idx) in pr.standard_data.index
 
     # Make a small gap
-    pr.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        pr.delete_range(start_idx, end_idx)
 
     # Check that gap was made
     assert (
@@ -1199,18 +1200,18 @@ def test_gap_closer(
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    pr.insert_missing_nans()
+    pr.pad_data_with_nan_to_set_freq()
     # Check that NaNs are inserted
     assert pd.isna(
         pr.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         pr.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
 
-    with pytest.warns(UserWarning):
+    with pytest.warns(DeprecationWarning):
         pr.gap_closer()
 
     # Check that gap was closed
@@ -1227,7 +1228,8 @@ def test_gap_closer(
     end_idx = "2023-01-05 00:00:00"
     assert pd.to_datetime(start_idx) in pr.standard_data.index
     assert pd.to_datetime(end_idx) in pr.standard_data.index
-    pr.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        pr.delete_range(start_idx, end_idx)
 
     # Check that gap was made
     assert (
@@ -1238,17 +1240,18 @@ def test_gap_closer(
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    pr.insert_missing_nans()
+    pr.pad_data_with_nan_to_set_freq()
     # Check that NaNs are inserted
     assert pd.isna(
         pr.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         pr.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
-    pr.gap_closer()
+    with pytest.warns(DeprecationWarning):
+        pr.gap_closer()
 
     # Check that gap was NOT closed
     assert pd.isna(
@@ -1362,7 +1365,7 @@ def test_data_export(
     # =======================Insert Nans========================
     # This is how we internally represent gaps. They need to be converted to the Gap
     # tag for xml export.
-    pr.insert_missing_nans()
+    pr.pad_data_with_nan_to_set_freq()
 
     pr.data_exporter(gap_path_csv, ftype="csv")
 

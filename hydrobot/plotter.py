@@ -1,5 +1,6 @@
 """Tools for displaying potentially problematic data."""
 
+import numpy as np
 import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
@@ -265,11 +266,15 @@ def plot_check_data(
 
         if rain_control:
             checks = (
-                tag_check["Value"].diff().to_numpy()
-                / standard_series.loc[timestamps].diff()
-                * 100
-                - 100
-            ).fillna(0)
+                (
+                    tag_check["Value"].diff().to_numpy()
+                    / standard_series.loc[timestamps].diff()
+                    * 100
+                    - 100
+                )
+                .astype(np.float64)
+                .fillna(0)
+            )
         elif diffs:
             checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
         else:

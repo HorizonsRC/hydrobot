@@ -7,6 +7,7 @@ GAP: "Missing data: No valid data for this time"
 LIM: "Site quality code capped: Site has a quality code cap, additive"
 # Measurement specific quality code reasons
 CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, additive"
+SYN: "Synethic: data is 300"
 
 # Check source codes
 HTP: "Site inspections, imported from hilltop"
@@ -16,3 +17,10 @@ RFZ: "Rainfall zero: used for when zeroes are inserted into rainfall"
 
 # Issue codes
 RMT: "Rainfall manual tips issue: automatic removal of manual tips ran into problems"
+LCO: "Long-term Common Offset"
+MSP: "Missing supplemental parameter (rainfall)"
+IRR: "Irregular data: frequency not set, some features disabled"
+HXD: "Hilltop extraction data missing: inferred data type for hilltop xml"
+MSD: "Missing standard data"
+MQD: "Missing quality data"
+MCD: "Missing check data"

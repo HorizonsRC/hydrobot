@@ -1,4 +1,4 @@
-site: Whanganui at Mataimona Trig
+site: Tutaenui at Ribby Farm
 analyst_name: Sam Irvine
 from_date: "2023-07-17 13:00"
 to_date: "2024-09-26 14:00"
@@ -28,3 +28,8 @@ logfile: "hydrobot_logs.csv"
 format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
   stream: "%(asctime)s, %(function_name)s"
+
+# Archive hts
+archive_base_url: "http://hilltopdev.horizons.govt.nz/"
+archive_standard_hts_filename: "Archive.hts"
+archive_check_hts_filename: "Archive.hts"

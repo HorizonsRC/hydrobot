@@ -8,6 +8,8 @@ import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
 
+import hydrobot.utils as utils
+
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
 
@@ -462,6 +464,7 @@ def manual_tip_filter(
                 "code": "RMT",
                 "comment": comment,
                 "series_type": "Standard and Check",
+                "message_type": "warning",
             }
 
             differences = (
@@ -478,3 +481,67 @@ def manual_tip_filter(
             std_series[inspection_data.index] = events
 
             return std_series, issue
+
+
+def calculate_common_offset(
+    standard_series: pd.Series,
+    check_series: pd.Series,
+    quality_series: pd.Series,
+    threshold: int = 0,
+) -> float:
+    """
+    Calculate common offset.
+
+    Parameters
+    ----------
+    standard_series : pd.Series
+        Standard series
+    check_series : pd.Series
+        Check series
+    quality_series : pd.Series
+        Quality series
+    threshold : int
+        Quality required to consider the value in the common offset
+
+    Returns
+    -------
+    numeric
+        The common offset
+    """
+    scada_difference = utils.calculate_scada_difference(
+        utils.rainfall_six_minute_repacker(standard_series),
+        check_series,
+    )
+    check_quality = quality_series.reindex(scada_difference.index, method="bfill")
+    usable_checks = scada_difference[check_quality >= threshold]
+    return usable_checks.mean()
+
+
+def add_zeroes_at_checks(standard_data: pd.DataFrame, check_data: pd.DataFrame):
+    """
+    Add zeroes in standard data where checks are, if there is no data there.
+
+    Parameters
+    ----------
+    standard_data : pd.DataFrame
+        Standard data that is potentially missing times
+    check_data : pd.DataFrame
+        Check data to potentially add zero values at set times.
+
+    Returns
+    -------
+    pd.DataFrame
+        The standard data with zeroes added
+
+    """
+    empty_check_values = check_data[["Raw", "Value", "Changes"]].copy()
+    empty_check_values["Value"] = 0
+    empty_check_values["Raw"] = 0.0
+    empty_check_values["Changes"] = "RFZ"
+
+    # exclude values which are already in scada
+    empty_check_values = empty_check_values.loc[
+        ~empty_check_values.index.isin(standard_data.index)
+    ]
+    standard_data = pd.concat([standard_data, empty_check_values]).sort_index()
+    return standard_data

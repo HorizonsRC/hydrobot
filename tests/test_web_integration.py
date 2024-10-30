@@ -344,7 +344,8 @@ def test_processor_integration(tmp_path):
     start_idx = "2021-02-02 11:00"
     end_idx = "2021-02-02 11:30"
 
-    data.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        data.delete_range(start_idx, end_idx)
     # Check that row was completely deleted
     assert (
         pd.to_datetime(start_idx) not in data.standard_data.index
@@ -354,19 +355,20 @@ def test_processor_integration(tmp_path):
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    data.insert_missing_nans()
+    data.pad_data_with_nan_to_set_freq()
 
     # Check that NaNs are inserted
     assert pd.isna(
         data.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         data.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
     print(data.standard_data.loc[start_idx])
-    data.gap_closer()
+    with pytest.warns(DeprecationWarning):
+        data.gap_closer()
 
     # Check that gap was closed
     assert (
@@ -380,7 +382,8 @@ def test_processor_integration(tmp_path):
     start_idx = "2021-01-30 00:00"
     end_idx = "2021-02-01 00:00"
 
-    data.delete_range(start_idx, end_idx)
+    with pytest.warns(DeprecationWarning):
+        data.delete_range(start_idx, end_idx)
     # Check that row was completely deleted
     assert (
         pd.to_datetime(start_idx) not in data.standard_data.index
@@ -390,19 +393,20 @@ def test_processor_integration(tmp_path):
     ), "processor.delete_range appears to be broken."
 
     # Insert nans where values are missing
-    data.insert_missing_nans()
+    data.pad_data_with_nan_to_set_freq()
 
     # Check that NaNs are inserted
     assert pd.isna(
         data.standard_data.loc[start_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
     assert pd.isna(
         data.standard_data.loc[end_idx, "Value"]
-    ), "processor.insert_missing_nans appears to be broken."
+    ), "processor.pad_data_with_nan_to_set_freq appears to be broken."
 
     # "Close" gaps (i.e. remove nan rows)
     print(data.standard_data.loc[start_idx])
-    data.gap_closer()
+    with pytest.warns(DeprecationWarning):
+        data.gap_closer()
 
     # Check that gap was closed
     # assert (
