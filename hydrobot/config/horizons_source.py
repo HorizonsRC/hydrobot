@@ -35,7 +35,8 @@ def survey123_db_engine():
 
 def rainfall_query():
     """Returns query used for Rainfall inspections."""
-    query = """SELECT Hydro_Inspection.arrival_time,
+    query = """
+            SELECT Hydro_Inspection.arrival_time,
             Hydro_Inspection.weather,
             Hydro_Inspection.notes,
             Hydro_Inspection.departure_time,
@@ -66,6 +67,43 @@ def rainfall_query():
     return query
 
 
+def atmospheric_pressure_query():
+    """Get SQL query for atmospheric pressure."""
+    query = """
+    SELECT
+        Hydro_Inspection.id,
+        Hydro_Inspection.arrival_time,
+        Hydro_Inspection.sitename,
+        Hydro_Inspection.weather,
+        Hydro_Inspection.notes,
+        Hydro_Inspection.departure_time,
+        Hydro_Inspection.creator,
+        DO_Inspection.inspection_id,
+        DO_Inspection.handheld_baro,
+        DO_Inspection.logger_baro,
+        DO_Inspection.do_notes,
+        DO_Inspection.inspection_id,
+        WaterLevel_Inspection.inspection_id,
+        WaterLevel_Inspection.wl_notes,
+        WaterTemp_Inspection.inspection_id,
+        WaterTemp_Inspection.wt_device,
+        WaterTemp_Inspection.handheld_temp,
+        WaterTemp_Inspection.logger_temp
+    FROM
+        [dbo].Hydro_Inspection
+        FULL JOIN [dbo].DO_Inspection ON DO_Inspection.inspection_id = Hydro_Inspection.id
+        FULL JOIN [dbo].WaterLevel_Inspection ON WaterLevel_Inspection.inspection_id = Hydro_Inspection.id
+        FULL JOIN [dbo].WaterTemp_Inspection ON WaterTemp_Inspection.inspection_id = Hydro_Inspection.id
+    WHERE
+        Hydro_Inspection.arrival_time >= ?
+        AND Hydro_Inspection.arrival_time < ?
+        AND Hydro_Inspection.sitename = ?
+    ORDER BY
+        Hydro_Inspection.arrival_time ASC
+    """
+    return query
+
+
 def rainfall_inspections(from_date, to_date, site):
     """Returns all info from rainfall inspection query."""
     rainfall_checks = pd.read_sql(
@@ -80,6 +118,11 @@ def rainfall_inspections(from_date, to_date, site):
     return rainfall_checks
 
 
+def atmospheric_pressure_inspections(from_date, to_date, site):
+    """Get atmospheric pressure inspection data."""
+    pass
+
+
 def rainfall_calibrations(site):
     """Return dataframe containing calibration info from assets."""
     ht_connection_url = URL.create(
@@ -91,7 +134,7 @@ def rainfall_calibrations(site):
     ht_engine = db.create_engine(ht_connection_url)
 
     calibration_query = db.text(
-        pkg_resources.files("hydrobot.config")
+        pkg_resources.files("hydrobot.config.horizons.sql")
         .joinpath("calibration_query.sql")
         .read_text()
     )

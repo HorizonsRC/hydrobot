@@ -1,11 +1,6 @@
-r"""Script to run through a processing task with the processor class.
+"""Script to run through a processing task for soil moisture."""
 
-Run command:
-
-cd .\prototypes\soil_moisture
-streamlit run .\sm_script.py
-
-"""
+import pandas as pd
 
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
@@ -13,59 +8,35 @@ from hydrobot.processor import Processor
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
 data, ann = Processor.from_config_yaml("sm_config.yaml")
-
 
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
-
 data.pad_data_with_nan_to_set_freq()
-
-# Clipping all data outside of low_clip and high_clip
 data.clip()
-
-# Remove obvious spikes using FBEWMA algorithm
 data.remove_spikes()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
-# Remember to add Annalist logging!
+# Can also add Annalist logging
 #######################################################################################
-
-# Manually removing an erroneous check data point
-# ann.logger.info(
-#     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
-#     "wrong temperature into Survey123 at this site."
-# )
-# data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
+# Example annalist log
+# ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
 
 #######################################################################################
 # Assign quality codes
 #######################################################################################
-# data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
-# data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
-data.quality_encoder()
-
-# ann.logger.info(
-#     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
-#     "the temperature sensor reading."
-# )
-# data.quality_series["2023-09-04T11:26:40"] = 500
+data.quality_data.loc[pd.Timestamp(data.from_date), "Value"] = 200
+data.quality_data.loc[pd.Timestamp(data.to_date), "Value"] = 0
 
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
 data.data_exporter()
-# data.data_exporter("hilltop_csv", ftype="hilltop_csv")
-# data.data_exporter("processed.csv", ftype="csv")
 
 #######################################################################################
-# Launch Hydrobot Processing Visualiser (HPV)
-# Known issues:
-# - No manual changes to check data points reflected in visualiser at this point
+# Write visualisation files
 #######################################################################################
 
 fig = data.plot_processing_overview_chart()
