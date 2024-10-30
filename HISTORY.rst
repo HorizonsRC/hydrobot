@@ -179,7 +179,8 @@ History
 * Dipstick used when flask is not recorded, downgraded to qc400
 * Updating the dashboard with additional info
 
-0.7.8 ()
+0.7.8 (2024-10-31)
 ----------------------------------
 
 * LTCO calculation supported
+* Script cleanup for rainfall/soil moisture/air temperature
