@@ -134,7 +134,7 @@ def rainfall_calibrations(site):
     ht_engine = db.create_engine(ht_connection_url)
 
     calibration_query = db.text(
-        pkg_resources.files("hydrobot.config.horizons.sql")
+        pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("calibration_query.sql")
         .read_text()
     )

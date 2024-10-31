@@ -17,6 +17,8 @@ data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 # Importing external check data
 #######################################################################################
 data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+# Put in zeroes at checks where there is no scada event
+data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
 rainfall_inspections = source.rainfall_inspections(
     data.from_date, data.to_date, data.site
 )
@@ -59,9 +61,6 @@ data.standard_data["Value"] = trim_series(
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
-# Put in zeroes at checks where there is no scada event
-data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
-
 data.data_exporter()
 
 #######################################################################################
