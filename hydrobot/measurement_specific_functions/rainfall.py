@@ -157,7 +157,7 @@ def rainfall_nems_site_matrix(site):
             output_dict["Distance Between Gauges"] = 3  # including nan
         # Orifice Height - Primary Reference Gauge
         splash = (
-            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] > 2
+            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] < 2
         )
         height = matrix_dict[
             "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"

@@ -74,6 +74,8 @@ with open("check_table.html", "w", encoding="utf-8") as file:
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
+with open("inspections_table.html", "w", encoding="utf-8") as file:
+    rainfall_inspections.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
     source.rainfall_calibrations(data.site).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
