@@ -50,9 +50,7 @@ dipstick_points = pd.Series(
     index=rainfall_inspections[rainfall_inspections["flask"].isna()]["arrival_time"],
 )
 
-data.quality_encoder(
-    manual_additional_points=dipstick_points, synthetic_checks=["2024-03-06 09:32"]
-)
+data.quality_encoder(manual_additional_points=dipstick_points, synthetic_checks=[])
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],

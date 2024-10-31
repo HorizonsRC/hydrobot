@@ -438,14 +438,14 @@ def manual_tip_filter(
         return std_series, None
     else:
         # Count the actual amount of events, which may be grouped in a single second bucket
-        events = (inspection_data.fillna(0).copy() / mode).astype(int)
+        events = inspection_data.astype(int).fillna(0).copy() / mode
         while not events[events > 1].empty:
             events = pd.concat(
                 [events - 1, events[events > 1].apply(lambda x: 1)]
             ).sort_index()
         events = events.astype(np.float64)
         events[inspection_data > 0] = mode
-        events[inspection_data.fillna(0) <= 0] = 0
+        events[inspection_data.astype(int).fillna(0) <= 0] = 0
 
         if weather in ["Fine", "Overcast"] and np.abs(len(events) - manual_tips) <= 1:
             # Off by 1 is probably just a typo, delete it all

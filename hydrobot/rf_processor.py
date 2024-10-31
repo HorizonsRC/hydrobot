@@ -360,7 +360,7 @@ class RFProcessor(Processor):
         list_of_replaced_checks = [pd.Timestamp(time) for time in synthetic_checks]
         list_of_replaced_checks.sort()
         checks_to_300 = utils.series_rounder(
-            pd.Series(index=list_of_replaced_checks, data=np.nan)
+            pd.Series(index=pd.DatetimeIndex(list_of_replaced_checks), data=np.nan)
         )
         prior_checks_to_300 = pd.Series(
             data=checks_for_qcing.index, index=checks_for_qcing.index
