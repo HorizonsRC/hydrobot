@@ -730,8 +730,8 @@ class RFProcessor(Processor):
             threshold,
         )
         self.report_processing_issue(
-            start_time=None,
-            end_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
+            start_time=historic_standard.index[0],
+            end_time=historic_standard.index[-1],
             code="LCO",
             comment=f"Long term common offset calculated to be: {self.ltco}",
             series_type="check",

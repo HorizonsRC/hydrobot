@@ -2093,8 +2093,18 @@ class Processor:
         self.processing_issues = pd.concat(
             [
                 pd.DataFrame(
-                    [[start_time, end_time, code, comment, series_type, message_type]],
+                    [
+                        [
+                            start_time,
+                            end_time,
+                            code,
+                            comment,
+                            series_type,
+                            message_type,
+                        ]
+                    ],
                     columns=self.processing_issues.columns,
+                    dtype=object,
                 ),
                 self.processing_issues,
             ],
