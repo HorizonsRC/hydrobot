@@ -37,3 +37,4 @@ inspection_expiry:
         months: 4
 
 constant_check_shift: 0
+provisional_wq_filename: "ProvisionalWQ.hts"

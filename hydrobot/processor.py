@@ -10,6 +10,7 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
+import hydrobot
 from hydrobot import (
     data_acquisition,
     data_sources,
@@ -135,6 +136,7 @@ class Processor:
         archive_base_url: str | None = None,
         archive_standard_hts_filename: str | None = None,
         archive_check_hts_filename: str | None = None,
+        provisional_wq_filename: str | None = None,
         **kwargs,
     ):
         """
@@ -166,6 +168,8 @@ class Processor:
             Determines how data with old checks is downgraded
         export_file_name : string, optional
             Where the data is exported to. Used as default when exporting without specified filename.
+        provisional_wq_filename : str, optional
+            Filename for provisional WQ data to be converted to check
         kwargs : dict
             Additional keyword arguments.
         """
@@ -179,6 +183,7 @@ class Processor:
                 "message_type": [],
             }
         ).astype(str)
+        self.report_processing_issue(comment=f"hydrobot version {hydrobot.__version__}")
         self._defaults = defaults
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
@@ -316,6 +321,7 @@ class Processor:
         self.archive_base_url = archive_base_url
         self.archive_standard_hts_filename = archive_standard_hts_filename
         self.archive_check_hts_filename = archive_check_hts_filename
+        self.provisional_wq_filename = provisional_wq_filename
 
     @classmethod
     def from_processing_parameters_dict(

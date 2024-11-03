@@ -10,7 +10,6 @@ streamlit run .\script.py
 import pandas as pd
 import streamlit as st
 
-import hydrobot
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
@@ -26,26 +25,12 @@ from hydrobot.utils import merge_all_comments
 
 data, ann = Processor.from_config_yaml("ap_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-
 #######################################################################################
-# Importing all check data that is not obtainable from Hilltop
-# (So far Hydrobot only speaks to Hilltop)
+# Importing all check data
 #######################################################################################
 
-check_col = "Value"
-logger_col = "Logger"
-
-inspections = import_inspections(
-    "AP_Inspections.csv", check_col=check_col, logger_col=logger_col
-)
-prov_wq = import_prov_wq(
-    "AP_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
-)
+inspections = import_inspections("AP_Inspections.csv")
+prov_wq = import_prov_wq("AP_ProvWQ.csv", use_for_qc=True)
 ncrs = import_ncr("AP_non-conformance_reports.csv")
 
 
