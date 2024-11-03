@@ -18,4 +18,5 @@ SELECT Assets.AssetID,
 			ON Assets.CategoryID = AssetCategories.CategoryID
 		INNER JOIN [dbo].Datasources
 			ON Assets.SensorID = Datasources.SensorID
-      WHERE Sites.SiteName = :site;
+      WHERE Sites.SiteName = :site
+        AND Datasources.DataSourceName = :measurement_name;

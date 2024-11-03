@@ -123,7 +123,7 @@ def atmospheric_pressure_inspections(from_date, to_date, site):
     pass
 
 
-def rainfall_calibrations(site):
+def calibrations(site, measurement_name):
     """Return dataframe containing calibration info from assets."""
     ht_connection_url = URL.create(
         "mssql+pyodbc",
@@ -139,7 +139,11 @@ def rainfall_calibrations(site):
         .read_text()
     )
 
-    calibration_df = pd.read_sql(calibration_query, ht_engine, params={"site": site})
+    calibration_df = pd.read_sql(
+        calibration_query,
+        ht_engine,
+        params={"site": site, "measurement_name": measurement_name},
+    )
     return calibration_df
 
 

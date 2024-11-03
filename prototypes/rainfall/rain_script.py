@@ -77,7 +77,9 @@ with open("quality_table.html", "w", encoding="utf-8") as file:
 with open("inspections_table.html", "w", encoding="utf-8") as file:
     rainfall_inspections.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
-    source.rainfall_calibrations(data.site).to_html(file)
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
     data.processing_issues.to_html(file)
 
@@ -86,6 +88,7 @@ merger = HtmlMerger(
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
+        "inspections_table.html",
         "calibration_table.html",
         "potential_processing_issues.html",
     ],
