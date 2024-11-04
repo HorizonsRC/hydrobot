@@ -23,7 +23,7 @@ def sql_server_url():
 
 
 def survey123_db_engine():
-    """Generate and return database engine."""
+    """Generate and return survey123 database engine."""
     s123_connection_url = URL.create(
         "mssql+pyodbc",
         host=sql_server_url(),
@@ -33,106 +33,59 @@ def survey123_db_engine():
     return db.create_engine(s123_connection_url)
 
 
-def rainfall_query():
-    """Returns query used for Rainfall inspections."""
-    query = """
-            SELECT Hydro_Inspection.arrival_time,
-            Hydro_Inspection.weather,
-            Hydro_Inspection.notes,
-            Hydro_Inspection.departure_time,
-            Hydro_Inspection.creator,
-            Rainfall_Inspection.dipstick,
-            ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) as 'check',
-            Rainfall_Inspection.flask,
-            Rainfall_Inspection.gauge_emptied,
-            Rainfall_Inspection.primary_total,
-            Manual_Tips.start_time,
-            Manual_Tips.end_time,
-            Manual_Tips.primary_manual_tips,
-            Manual_Tips.backup_manual_tips,
-            RainGauge_Validation.pass
-        FROM [dbo].RainGauge_Validation
-        RIGHT JOIN ([dbo].Manual_Tips
-            RIGHT JOIN ([dbo].Rainfall_Inspection
-                INNER JOIN [dbo].Hydro_Inspection
-                ON Rainfall_Inspection.inspection_id = Hydro_Inspection.id)
-            ON Manual_Tips.inspection_id = Hydro_Inspection.id)
-        ON RainGauge_Validation.inspection_id = Hydro_Inspection.id
-        WHERE Hydro_Inspection.arrival_time >= ?
-            AND Hydro_Inspection.arrival_time < ?
-            AND Hydro_Inspection.sitename = ?
-            AND ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) IS NOT NULL
-        ORDER BY Hydro_Inspection.arrival_time ASC
-        """
-    return query
-
-
-def atmospheric_pressure_query():
-    """Get SQL query for atmospheric pressure."""
-    query = """
-    SELECT
-        Hydro_Inspection.id,
-        Hydro_Inspection.arrival_time,
-        Hydro_Inspection.sitename,
-        Hydro_Inspection.weather,
-        Hydro_Inspection.notes,
-        Hydro_Inspection.departure_time,
-        Hydro_Inspection.creator,
-        DO_Inspection.inspection_id,
-        DO_Inspection.handheld_baro,
-        DO_Inspection.logger_baro,
-        DO_Inspection.do_notes,
-        DO_Inspection.inspection_id,
-        WaterLevel_Inspection.inspection_id,
-        WaterLevel_Inspection.wl_notes,
-        WaterTemp_Inspection.inspection_id,
-        WaterTemp_Inspection.wt_device,
-        WaterTemp_Inspection.handheld_temp,
-        WaterTemp_Inspection.logger_temp
-    FROM
-        [dbo].Hydro_Inspection
-        FULL JOIN [dbo].DO_Inspection ON DO_Inspection.inspection_id = Hydro_Inspection.id
-        FULL JOIN [dbo].WaterLevel_Inspection ON WaterLevel_Inspection.inspection_id = Hydro_Inspection.id
-        FULL JOIN [dbo].WaterTemp_Inspection ON WaterTemp_Inspection.inspection_id = Hydro_Inspection.id
-    WHERE
-        Hydro_Inspection.arrival_time >= ?
-        AND Hydro_Inspection.arrival_time < ?
-        AND Hydro_Inspection.sitename = ?
-    ORDER BY
-        Hydro_Inspection.arrival_time ASC
-    """
-    return query
-
-
-def rainfall_inspections(from_date, to_date, site):
-    """Returns all info from rainfall inspection query."""
-    rainfall_checks = pd.read_sql(
-        rainfall_query(),
-        survey123_db_engine(),
-        params=(
-            pd.Timestamp(from_date) - pd.Timedelta("3min"),
-            pd.Timestamp(to_date) + pd.Timedelta("3min"),
-            site,
-        ),
-    )
-    return rainfall_checks
-
-
-def atmospheric_pressure_inspections(from_date, to_date, site):
-    """Get atmospheric pressure inspection data."""
-    pass
-
-
-def calibrations(site, measurement_name):
-    """Return dataframe containing calibration info from assets."""
+def hilltop_db_engine():
+    """Generate and return hilltop database engine."""
     ht_connection_url = URL.create(
         "mssql+pyodbc",
         host=sql_server_url(),
         database="hilltop",
         query={"driver": "ODBC Driver 17 for SQL Server"},
     )
-    ht_engine = db.create_engine(ht_connection_url)
+    return db.create_engine(ht_connection_url)
 
+
+def rainfall_inspections(from_date, to_date, site):
+    """Returns all info from rainfall inspection query."""
+    rainfall_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("rainfall_checks.sql")
+        .read_text()
+    )
+
+    rainfall_checks = pd.read_sql(
+        rainfall_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date) - pd.Timedelta("3min"),
+            "end_time": pd.Timestamp(to_date) + pd.Timedelta("3min"),
+            "site": site,
+        },
+    )
+    return rainfall_checks
+
+
+def atmospheric_pressure_inspections(from_date, to_date, site):
+    """Get atmospheric pressure inspection data."""
+    rainfall_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("atmospheric_pressure_check.sql")
+        .read_text()
+    )
+
+    rainfall_checks = pd.read_sql(
+        rainfall_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+    return rainfall_checks
+
+
+def calibrations(site, measurement_name):
+    """Return dataframe containing calibration info from assets."""
     calibration_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("calibration_query.sql")
@@ -141,10 +94,26 @@ def calibrations(site, measurement_name):
 
     calibration_df = pd.read_sql(
         calibration_query,
-        ht_engine,
+        hilltop_db_engine(),
         params={"site": site, "measurement_name": measurement_name},
     )
     return calibration_df
+
+
+def non_conformances(site):
+    """Return dataframe containing non-conformance info from assets."""
+    non_conf_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("non_conformances.sql")
+        .read_text()
+    )
+
+    non_conf_df = pd.read_sql(
+        non_conf_query,
+        survey123_db_engine(),
+        params={"site": site},
+    )
+    return non_conf_df
 
 
 def rainfall_check_data(from_date, to_date, site):

@@ -992,9 +992,10 @@ class Processor:
             data_source_options = []
             for blob in blob_list:
                 data_source_options += [blob.data_source.name]
-                if (blob.data_source.name == check_data_source_name) and (
-                    blob.data_source.ts_type == "CheckSeries"
-                ):
+                if (
+                    blob.data_source.name
+                    in [check_data_source_name, self.standard_data_source_name]
+                ) and (blob.data_source.ts_type == "CheckSeries"):
                     # Found it. Now we extract it.
                     blob_found = True
 

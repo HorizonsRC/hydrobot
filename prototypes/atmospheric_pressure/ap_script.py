@@ -41,10 +41,6 @@ check_data_list = [c for c in check_data_list if not c.empty]
 if check_data_list:
     data.check_data = pd.concat(check_data_list).sort_index()
 
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
-]
-
 all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 
 #######################################################################################
