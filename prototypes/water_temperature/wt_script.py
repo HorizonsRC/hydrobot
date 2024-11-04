@@ -1,42 +1,26 @@
-r"""Script to run through a processing task with the processor class.
-
-Run command:
-
-cd .\prototypes\water_temperature
-streamlit run .\wt_script.py
-
-"""
+"""Script to run through a processing task for Water Temperature."""
 
 import pandas as pd
-import streamlit as st
 
-import hydrobot
+import hydrobot.config.horizons_source as source
 from hydrobot.data_acquisition import (
     import_inspections,
     import_ncr,
     import_prov_wq,
 )
 from hydrobot.filters import trim_series
+from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 from hydrobot.utils import merge_all_comments
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
 data, ann = Processor.from_config_yaml("wt_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-
 #######################################################################################
-# Importing all check data that is not obtainable from Hilltop
-# (So far Hydrobot only speaks to Hilltop)
+# Importing all check data
 #######################################################################################
-
 check_col = "Temp Check"
 logger_col = "Temp Logger"
 
@@ -62,9 +46,6 @@ all_checks = all_checks.loc[
     (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
 ]
 
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
-
 data_check_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
 data_check_list = [i for i in data_check_list if not i.empty]
 data.check_data = pd.concat(data_check_list).sort_index()
@@ -79,27 +60,16 @@ all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
-
 data.pad_data_with_nan_to_set_freq()
-
-# Clipping all data outside of low_clip and high_clip
 data.clip()
-
-# Remove obvious spikes using FBEWMA algorithm
 data.remove_spikes()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
-# Remember to add Annalist logging!
+# Can also add Annalist logging
 #######################################################################################
-
-# Manually removing an erroneous check data point
-# ann.logger.info(
-#     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
-#     "wrong temperature into Survey123 at this site."
-# )
-# data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
+# Example annalist log
+# ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
 
 #######################################################################################
 # Assign quality codes
@@ -120,22 +90,40 @@ data.standard_data["Value"] = trim_series(
 # Export all data to XML file
 #######################################################################################
 data.data_exporter()
-# data.data_exporter("hilltop_csv", ftype="hilltop_csv")
-# data.data_exporter("processed.csv", ftype="csv")
 
 #######################################################################################
-# Launch Hydrobot Processing Visualiser (HPV)
-# Known issues:
-# - No manual changes to check data points reflected in visualiser at this point
+# Write visualisation files
 #######################################################################################
-
 fig = data.plot_processing_overview_chart()
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_html()))
 
+with open("check_table.html", "w", encoding="utf-8") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w", encoding="utf-8") as file:
+    data.quality_data.to_html(file)
+with open("inspections_table.html", "w", encoding="utf-8") as file:
+    all_comments.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    data.processing_issues.to_html(file)
 
-st.plotly_chart(fig, use_container_width=True)
-# st.plotly_chart(pcc_fig, use_container_width=True)
+merger = HtmlMerger(
+    [
+        "pyplot.html",
+        "check_table.html",
+        "quality_table.html",
+        "inspections_table.html",
+        "calibration_table.html",
+        "potential_processing_issues.html",
+    ],
+    encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
+)
 
-# st.dataframe(all_comments, use_container_width=True)
-# # st.dataframe(data.standard_data, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-# st.dataframe(data.quality_data, use_container_width=True)
+merger.merge()

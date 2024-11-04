@@ -1,11 +1,4 @@
-r"""Script to run through a processing task with the processor class.
-
-Run command:
-
-cd .\prototypes\example_script\
-streamlit run .\script.py
-
-"""
+"""Script to run through a processing task for Atmospheric Pressure."""
 
 import pandas as pd
 
@@ -23,17 +16,14 @@ from hydrobot.utils import merge_all_comments
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
 data, ann = Processor.from_config_yaml("ap_config.yaml")
 
 #######################################################################################
 # Importing all check data
 #######################################################################################
-
 inspections = import_inspections("AP_Inspections.csv")
 prov_wq = import_prov_wq("AP_ProvWQ.csv", use_for_qc=True)
 ncrs = import_ncr("AP_non-conformance_reports.csv")
-
 
 inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
 prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
@@ -45,9 +35,6 @@ all_checks = pd.concat(all_check_list).sort_index()
 all_checks = all_checks.loc[
     (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
 ]
-
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
 
 check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
 check_data_list = [c for c in check_data_list if not c.empty]
@@ -63,27 +50,16 @@ all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
-
 data.pad_data_with_nan_to_set_freq()
-
-# Clipping all data outside of low_clip and high_clip
 data.clip()
-
-# Remove obvious spikes using FBEWMA algorithm
 data.remove_spikes()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
-# Remember to add Annalist logging!
+# Can also add Annalist logging
 #######################################################################################
-
-# Manually removing an erroneous check data point
-# ann.logger.info(
-#     "Deleting SOE check point on 2023-10-19T11:55:00. Looks like Darren recorded the "
-#     "wrong temperature into Survey123 at this site."
-# )
-# data.check_series = pd.concat([data.check_series[:3], data.check_series[9:]])
+# Example annalist log
+# ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
 
 #######################################################################################
 # Assign quality codes
@@ -93,12 +69,6 @@ data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
 )
-
-# ann.logger.info(
-#     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
-#     "the temperature sensor reading."
-# )
-# data.quality_series["2023-09-04T11:26:40"] = 500
 
 #######################################################################################
 # Export all data to XML file

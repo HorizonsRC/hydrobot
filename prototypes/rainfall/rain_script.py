@@ -1,4 +1,4 @@
-"""Script to run through a processing task for rainfall."""
+"""Script to run through a processing task for Rainfall."""
 
 import pandas as pd
 
@@ -26,9 +26,11 @@ rainfall_inspections = source.rainfall_inspections(
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
-# Clipping all data outside of low_clip and high_clip
 data.clip()
+
+#######################################################################################
+# Rainfall specific operation
+#######################################################################################
 # Remove manual tips
 rainfall_inspections["primary_manual_tips"] = (
     rainfall_inspections["primary_manual_tips"].fillna(0).astype(int)
