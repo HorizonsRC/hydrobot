@@ -152,3 +152,8 @@ def rainfall_check_data(from_date, to_date, site):
     ]
 
     return utils.series_rounder(check_data)
+
+
+def atmospheric_pressure_field_wq_checks(from_date, to_date, site):
+    """Get SoE data for atmospheric pressure."""
+    pass

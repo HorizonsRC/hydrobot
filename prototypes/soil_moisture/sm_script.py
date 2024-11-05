@@ -2,6 +2,7 @@
 
 import pandas as pd
 
+import hydrobot.config.horizons_source as source
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 
@@ -53,12 +54,17 @@ with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
     data.processing_issues.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
+        "calibration_table.html",
         "potential_processing_issues.html",
     ],
     encoding="utf-8",
