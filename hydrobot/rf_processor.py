@@ -398,10 +398,18 @@ class RFProcessor(Processor):
         time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
 
         site_survey_frame = rf.rainfall_nems_site_matrix(self.site)
+        if self.from_date not in site_survey_frame.index:
+            site_survey_frame = site_survey_frame.reindex(
+                site_survey_frame.index.append(
+                    pd.DatetimeIndex([self.from_date])
+                ).sort_values()
+            ).ffill()
+        site_survey_frame = site_survey_frame[site_survey_frame.index >= self.from_date]
 
         quality_series = rf.points_to_qc(
             [deviation_points, time_points, manual_additional_points], site_survey_frame
         )
+        quality_series = quality_series.reindex(self.check_data.index, method="ffill")
         # filter to apply codes only to dates in start-end-range
         if self.from_date not in quality_series.index:
             quality_series[self.from_date] = np.nan
