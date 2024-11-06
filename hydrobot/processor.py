@@ -183,7 +183,11 @@ class Processor:
                 "message_type": [],
             }
         ).astype(str)
-        self.report_processing_issue(comment=f"hydrobot version {hydrobot.__version__}")
+        self.report_processing_issue(
+            comment=f"Hydrobot Version: {hydrobot.__version__}",
+            message_type="info",
+            start_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        )
         self._defaults = defaults
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name

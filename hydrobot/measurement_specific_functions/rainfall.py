@@ -100,6 +100,9 @@ def rainfall_nems_site_matrix(site):
             Keys are rows of NEMS matrix, values are the points contributed
     """
     all_site_surveys = rainfall_site_survey(site)
+    with pd.option_context("future.no_silent_downcasting", True):
+        all_site_surveys = all_site_surveys.ffill().bfill()
+
     survey_points_dict = {
         "matrix_sum": [],
         "three_point_sum": [],
@@ -108,7 +111,6 @@ def rainfall_nems_site_matrix(site):
     }
     survey_points_index = []
     for survey in all_site_surveys.index:
-        pass
         site_surveys = all_site_surveys[
             all_site_surveys["Arrival Time"] <= all_site_surveys["Arrival Time"][survey]
         ]

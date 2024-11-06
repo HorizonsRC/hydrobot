@@ -398,15 +398,20 @@ class RFProcessor(Processor):
         time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
 
         site_survey_frame = rf.rainfall_nems_site_matrix(self.site)
+
+        if self.from_date not in site_survey_frame.index:
+            site_survey_frame = (
+                site_survey_frame.reindex(
+                    site_survey_frame.index.append(
+                        pd.DatetimeIndex([self.from_date])
+                    ).sort_values()
+                )
+                .ffill()
+                .bfill()
+            )
         self.report_processing_issue(
             message_type="info", comment=str(site_survey_frame["output_dict"].iloc[-1])
         )
-        if self.from_date not in site_survey_frame.index:
-            site_survey_frame = site_survey_frame.reindex(
-                site_survey_frame.index.append(
-                    pd.DatetimeIndex([self.from_date])
-                ).sort_values()
-            ).ffill()
         site_survey_frame = site_survey_frame[site_survey_frame.index >= self.from_date]
 
         quality_series = rf.points_to_qc(
