@@ -440,7 +440,9 @@ def manual_tip_filter(
         return std_series, None
     else:
         # Count the actual amount of events, which may be grouped in a single second bucket
-        events = inspection_data.astype(int).fillna(0).copy() / mode
+        events = (inspection_data.astype(np.float64).fillna(0.0).copy() / mode).astype(
+            int
+        )
         while not events[events > 1].empty:
             events = pd.concat(
                 [events - 1, events[events > 1].apply(lambda x: 1)]

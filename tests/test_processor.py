@@ -428,9 +428,9 @@ def test_processor_init(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        check_hts="OceansOfEffluent.hts",
+        check_hts_filename="OceansOfEffluent.hts",
         check_measurement_name=CHECK_MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
@@ -556,7 +556,7 @@ def test_to_xml_data_structure(
         pr = processor.Processor(
             base_url="https://greenwashed.and.pleasant/",
             site=SITES[1],
-            standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+            standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
             check_measurement_name=check,
             frequency="15min",
@@ -659,7 +659,7 @@ def test_import_data(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -762,7 +762,7 @@ def test_remove_range(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -869,7 +869,7 @@ def test_clip(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -971,7 +971,7 @@ def test_remove_spikes(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -1069,7 +1069,7 @@ def test_remove_flatlined_values(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -1172,7 +1172,7 @@ def test_gap_closer(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
@@ -1306,8 +1306,8 @@ def test_data_export(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        check_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        check_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         check_measurement_name=MEASUREMENTS[0],
         frequency="15min",

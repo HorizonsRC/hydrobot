@@ -4,7 +4,6 @@ import re
 from datetime import datetime
 
 import pandas as pd
-from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
@@ -25,7 +24,7 @@ class DOProcessor(Processor):
         self,
         base_url: str,
         site: str,
-        standard_hts: str,
+        standard_hts_filename: str,
         standard_measurement_name: str,
         frequency: str | None,
         site_altitude: float,
@@ -40,7 +39,7 @@ class DOProcessor(Processor):
         atmospheric_pressure_measurement_name: str | None = "Atmospheric Pressure",
         from_date: str | None = None,
         to_date: str | None = None,
-        check_hts: str | None = None,
+        check_hts_filename: str | None = None,
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
         interval_dict: dict | None = None,
@@ -52,12 +51,12 @@ class DOProcessor(Processor):
         super().__init__(
             base_url=base_url,
             site=site,
-            standard_hts=standard_hts,
+            standard_hts_filename=standard_hts_filename,
             standard_measurement_name=standard_measurement_name,
             frequency=frequency,
             from_date=from_date,
             to_date=to_date,
-            check_hts=check_hts,
+            check_hts_filename=check_hts_filename,
             check_measurement_name=check_measurement_name,
             defaults=defaults,
             interval_dict=interval_dict,
@@ -66,10 +65,6 @@ class DOProcessor(Processor):
             export_file_name=export_file_name,
             **kwargs,
         )
-
-        wt_hilltop = Hilltop(base_url, water_temperature_hts, **kwargs)
-        ap_hilltop = Hilltop(base_url, atmospheric_pressure_hts, **kwargs)
-
         if water_temperature_site is None:
             self.water_temperature_site = self.site
         else:
@@ -79,6 +74,10 @@ class DOProcessor(Processor):
         else:
             self.atmospheric_pressure_site = atmospheric_pressure_site
 
+        wt_hilltop = Hilltop(base_url, water_temperature_hts)
+        ap_hilltop = Hilltop(base_url, atmospheric_pressure_hts)
+
+        self.enforce_site_in_hts(wt_hilltop, self.water_temperature_site)
         if self.water_temperature_site not in wt_hilltop.available_sites:
             raise ValueError(
                 f"Water Temperature site '{self.water_temperature_site}' not found for both base_url and hts combos."
@@ -179,7 +178,7 @@ class DOProcessor(Processor):
         self.wt_quality_data = EMPTY_QUALITY_DATA.copy()
 
         self.ap_standard_data, _, _, _ = self.import_standard(
-            standard_hts=self.atmospheric_pressure_hts,
+            standard_hts_filename=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
             standard_measurement_name=self.atmospheric_pressure_measurement_name,
             standard_data_source_name=self.ap_data_source_name,
@@ -191,7 +190,7 @@ class DOProcessor(Processor):
         )
 
         self.ap_quality_data, _, _, _ = self.import_quality(
-            standard_hts=self.atmospheric_pressure_hts,
+            standard_hts_filename=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
             standard_measurement_name=self.atmospheric_pressure_measurement_name,
             standard_data_source_name=self.ap_data_source_name,
@@ -201,7 +200,7 @@ class DOProcessor(Processor):
         )
 
         self.wt_standard_data, _, _, _ = self.import_standard(
-            standard_hts=self.water_temperature_hts,
+            standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
             standard_measurement_name=self.water_temperature_measurement_name,
             standard_data_source_name=self.wt_data_source_name,
@@ -212,7 +211,7 @@ class DOProcessor(Processor):
             frequency=self.water_temperature_frequency,
         )
         self.wt_quality_data, _, _, _ = self.import_quality(
-            standard_hts=self.water_temperature_hts,
+            standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
             standard_measurement_name=self.water_temperature_measurement_name,
             standard_data_source_name=self.wt_data_source_name,
@@ -341,47 +340,27 @@ class DOProcessor(Processor):
         processing_parameters = config_yaml_import(config_path)
 
         ###################################################################################
-        # Setting up logging with Annalist
-        ###################################################################################
-
-        ann = Annalist()
-        ann.configure(
-            logfile=processing_parameters["logfile"],
-            analyst_name=processing_parameters["analyst_name"],
-            stream_format_str=processing_parameters["format"]["stream"],
-            file_format_str=processing_parameters["format"]["file"],
-        )
-
-        ###################################################################################
         # Creating a Hydrobot Processor object which contains the data to be processed
         ###################################################################################
-        now = datetime.now()
-        return (
-            cls(
-                processing_parameters["base_url"],
-                processing_parameters["site"],
-                processing_parameters["standard_hts_filename"],
-                processing_parameters["standard_measurement_name"],
-                processing_parameters.get("frequency", None),
-                processing_parameters["site_altitude"],
-                processing_parameters.get("water_temperature_site", None),
-                processing_parameters.get("atmospheric_pressure_site", None),
-                processing_parameters.get("water_temperature_hts", None),
-                processing_parameters.get("atmospheric_pressure_hts", None),
-                processing_parameters["atmospheric_pressure_frequency"],
-                processing_parameters["water_temperature_frequency"],
-                processing_parameters.get("atmospheric_pressure_site_altitude", None),
-                processing_parameters.get("water_temperature_measurement_name", None),
-                processing_parameters.get(
-                    "atmospheric_pressure_measurement_name", None
-                ),
-                processing_parameters["from_date"],
-                processing_parameters.get("to_date", now.strftime("%d-%m-%Y %H:%M:%S")),
-                processing_parameters.get("check_hts_filename", None),
-                processing_parameters.get("check_measurement_name", None),
-                processing_parameters["defaults"],
-                processing_parameters["inspection_expiry"],
-                constant_check_shift=processing_parameters["constant_check_shift"],
-            ),
-            ann,
+        if "to_date" not in processing_parameters:
+            processing_parameters["to_date"] = datetime.now().strftime(
+                "%d-%m-%Y %H:%M:%S"
+            )
+        keys_to_be_set_to_none_if_missing = [
+            "frequency",
+            "water_temperature_site",
+            "atmospheric_pressure_site",
+            "water_temperature_hts",
+            "atmospheric_pressure_hts",
+            "atmospheric_pressure_site_altitude",
+            "water_temperature_measurement_name",
+            "atmospheric_pressure_measurement_name",
+            "check_hts_filename",
+            "check_measurement_name",
+        ]
+        for k in keys_to_be_set_to_none_if_missing:
+            if k not in processing_parameters:
+                processing_parameters[k] = None
+        return cls.from_processing_parameters_dict(
+            processing_parameters, fetch_quality=fetch_quality
         )

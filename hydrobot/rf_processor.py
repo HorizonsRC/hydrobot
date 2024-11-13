@@ -23,12 +23,12 @@ class RFProcessor(Processor):
         self,
         base_url: str,
         site: str,
-        standard_hts: str,
+        standard_hts_filename: str,
         standard_measurement_name: str,
         frequency: str,
         from_date: str | None = None,
         to_date: str | None = None,
-        check_hts: str | None = None,
+        check_hts_filename: str | None = None,
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
         interval_dict: dict | None = None,
@@ -39,12 +39,12 @@ class RFProcessor(Processor):
         super().__init__(
             base_url=base_url,
             site=site,
-            standard_hts=standard_hts,
+            standard_hts_filename=standard_hts_filename,
             standard_measurement_name=standard_measurement_name,
             frequency=frequency,
             from_date=from_date,
             to_date=to_date,
-            check_hts=check_hts,
+            check_hts_filename=check_hts_filename,
             check_measurement_name=check_measurement_name,
             defaults=defaults,
             interval_dict=interval_dict,
@@ -148,7 +148,7 @@ class RFProcessor(Processor):
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_standard(
-                standard_hts=self.standard_hts,
+                standard_hts_filename=self.standard_hts_filename,
                 site=self.site,
                 standard_measurement_name=self._standard_measurement_name,
                 standard_data_source_name=self.standard_data_source_name,
@@ -165,7 +165,7 @@ class RFProcessor(Processor):
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_quality(
-                standard_hts=self._standard_hts,
+                standard_hts_filename=self.standard_hts_filename,
                 site=self._site,
                 standard_measurement_name=self._standard_measurement_name,
                 standard_data_source_name=self.standard_data_source_name,
@@ -180,7 +180,7 @@ class RFProcessor(Processor):
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_check(
-                check_hts=self._check_hts,
+                check_hts_filename=self.check_hts_filename,
                 site=self._site,
                 check_measurement_name=self._check_measurement_name,
                 check_data_source_name=self.check_data_source_name,
@@ -194,7 +194,7 @@ class RFProcessor(Processor):
     @ClassLogger
     def import_check(
         self,
-        check_hts: str | None = None,
+        check_hts_filename: str | None = None,
         site: str | None = None,
         check_measurement_name: str | None = None,
         check_data_source_name: str | None = None,
@@ -210,7 +210,7 @@ class RFProcessor(Processor):
 
         Parameters
         ----------
-        check_hts : str or None, optional
+        check_hts_filename : str or None, optional
             Where to get check data from
         site : str or None, optional
             Which site to get data from
@@ -264,7 +264,7 @@ class RFProcessor(Processor):
             raw_check_xml,
             raw_check_blob,
         ) = super().import_check(
-            check_hts,
+            check_hts_filename,
             site,
             check_measurement_name,
             check_data_source_name,
@@ -718,7 +718,7 @@ class RFProcessor(Processor):
             Sets self.ltco to the long term common offset
         """
         historic_standard, _, _, _ = self.import_standard(
-            standard_hts=self.archive_standard_hts_filename,
+            standard_hts_filename=self.archive_standard_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             infer_frequency=False,
@@ -726,14 +726,14 @@ class RFProcessor(Processor):
             standard_data=processor.EMPTY_STANDARD_DATA.copy(),
         )
         historic_check, _, _, _ = self.import_check(
-            check_hts=self.archive_check_hts_filename,
+            check_hts_filename=self.archive_check_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             base_url=self.archive_base_url,
             check_data=processor.EMPTY_CHECK_DATA.copy(),
         )
         historic_quality, _, _, _ = self.import_quality(
-            standard_hts=self.archive_standard_hts_filename,
+            standard_hts_filename=self.archive_standard_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             base_url=self.archive_base_url,
@@ -798,3 +798,12 @@ class RFProcessor(Processor):
                     self.check_data.loc[check, "Value"] = (
                         recorded_totals.loc[check] * self.ltco
                     )
+
+    def enforce_measurement_at_site(self, measurement_name, hilltop):
+        """Raise exception if check data is not in check_hts.
+
+        This function does not function properly for rainfall.
+
+        Hilltoppy does not recognise rain6 data type.
+        """
+        pass
