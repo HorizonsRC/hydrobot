@@ -189,3 +189,4 @@ History
 ----------------------------------
 
 * Fixed manual additional points from dipstick-only inspections making later inspections qc400
+* Added site points dictionary to issues for user verification
