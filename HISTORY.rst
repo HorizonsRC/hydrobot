@@ -184,3 +184,8 @@ History
 
 * LTCO calculation supported
 * Script cleanup for rainfall/soil moisture/air temperature
+
+0.7.9 ()
+----------------------------------
+
+* Fixed manual additional points from dipstick-only inspections making later inspections qc400

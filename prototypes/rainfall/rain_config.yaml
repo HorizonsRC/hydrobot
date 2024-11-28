@@ -1,7 +1,7 @@
-site: Tiraumea at Alfredton
+site: Ohura at Waikaka
 analyst_name: Sam Irvine
-from_date: "2023-03-16 11:06"
-to_date: "2024-10-31 06:00"
+from_date: "2023-06-20 11:48"
+to_date: "2024-11-29 06:00"
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
@@ -10,7 +10,7 @@ check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
 standard_measurement_name: "Rainfall [SCADA Rainfall]"
-check_measurement_name: "Check Gauge Total [Rainfall]"
+check_measurement_name: "Check Gauge Total [SCADA Rainfall]"
 standard_backup: "Rainfall [SCADA Rainfall]"
 check_backup: "Check Gauge Total [Rainfall]"
 

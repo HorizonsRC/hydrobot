@@ -52,7 +52,20 @@ dipstick_points = pd.Series(
     index=rainfall_inspections[rainfall_inspections["flask"].isna()]["arrival_time"],
 )
 
-data.quality_encoder(manual_additional_points=dipstick_points, synthetic_checks=[])
+flask_points = pd.Series(
+    data=0,
+    index=rainfall_inspections[~rainfall_inspections["flask"].isna()]["arrival_time"],
+)
+
+manual_additional_points = [dipstick_points, flask_points]
+manual_additional_points = pd.concat(
+    [i for i in manual_additional_points if not i.empty]
+)
+manual_additional_points = manual_additional_points.sort_index()
+
+data.quality_encoder(
+    manual_additional_points=manual_additional_points, synthetic_checks=[]
+)
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
     data.check_data["Value"],
