@@ -65,7 +65,10 @@ def rainfall_site_survey(site: str):
     site_index = site_lookup.SiteID.iloc[0]
 
     # get inspections at site
-    site_surveys = site_survey_frame[site_survey_frame["Site Name"] == site_index]
+    site_surveys = site_survey_frame[
+        (site_survey_frame["Site Name"] == site_index)
+        | (site_survey_frame["New/un-official Site Name"] == site)
+    ]
 
     # Most recent filter
     """recent_survey = site_surveys[
