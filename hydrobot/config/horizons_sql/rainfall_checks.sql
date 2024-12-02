@@ -23,5 +23,4 @@ FROM [dbo].RainGauge_Validation
 WHERE Hydro_Inspection.arrival_time >= :start_time
     AND Hydro_Inspection.arrival_time < :end_time
     AND Hydro_Inspection.sitename = :site
-    AND ISNULL(Rainfall_Inspection.flask, Rainfall_Inspection.dipstick) IS NOT NULL
 ORDER BY Hydro_Inspection.arrival_time ASC

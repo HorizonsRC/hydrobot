@@ -1,5 +1,4 @@
 """Script to run through a processing task for Rainfall."""
-
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
@@ -7,6 +6,11 @@ import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.rf_processor import RFProcessor
+
+#######################################################################################
+# Manual interventions
+#######################################################################################
+synthetic_checks = []
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -64,7 +68,8 @@ manual_additional_points = pd.concat(
 manual_additional_points = manual_additional_points.sort_index()
 
 data.quality_encoder(
-    manual_additional_points=manual_additional_points, synthetic_checks=[]
+    manual_additional_points=manual_additional_points,
+    synthetic_checks=synthetic_checks,
 )
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],

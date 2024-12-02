@@ -524,6 +524,9 @@ class RFProcessor(Processor):
         check_names = ["Check data", "Inspections", "SOE checks"]
 
         zeroed_cumulative_check_data = self.cumulative_check_data.copy()
+        zeroed_cumulative_check_data["Value"] = zeroed_cumulative_check_data[
+            "Value"
+        ].fillna(0)
         zeroed_cumulative_check_data["Value"] = (
             zeroed_cumulative_check_data["Value"]
             - zeroed_cumulative_check_data["Value"].iloc[0]
