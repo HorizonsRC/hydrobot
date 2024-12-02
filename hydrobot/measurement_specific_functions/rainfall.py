@@ -467,7 +467,7 @@ def manual_tip_filter(
                 "end_time": departure_time,
                 "code": "RMT",
                 "comment": comment,
-                "series_type": "Standard and Check",
+                "series_type": "standard,check",
                 "message_type": "warning",
             }
 
