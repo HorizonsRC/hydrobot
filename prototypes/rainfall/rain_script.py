@@ -6,11 +6,13 @@ import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.rf_processor import RFProcessor
+from hydrobot.utils import series_rounder
 
 #######################################################################################
 # Manual interventions
 #######################################################################################
 synthetic_checks = []
+checks_to_manually_ignore = []
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -21,6 +23,11 @@ data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
 # Importing external check data
 #######################################################################################
 data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+# Any manual removals
+for false_check in series_rounder(
+    pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
+).index:
+    data.check_data = data.check_data.drop(pd.Timestamp(false_check))
 # Put in zeroes at checks where there is no scada event
 data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
 rainfall_inspections = source.rainfall_inspections(
