@@ -144,7 +144,7 @@ def rainfall_nems_site_matrix(site):
         output_dict["Average annual windspeed"] = (
             int(matrix_dict["Average annual windspeed"])
             if not np.isnan(matrix_dict["Average annual windspeed"])
-            else 3
+            else 1  # 1 as region is almost all in the 3-6m/s category
         )
         # Obstructed Horizon
         output_dict["Obstructed Horizon"] = (
