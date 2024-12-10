@@ -4,7 +4,10 @@ import warnings
 
 import numpy as np
 import pandas as pd
+import ruamel.yaml
 from pandas.tseries.frequencies import to_offset
+
+import hydrobot.data_acquisition as data_acquisition
 
 MOWSECS_OFFSET = 946771200
 
@@ -742,3 +745,40 @@ def find_last_indices(base_series, check_series):
         nearest_indices.append(nearest_index)
 
     return nearest_indices
+
+
+def set_config_from_date(config_file, base_url, hts_filename, site, measurement):
+    """
+    Set config.yaml parameter from_date based on last data from archive file.
+
+    Parameters
+    ----------
+    config_file : str
+        Path to config.yaml to modify
+    base_url : str
+        Base url for archive file
+    hts_filename
+        Archive hts file name
+    site :str
+        The site to test
+    measurement : str
+        The measurement to test
+
+    Returns
+    -------
+    None
+        side effect: modifies the config.yaml
+    """
+    last_time = data_acquisition.find_last_time(
+        base_url=base_url,
+        hts=hts_filename,
+        site=site,
+        measurement=measurement,
+    )
+
+    yaml = ruamel.yaml.YAML()
+    with open(config_file) as fp:
+        data = yaml.load(fp)
+        data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
+    with open(config_file, "w") as fp:
+        yaml.dump(data, fp)

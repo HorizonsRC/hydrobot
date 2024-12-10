@@ -1,3 +1,26 @@
-site_name,site_code,list_of_measurements,batch_no,from_date,to_date,frequency
-Desert Rd Summit Climate Station,ZTH,Air Temperature (1.5m),410,2023-03-03 11:00,2024-04-04 22:00,10min
-Air Quality at Taihape,TAQ,Air Temperature (1.5m),400,2023-01-01 10:00,2024-02-02 20:00,5min
+site_name,site_code,list_of_measurements,from_date,to_date,frequency
+Ahuahu at Te Tuhi Junction,AHU,Rainfall,,2024-12-10 06:00,
+Ahuahu at Te Tuhi Junction,AHU,Air Temperature (1.5m),14/02/2018 8:00,9/08/2024 15:00,10min
+Air Quality at Taihape,TAQ,Air Temperature (1.5m);Air Temperature (5m);Air Temperature (10m),9/02/2021 10:00,9/08/2024 15:00,5min
+Air Quality at Taumarunui,AQT,Air Temperature (1.5m);Air Temperature (5m);Air Temperature (10m),26/10/2021 9:30,9/08/2024 15:00,5min
+Desert Rd Summit Climate Station,ZTH,Air Temperature (1.5m),15/02/2017 15:50,9/08/2024 15:00,10min
+Hautapu at Mounganui Station,MON,Air Temperature (1.5m),6/08/2018 15:40,9/08/2024 15:00,10min
+Kawhatau Catchment at Upper Kawhatau,UKW,Air Temperature (1.5m),21/10/2021 8:30,9/08/2024 15:00,10min
+Matarawa at Matarawa Valley,MTV,Air Temperature (1.5m),11/05/2021 7:40,29/08/2022 13:10,10min
+Ngahere Park Climate Station,NPK,Air Temperature (1.5m),19/10/2021 7:30,9/08/2024 15:00,10min
+Ngaruroro Catchment at Ngamatea,NTA,Air Temperature (1.5m),19/10/2021 14:50,9/08/2024 15:00,10min
+Paradise Valley Climate Station,PVR,Air Temperature (1.5m),18/02/2017 14:40,9/08/2024 15:00,10min
+Raumai Climate Station,RAU,Air Temperature (1.5m),30/07/2015 16:30,9/09/2016 15:30,15min
+Raumai Climate Station,RAU,Air Temperature (1.5m),9/09/2016 15:50,9/08/2024 15:00,10min
+Ruatiti at Ruatiti Station,RTT,Air Temperature (1.5m),9/05/2018 10:45,19/06/2018 19:30,5min
+Tapuae at Waituna West,TPU,Air Temperature (1.5m),19/10/2021 7:30,9/08/2024 15:00,10min
+Three Kings Climate Station,TKG,Air Temperature (1.5m),14/02/2017 13:40,9/08/2024 15:00,10min
+Turoa at Repeater,TUR,Air Temperature (1.5m),1/09/2016 12:20,9/08/2024 15:00,5min
+Waimarino Forest Climate Station,WAF,Air Temperature (1.5m),24/04/2015 20:35,9/08/2024 15:00,5min
+Waitarere Forest Climate Station,WTF,Air Temperature (1.5m),3/10/2016 12:00,20/12/2018 12:10,10min
+Waitarere Forest Climate Station,WTF,Air Temperature (1.5m),20/12/2018 14:00,3/09/2020 10:00,5min
+Westlawn Climate Station,WLN,Air Temperature (1.5m),14/02/2017 15:20,9/08/2024 15:00,10min
+Whangaehu at Karioi Pulpmill,TSM,Air Temperature (1.5m);Air Temperature (10m),7/07/2021 9:30,9/08/2024 15:00,5min
+Whangaehu at Titoki,TIT,Air Temperature (1.5m),12/10/2021 7:30,9/08/2024 15:00,10min
+Whangamomona at Bridge to Somewhere,WBS,Air Temperature (1.5m),14/10/2021 8:00,9/08/2024 15:00,10min
+Whangamomona at Marco Road,MAR,Air Temperature (1.5m),14/10/2021 8:30,9/08/2024 15:00,10min

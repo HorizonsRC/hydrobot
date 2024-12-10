@@ -351,7 +351,7 @@ class Processor:
         return cls(**processing_parameters, fetch_quality=fetch_quality), ann
 
     @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False):
+    def from_config_yaml(cls, config_path, fetch_quality=False, set_from_date=False):
         """
         Initialises a Processor class given a config file.
 
@@ -361,12 +361,27 @@ class Processor:
             Path to config.yaml.
         fetch_quality : bool, optional
             Whether to fetch any existing quality data, default false
+        set_from_date : bool, optional
+            If true, from_date in the config yaml is overwritten by the last date on the archive
+            Requires "archive_base_url" and "archive_standard_hts_filename" in the yaml, in addition to "site" and
+            "standard_measurement_name"
 
         Returns
         -------
         Processor, Annalist
         """
         processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+        if set_from_date:
+            utils.set_config_from_date(
+                config_file=config_path,
+                base_url=processing_parameters["archive_base_url"],
+                hts_filename=processing_parameters["archive_standard_hts_filename"],
+                site=processing_parameters["site"],
+                measurement=processing_parameters["standard_measurement_name"],
+            )
+            # refresh the parameters
+            processing_parameters = data_acquisition.config_yaml_import(config_path)
 
         if "to_date" not in processing_parameters:
             processing_parameters["to_date"] = datetime.now().strftime(
@@ -386,6 +401,8 @@ class Processor:
         for k in keys_to_be_set_to_none_if_missing:
             if k not in processing_parameters:
                 processing_parameters[k] = None
+        if np.isnan(processing_parameters["frequency"]):
+            processing_parameters["frequency"] = None
 
         return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 

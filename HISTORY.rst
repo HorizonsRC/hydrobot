@@ -188,5 +188,8 @@ History
 0.7.9 ()
 ----------------------------------
 
+* Better batch processing support
+* Processor can now find from_date from the archive file
 * Fixed manual additional points from dipstick-only inspections making later inspections qc400
 * Added site points dictionary to issues for user verification
+* Rainfall site survey wind now defaults to 1 point when missing (better represents the region)

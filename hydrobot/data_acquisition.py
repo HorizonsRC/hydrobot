@@ -1,5 +1,6 @@
 """Main module."""
 
+import urllib.parse
 from xml.etree import ElementTree
 
 import pandas as pd
@@ -145,7 +146,9 @@ def get_series(
 
     Returns
     -------
-    pandas.Series or pandas.DataFrame
+    xml.etree.ElementTree
+        An XML tree containing the acquired time series data.
+    pandas.Series | pandas.DataFrame
         A pd.Series containing the acquired time series data.
     """
     xml, data_object = get_data(
@@ -264,3 +267,32 @@ def config_yaml_import(file_name: str):
         processing_parameters["inspection_expiry"] = d
 
     return processing_parameters
+
+
+def find_last_time(
+    base_url,
+    hts,
+    site,
+    measurement,
+):
+    """
+    Find the last data point in the hts file for a given site/measurement pair.
+
+    Parameters
+    ----------
+    base_url : str
+    hts : str
+    site : str
+    measurement : str
+
+    Returns
+    -------
+    pd.Timestamp
+    """
+    timerange_url = (
+        f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
+        f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
+    )
+    return pd.Timestamp(
+        get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
+    )
