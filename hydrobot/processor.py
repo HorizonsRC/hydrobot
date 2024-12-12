@@ -401,7 +401,9 @@ class Processor:
         for k in keys_to_be_set_to_none_if_missing:
             if k not in processing_parameters:
                 processing_parameters[k] = None
-        if np.isnan(processing_parameters["frequency"]):
+        if (not isinstance(processing_parameters["frequency"], str)) and np.isnan(
+            processing_parameters["frequency"]
+        ):
             processing_parameters["frequency"] = None
 
         return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
