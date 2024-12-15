@@ -236,9 +236,9 @@ def import_ncr(filename):
                 axis=1,
             )
         else:
-            ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+            ncr_df = pd.DataFrame({"Time": [], "Value": [], "Comment": []})
     except FileNotFoundError:
-        ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+        ncr_df = pd.DataFrame({"Time": [], "Value": [], "Comment": []})
     return ncr_df
 
 
