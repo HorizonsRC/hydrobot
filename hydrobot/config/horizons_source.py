@@ -3,6 +3,7 @@
 import importlib.resources as pkg_resources
 import platform
 
+import numpy as np
 import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
@@ -48,7 +49,7 @@ def rainfall_inspections(from_date, to_date, site):
     """Returns all info from rainfall inspection query."""
     rainfall_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
-        .joinpath("rainfall_checks.sql")
+        .joinpath("rainfall_check.sql")
         .read_text()
     )
 
@@ -61,6 +62,33 @@ def rainfall_inspections(from_date, to_date, site):
             "site": site,
         },
     )
+    return rainfall_checks
+
+
+def water_temperature_hydro_inspections(from_date, to_date, site):
+    """Returns all info from rainfall inspection query."""
+    rainfall_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("water_temperature_check.sql")
+        .read_text()
+    )
+
+    rainfall_checks = pd.read_sql(
+        rainfall_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+
+    rainfall_checks["Index"] = rainfall_checks.loc[:, "inspection_time"].fillna(
+        rainfall_checks.loc[:, "arrival_time"]
+    )
+    rainfall_checks = rainfall_checks.set_index("Index")
+    rainfall_checks.index = pd.to_datetime(rainfall_checks.index)
+    rainfall_checks.index.name = None
     return rainfall_checks
 
 
@@ -152,6 +180,72 @@ def rainfall_check_data(from_date, to_date, site):
     ]
 
     return utils.series_rounder(check_data)
+
+
+def water_temperature_hydro_check_data(from_date, to_date, site):
+    """Filters water temperature hydro inspection data to be in format for use as hydrobot check data."""
+    inspection_check_data = water_temperature_hydro_inspections(
+        from_date, to_date, site
+    )
+
+    inspection_check_data["Time"] = inspection_check_data.loc[
+        :, "inspection_time"
+    ].fillna(inspection_check_data.loc[:, "arrival_time"])
+
+    inspection_check_data = inspection_check_data.rename(
+        columns={"handheld_temp": "Raw", "logger_temp": "Logger Temp"}
+    )
+    inspection_check_data["Value"] = inspection_check_data.loc[:, "Raw"]
+    inspection_check_data["Comment"] = utils.combine_comments(
+        inspection_check_data[["notes", "do_notes", "wl_notes"]].rename(
+            columns={"notes": "WT", "do_notes": "DO", "wl_notes": "WL"}
+        )
+    )
+    inspection_check_data["Changes"] = ""
+    inspection_check_data["Source"] = "INS"
+    inspection_check_data["QC"] = True
+
+    inspection_check_data = inspection_check_data[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Logger Temp",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+
+    return inspection_check_data
+
+
+def water_temperature_soe_check_data(processor, measurement):
+    """Format water temperature SoE data for use as hydrobot check data."""
+    soe_check = processor.get_measurement_dataframe(measurement, "check")
+    soe_check.index.name = None
+    soe_check.index = pd.DatetimeIndex(soe_check.index)
+    soe_check["Time"] = soe_check.index
+    soe_check["Value"] = soe_check["Value"].astype(np.float64)
+    soe_check["Raw"] = soe_check["Value"]
+    soe_check["Changes"] = ""
+    soe_check["Comment"] = ""
+    soe_check["Source"] = "SOE"
+    soe_check["QC"] = True
+
+    soe_check = soe_check[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+    return soe_check
 
 
 def atmospheric_pressure_field_wq_checks(from_date, to_date, site):

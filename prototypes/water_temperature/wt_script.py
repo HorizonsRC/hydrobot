@@ -3,15 +3,10 @@
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
-from hydrobot.utils import merge_all_comments
+from hydrobot.utils import series_rounder
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -21,41 +16,40 @@ data, ann = Processor.from_config_yaml("wt_config.yaml")
 #######################################################################################
 # Importing all check data
 #######################################################################################
-check_col = "Temp Check"
-logger_col = "Temp Logger"
-
-inspections = import_inspections(
-    "WaterTemp_Inspections.csv", check_col=check_col, logger_col=logger_col
+comments_inspections = source.water_temperature_hydro_inspections(
+    data.from_date, data.to_date, data.site
 )
-prov_wq = import_prov_wq(
-    "WaterTemp_ProvWQ.csv",
-    check_col=check_col,
-    logger_col=logger_col,
-    use_for_qc=True,
+comments_soe = data.get_measurement_dataframe("Field Temperature (HRC)", "check")
+comments_soe.index = pd.to_datetime(comments_soe.index)
+comments_ncr = source.non_conformances(data.site)
+all_comments = pd.concat(
+    [i for i in [comments_inspections, comments_soe, comments_ncr] if not i.empty]
 )
-ncrs = import_ncr("WaterTemp_non-conformance_reports.csv")
 
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
-
-all_checks_list = [data.check_data, inspections, prov_wq]
-all_checks_list = [i for i in all_checks_list if not i.empty]
-all_checks = pd.concat(all_checks_list).sort_index()
-
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+water_temperature_inspections = series_rounder(
+    source.water_temperature_hydro_check_data(data.from_date, data.to_date, data.site),
+    "1min",
+)
+water_temperature_inspections = water_temperature_inspections[
+    ~water_temperature_inspections["Value"].isna()
+]
+soe_check = series_rounder(
+    source.water_temperature_soe_check_data(
+        data,
+        "Field Temperature (HRC)",
+    ),
+    "1min",
+)
+check_data = [
+    water_temperature_inspections,
+    soe_check,
 ]
 
-data_check_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-data_check_list = [i for i in data_check_list if not i.empty]
-data.check_data = pd.concat(data_check_list).sort_index()
+data.check_data = pd.concat([i for i in check_data if not i.empty])
+data.check_data = data.check_data[
+    ~data.check_data.index.duplicated(keep="first")
+].sort_index()
 
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= pd.Timestamp(data.from_date))
-    & (data.check_data.index <= pd.Timestamp(data.to_date))
-]
-
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
 
 #######################################################################################
 # Common auto-processing steps

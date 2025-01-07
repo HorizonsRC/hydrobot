@@ -1,7 +1,6 @@
 """Main module."""
 
 import urllib.parse
-from xml.etree import ElementTree
 
 import pandas as pd
 import yaml
@@ -113,7 +112,7 @@ def get_time_range(
     return hilltop_xml, data_object
 
 
-def get_series(
+def get_server_dataframe(
     base_url,
     hts,
     site,
@@ -121,8 +120,8 @@ def get_series(
     from_date,
     to_date,
     tstype="Standard",
-) -> tuple[ElementTree.Element, pd.DataFrame]:
-    """Pack data from get_data as a pd.Series.
+) -> pd.DataFrame:
+    """Call hilltop server and transform to pd.DataFrame.
 
     Parameters
     ----------
@@ -146,20 +145,22 @@ def get_series(
 
     Returns
     -------
-    xml.etree.ElementTree
-        An XML tree containing the acquired time series data.
-    pandas.Series | pandas.DataFrame
-        A pd.Series containing the acquired time series data.
+    pandas.DataFrame
+        A dataframe containing the acquired time series data.
     """
-    xml, data_object = get_data(
+    url = build_url(
         base_url,
         hts,
-        site,
-        measurement,
-        from_date,
-        to_date,
-        tstype,
+        "GetData",
+        site=site,
+        measurement=measurement,
+        from_date=from_date,
+        to_date=to_date,
+        tstype=tstype,
     )
+
+    root = get_hilltop_xml(url)
+    """
     if data_object is not None:
         data = data_object[0].data.timeseries
         if not data.empty:
@@ -173,7 +174,36 @@ def get_series(
                 data.index = pd.to_datetime(data.index)
     else:
         data = pd.DataFrame({})
-    return xml, data
+    """
+    data_list = []
+    for child in root.find("Measurement").find("Data"):
+        if child.tag == "E":
+            data_dict = {}
+            for element in child:
+                if element.tag == "Parameter":
+                    data_dict[element.attrib["Name"]] = element.attrib["Value"]
+
+                else:
+                    data_dict[element.tag] = element.text
+
+            data_list += [data_dict]
+        elif child.tag == "V":
+            if child.text is not None:
+                timestamp, data_val = child.text.split(" ")
+                data_dict = {
+                    "T": timestamp,
+                    "V": data_val,
+                }
+                data_list += [data_dict]
+        elif child.tag == "Gap":
+            pass
+        else:
+            raise ValueError(
+                "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
+            )
+
+    timeseries = pd.DataFrame(data_list).set_index("T")
+    return timeseries
 
 
 def import_inspections(

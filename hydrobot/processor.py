@@ -2119,3 +2119,21 @@ class Processor:
             ],
             ignore_index=True,
         )
+
+    def get_measurement_dataframe(self, measurement, hts_type):
+        """Get a dataframe of a given measurement for other processor parameters."""
+        if hts_type == "standard":
+            hts = self._standard_hts_filename
+        elif hts_type == "check":
+            hts = self._check_hts_filename
+        else:
+            raise ValueError(f"Invalid hts_type {hts_type}")
+
+        return data_acquisition.get_server_dataframe(
+            self._base_url,
+            hts,
+            self.site,
+            measurement,
+            self.from_date,
+            self.to_date,
+        )
