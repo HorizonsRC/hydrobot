@@ -401,7 +401,11 @@ class Processor:
         for k in keys_to_be_set_to_none_if_missing:
             if k not in processing_parameters:
                 processing_parameters[k] = None
-        if (not isinstance(processing_parameters["frequency"], str)) and np.isnan(
+
+        def isvalid(potential_nan):
+            return potential_nan is None or np.isnan(potential_nan)
+
+        if (not isinstance(processing_parameters["frequency"], str)) and isvalid(
             processing_parameters["frequency"]
         ):
             processing_parameters["frequency"] = None
@@ -686,6 +690,11 @@ class Processor:
                         )
                         raw_standard_data = raw_standard_data.asfreq(
                             frequency, fill_value=np.nan
+                        )
+                        self.report_processing_issue(
+                            code="IRR",
+                            comment=f"frequency inferred as {frequency}",
+                            message_type="info",
                         )
                     else:
                         # infer_frequency is explicitly set to false and frequency is None

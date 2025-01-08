@@ -22,9 +22,6 @@ comments_inspections = source.water_temperature_hydro_inspections(
 comments_soe = data.get_measurement_dataframe("Field Temperature (HRC)", "check")
 comments_soe.index = pd.to_datetime(comments_soe.index)
 comments_ncr = source.non_conformances(data.site)
-all_comments = pd.concat(
-    [i for i in [comments_inspections, comments_soe, comments_ncr] if not i.empty]
-)
 
 water_temperature_inspections = series_rounder(
     source.water_temperature_hydro_check_data(data.from_date, data.to_date, data.site),
@@ -99,7 +96,11 @@ with open("check_table.html", "w", encoding="utf-8") as file:
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
-    all_comments.to_html(file)
+    comments_inspections.to_html(file)
+with open("soe_table.html", "w", encoding="utf-8") as file:
+    comments_soe.to_html(file)
+with open("ncr_table.html", "w", encoding="utf-8") as file:
+    comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name
@@ -113,6 +114,8 @@ merger = HtmlMerger(
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
+        "soe_table.html",
+        "ncr_table.html",
         "calibration_table.html",
         "potential_processing_issues.html",
     ],
