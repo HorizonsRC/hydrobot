@@ -83,8 +83,9 @@ Initial Setup (Repeat for each release)
     pip freeze > dependencies.txt
 
 
-Processing Steps
-^^^^^^^^^^^^^^^^
+Manual Processing Steps
+^^^^^^^^^^^^^^^^^^^^^^^
+For processing one particular site:
 
 #. Open Logsheet Loader. Fill it as normal, and note the start date of your
    processing period (i.e. end date of the previous period).
@@ -148,6 +149,21 @@ Processing Steps
    copy into the hts batch file.
 
 #. Copy to provisional automation when complete.
+
+Batch Processing Steps
+^^^^^^^^^^^^^^^^^^^^^^
+For processing many sites at once
+
+#. For each measurement you are processing, copy the script and yaml into a
+   directory named after the measurement
+
+#. Fill in the batch_config.csv with the sites that are to be processed
+   (to_date and frequency can be ommitted, which will be inferred)
+
+#. Run the batch_copy.py script
+
+#. Run the batch_runner.bat
+
 
 Credits
 -------

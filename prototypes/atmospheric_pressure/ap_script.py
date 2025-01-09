@@ -3,15 +3,10 @@
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
-from hydrobot.utils import merge_all_comments
+from hydrobot.utils import series_rounder
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -21,28 +16,38 @@ data, ann = Processor.from_config_yaml("ap_config.yaml")
 #######################################################################################
 # Importing all check data
 #######################################################################################
-inspections = import_inspections("AP_Inspections.csv")
-prov_wq = import_prov_wq("AP_ProvWQ.csv", use_for_qc=True)
-ncrs = import_ncr("AP_non-conformance_reports.csv")
+comments_inspections = source.water_temperature_hydro_inspections(
+    data.from_date, data.to_date, data.site
+)
+comments_soe = data.get_measurement_dataframe("Field Baro Pressure (HRC)", "check")
+comments_soe.index = pd.to_datetime(comments_soe.index)
+comments_ncr = source.non_conformances(data.site)
 
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
-
-all_check_list = [data.check_data, inspections, prov_wq]
-all_check_list = [c for c in all_check_list if not c.empty]
-all_checks = pd.concat(all_check_list).sort_index()
-
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+atmospheric_pressure_inspections = series_rounder(
+    source.atmospheric_pressure_hydro_check_data(
+        data.from_date, data.to_date, data.site
+    ),
+    "1min",
+)
+atmospheric_pressure_inspections = atmospheric_pressure_inspections[
+    ~atmospheric_pressure_inspections["Value"].isna()
+]
+soe_check = series_rounder(
+    source.soe_check_data(
+        data,
+        "Field Baro Pressure (HRC)",
+    ),
+    "1min",
+)
+check_data = [
+    atmospheric_pressure_inspections,
+    soe_check,
 ]
 
-check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-check_data_list = [c for c in check_data_list if not c.empty]
-if check_data_list:
-    data.check_data = pd.concat(check_data_list).sort_index()
-
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
-
+data.check_data = pd.concat([i for i in check_data if not i.empty])
+data.check_data = data.check_data[
+    ~data.check_data.index.duplicated(keep="first")
+].sort_index()
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
@@ -85,7 +90,11 @@ with open("check_table.html", "w", encoding="utf-8") as file:
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
-    all_comments.to_html(file)
+    comments_inspections.to_html(file)
+with open("soe_table.html", "w", encoding="utf-8") as file:
+    comments_soe.to_html(file)
+with open("ncr_table.html", "w", encoding="utf-8") as file:
+    comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name

@@ -10,15 +10,15 @@ SELECT
     DO_Inspection.handheld_baro,
     DO_Inspection.logger_baro,
     DO_Inspection.do_notes,
-    DO_Inspection.inspection_id,
-    WaterLevel_Inspection.inspection_id,
+    DO_Inspection.inspection_id as 'do_inspection_id',
+    DO_Inspection.inspection_time,
+    WaterLevel_Inspection.inspection_id as 'wl_inspection_id',
     WaterLevel_Inspection.wl_notes,
-    WaterTemp_Inspection.inspection_id,
+    WaterTemp_Inspection.inspection_id as 'wt_inspection_id',
     WaterTemp_Inspection.wt_device,
     WaterTemp_Inspection.handheld_temp,
     WaterTemp_Inspection.logger_temp
-FROM
-    [dbo].Hydro_Inspection
+FROM [dbo].Hydro_Inspection
     FULL JOIN [dbo].DO_Inspection ON DO_Inspection.inspection_id = Hydro_Inspection.id
     FULL JOIN [dbo].WaterLevel_Inspection ON WaterLevel_Inspection.inspection_id = Hydro_Inspection.id
     FULL JOIN [dbo].WaterTemp_Inspection ON WaterTemp_Inspection.inspection_id = Hydro_Inspection.id

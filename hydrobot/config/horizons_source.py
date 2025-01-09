@@ -66,15 +66,15 @@ def rainfall_inspections(from_date, to_date, site):
 
 
 def water_temperature_hydro_inspections(from_date, to_date, site):
-    """Returns all info from rainfall inspection query."""
-    rainfall_query = db.text(
+    """Returns all info from inspection query."""
+    wt_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("water_temperature_check.sql")
         .read_text()
     )
 
-    rainfall_checks = pd.read_sql(
-        rainfall_query,
+    wt_checks = pd.read_sql(
+        wt_query,
         survey123_db_engine(),
         params={
             "start_time": pd.Timestamp(from_date),
@@ -83,25 +83,25 @@ def water_temperature_hydro_inspections(from_date, to_date, site):
         },
     )
 
-    rainfall_checks["Index"] = rainfall_checks.loc[:, "inspection_time"].fillna(
-        rainfall_checks.loc[:, "arrival_time"]
+    wt_checks["Index"] = wt_checks.loc[:, "inspection_time"].fillna(
+        wt_checks.loc[:, "arrival_time"]
     )
-    rainfall_checks = rainfall_checks.set_index("Index")
-    rainfall_checks.index = pd.to_datetime(rainfall_checks.index)
-    rainfall_checks.index.name = None
-    return rainfall_checks
+    wt_checks = wt_checks.set_index("Index")
+    wt_checks.index = pd.to_datetime(wt_checks.index)
+    wt_checks.index.name = None
+    return wt_checks
 
 
 def atmospheric_pressure_inspections(from_date, to_date, site):
     """Get atmospheric pressure inspection data."""
-    rainfall_query = db.text(
+    ap_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("atmospheric_pressure_check.sql")
         .read_text()
     )
 
-    rainfall_checks = pd.read_sql(
-        rainfall_query,
+    ap_checks = pd.read_sql(
+        ap_query,
         survey123_db_engine(),
         params={
             "start_time": pd.Timestamp(from_date),
@@ -109,7 +109,14 @@ def atmospheric_pressure_inspections(from_date, to_date, site):
             "site": site,
         },
     )
-    return rainfall_checks
+
+    ap_checks["Index"] = ap_checks.loc[:, "inspection_time"].fillna(
+        ap_checks.loc[:, "arrival_time"]
+    )
+    ap_checks = ap_checks.set_index("Index")
+    ap_checks.index = pd.to_datetime(ap_checks.index)
+    ap_checks.index.name = None
+    return ap_checks
 
 
 def calibrations(site, measurement_name):
@@ -221,7 +228,7 @@ def water_temperature_hydro_check_data(from_date, to_date, site):
     return inspection_check_data
 
 
-def water_temperature_soe_check_data(processor, measurement):
+def soe_check_data(processor, measurement):
     """Format water temperature SoE data for use as hydrobot check data."""
     soe_check = processor.get_measurement_dataframe(measurement, "check")
     soe_check.index.name = None
@@ -248,6 +255,38 @@ def water_temperature_soe_check_data(processor, measurement):
     return soe_check
 
 
-def atmospheric_pressure_field_wq_checks(from_date, to_date, site):
-    """Get SoE data for atmospheric pressure."""
-    pass
+def atmospheric_pressure_hydro_check_data(from_date, to_date, site):
+    """Filters atmospheric pressure hydro inspection data to be in format for use as hydrobot check data."""
+    inspection_check_data = atmospheric_pressure_inspections(from_date, to_date, site)
+
+    inspection_check_data["Time"] = inspection_check_data.loc[
+        :, "inspection_time"
+    ].fillna(inspection_check_data.loc[:, "arrival_time"])
+
+    inspection_check_data = inspection_check_data.rename(
+        columns={"handheld_baro": "Raw", "logger_baro": "Logger Baro"}
+    )
+    inspection_check_data["Value"] = inspection_check_data.loc[:, "Raw"]
+    inspection_check_data["Comment"] = utils.combine_comments(
+        inspection_check_data[["notes", "do_notes", "wl_notes"]].rename(
+            columns={"notes": "WT", "do_notes": "DO", "wl_notes": "WL"}
+        )
+    )
+    inspection_check_data["Changes"] = ""
+    inspection_check_data["Source"] = "INS"
+    inspection_check_data["QC"] = True
+
+    inspection_check_data = inspection_check_data[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Logger Baro",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+
+    return inspection_check_data

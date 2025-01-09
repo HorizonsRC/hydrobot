@@ -31,7 +31,7 @@ water_temperature_inspections = water_temperature_inspections[
     ~water_temperature_inspections["Value"].isna()
 ]
 soe_check = series_rounder(
-    source.water_temperature_soe_check_data(
+    source.soe_check_data(
         data,
         "Field Temperature (HRC)",
     ),

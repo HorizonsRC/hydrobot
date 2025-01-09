@@ -1,4 +1,5 @@
-SELECT Hydro_Inspection.id,
+SELECT
+    Hydro_Inspection.id,
     Hydro_Inspection.arrival_time,
     Hydro_Inspection.sitename,
     Hydro_Inspection.weather,
