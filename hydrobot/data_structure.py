@@ -1019,7 +1019,7 @@ def standard_to_xml_structure(
 
     standard_data = Data(
         date_format="Calendar",
-        num_items=3,
+        num_items=len(item_info_list),
         timeseries=standard_timeseries.to_frame(),
     )
 

@@ -21,7 +21,7 @@ dsn_file_list = []
 # for each site
 for site_index in site_config.index:
     # find base files
-    files_to_copy = [
+    base_files_to_copy = [
         os.path.join(template_base, f)
         for f in os.listdir(template_base)
         if os.path.isfile(os.path.join(template_base, f))
@@ -29,7 +29,7 @@ for site_index in site_config.index:
     # for each measurement at the site
     for measurement in site_config.loc[site_index].list_of_measurements.split(";"):
         # find measurement specific files
-        files_to_copy += [
+        files_to_copy = base_files_to_copy + [
             os.path.join(template_base, measurement, f)
             for f in os.listdir(os.path.join(template_base, measurement))
             if os.path.isfile(os.path.join(template_base, measurement, f))
@@ -75,7 +75,15 @@ for site_index in site_config.index:
                     )
 
                 with open(file, "w") as fp:
-                    yaml.dump(data, fp)
+                    yaml.dump(
+                        {
+                            key: (value if not pd.isna(value) else None)
+                            for key, value in zip(
+                                data.keys(), data.values(), strict=True
+                            )
+                        },
+                        fp,
+                    )
 
             if ext in [".py"]:
                 # prep for running

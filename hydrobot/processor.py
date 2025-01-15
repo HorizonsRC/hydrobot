@@ -137,6 +137,7 @@ class Processor:
         archive_standard_hts_filename: str | None = None,
         archive_check_hts_filename: str | None = None,
         provisional_wq_filename: str | None = None,
+        archive_standard_measurement_name: str | None = None,
         **kwargs,
     ):
         """
@@ -170,14 +171,46 @@ class Processor:
             Where the data is exported to. Used as default when exporting without specified filename.
         provisional_wq_filename : str, optional
             Filename for provisional WQ data to be converted to check
+        archive_standard_measurement_name : str, optional
+            standard_measurement_name used in the archve file used to find last processed time and for final exported data
         kwargs : dict
             Additional keyword arguments.
         """
+        # Processing issues reporting setup
+        self.processing_issues = pd.DataFrame(
+            {
+                "start_time": [],
+                "end_time": [],
+                "code": [],
+                "comment": [],
+                "series_type": [],
+                "message_type": [],
+            }
+        ).astype(str)
+        self.report_processing_issue(
+            comment=f"Hydrobot Version: {hydrobot.__version__}",
+            message_type="info",
+            start_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        )
+
         # replacements
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
         if interval_dict is None:
             interval_dict = {}
+        if archive_standard_measurement_name is None:
+            archive_standard_measurement_name = standard_measurement_name
+        if pd.isna(from_date):
+            from_date = data_acquisition.find_last_time(
+                archive_base_url,
+                archive_standard_hts_filename,
+                site,
+                archive_standard_measurement_name,
+            )
+            self.report_processing_issue(
+                comment=f"from_date inferred as: {str(from_date)}",
+                message_type="info",
+            )
 
         # set input values
         self._base_url = base_url
@@ -195,6 +228,7 @@ class Processor:
         self.archive_base_url = archive_base_url
         self.archive_standard_hts_filename = archive_standard_hts_filename
         self.archive_check_hts_filename = archive_check_hts_filename
+        self.archive_standard_measurement_name = archive_standard_measurement_name
         self.provisional_wq_filename = provisional_wq_filename
 
         # Set other value initial values
@@ -209,33 +243,28 @@ class Processor:
         self.raw_check_blob = None
         self.raw_check_xml = None
 
-        self.processing_issues = pd.DataFrame(
-            {
-                "start_time": [],
-                "end_time": [],
-                "code": [],
-                "comment": [],
-                "series_type": [],
-                "message_type": [],
-            }
-        ).astype(str)
-        self.report_processing_issue(
-            comment=f"Hydrobot Version: {hydrobot.__version__}",
-            message_type="info",
-            start_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
-        )
-
         # standard hilltop
         standard_hilltop = Hilltop(base_url, standard_hts_filename)
         self.enforce_site_in_hts(standard_hilltop, self.site)
         self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
 
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", standard_measurement_name)
-        if matches is not None:
-            self.standard_item_name = matches.groups()[0].strip(" ")
-            self.standard_data_source_name = matches.groups()[2]
-            if self.standard_data_source_name is None:
-                self.standard_data_source_name = self.standard_item_name
+        def measurement_datasource_splitter(measurement_name):
+            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", measurement_name)
+            item_name = matches.groups()[0].strip(" ")
+            data_source_name = matches.groups()[2]
+            if data_source_name is None:
+                data_source_name = item_name
+            return item_name, data_source_name
+
+        (
+            self.standard_item_name,
+            self.standard_data_source_name,
+        ) = measurement_datasource_splitter(standard_measurement_name)
+
+        (
+            self.archive_standard_item_name,
+            self.archive_standard_data_source_name,
+        ) = measurement_datasource_splitter(archive_standard_measurement_name)
 
         # check hilltop
         if check_hts_filename is not None:
@@ -243,15 +272,20 @@ class Processor:
             self.enforce_site_in_hts(check_hilltop, self.site)
             self.enforce_measurement_at_site(check_measurement_name, check_hilltop)
 
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
-        if matches is not None:
-            self.check_item_name = matches.groups()[0].strip(" ")
-            self.check_data_source_name = matches.groups()[2]
-            if self.check_data_source_name is None:
-                self.check_data_source_name = self.check_item_name
+        (
+            self.check_item_name,
+            self.check_data_source_name,
+        ) = measurement_datasource_splitter(check_measurement_name)
 
         self.standard_item_info = {
             "item_name": self.standard_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
+        }
+        self.archive_standard_item_info = {
+            "item_name": self.archive_standard_item_name,
             "item_format": "F",
             "divisor": 1,
             "units": "",
@@ -696,6 +730,7 @@ class Processor:
                             comment=f"frequency inferred as {frequency}",
                             message_type="info",
                         )
+                        self._frequency = frequency
                     else:
                         # infer_frequency is explicitly set to false and frequency is None
                         # Assuming irregular data
@@ -1793,7 +1828,7 @@ class Processor:
         trimmed=True,
     ):
         """
-        Export data to CSV file.
+        Export data to file.
 
         Parameters
         ----------
@@ -2025,8 +2060,8 @@ class Processor:
         if standard:
             data_blob_list += [
                 data_structure.standard_to_xml_structure(
-                    self.standard_item_info,
-                    self.standard_data_source_name,
+                    self.archive_standard_item_info,
+                    self.archive_standard_data_source_name,
                     self.standard_data_source_info,
                     self.standard_data["Value"],
                     self.site,
@@ -2071,7 +2106,7 @@ class Processor:
         if quality:
             data_blob_list += [
                 data_structure.quality_to_xml_structure(
-                    data_source_name=self.standard_data_source_name,
+                    data_source_name=self.archive_standard_data_source_name,
                     quality_series=self.quality_data["Value"],
                     site=self.site,
                 )
