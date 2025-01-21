@@ -290,3 +290,22 @@ def atmospheric_pressure_hydro_check_data(from_date, to_date, site):
     ]
 
     return inspection_check_data
+
+
+def find_three_letter_code(site):
+    """Find three-letter code for a given site."""
+    tlc_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("three_letter_site_code.sql")
+        .read_text()
+    )
+
+    tlc_frame = pd.read_sql(
+        tlc_query,
+        hilltop_db_engine(),
+        params={
+            "site": site,
+        },
+    )
+
+    return tlc_frame["AuxName2"].iloc[0]

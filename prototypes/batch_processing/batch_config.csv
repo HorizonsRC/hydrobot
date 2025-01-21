@@ -1,4 +1,4 @@
-site_name,site_code,list_of_measurements,from_date,to_date,frequency
-Manawatu at Hopelands,NA,Atmospheric Pressure;Water Temperature,,,
-Manawatu at Weber Road,NA,Atmospheric Pressure;Water Temperature,,,
-Rangitikei at McKelvies,NA,Atmospheric Pressure;Water Temperature,,,
+site_name,list_of_measurements,from_date,to_date,frequency
+Manawatu at Hopelands,Atmospheric Pressure;Water Temperature,,,
+Manawatu at Weber Road,Atmospheric Pressure;Water Temperature,,,
+Rangitikei at McKelvies,Atmospheric Pressure;Water Temperature,,,

@@ -6,6 +6,8 @@ import shutil
 import pandas as pd
 import ruamel.yaml
 
+import hydrobot.config.horizons_source as source
+
 # file locations
 template_base = ".\\template\\"
 destination_base = ".\\output_dump\\"
@@ -20,6 +22,7 @@ dsn_file_list = []
 
 # for each site
 for site_index in site_config.index:
+    site_code = source.find_three_letter_code(site_config.loc[site_index].site_name)
     # find base files
     base_files_to_copy = [
         os.path.join(template_base, f)
@@ -54,9 +57,7 @@ for site_index in site_config.index:
             if ext in [".hts", ".accdb"]:
                 # rename files
                 path, file_suffix = os.path.split(file)
-                new_file_name = "_".join(
-                    [batch_no, str(site_config.loc[site_index].site_code), file_suffix]
-                )
+                new_file_name = "_".join([batch_no, site_code, file_suffix])
                 os.rename(file, os.path.join(path, new_file_name))
 
             if ext in [".yaml"]:
