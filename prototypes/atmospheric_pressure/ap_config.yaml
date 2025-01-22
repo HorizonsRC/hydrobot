@@ -1,19 +1,21 @@
+# Fields to fill out
+analyst_name: "default"
+site: "Whanganui at Te Rewa"
+constant_check_shift: 0
+
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
 standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-site: "Whanganui at Te Rewa"
 standard_measurement_name: "Atmospheric Pressure"
 check_measurement_name: "Check Pressure [Atmospheric Pressure]"
-
 
 # Export configuration
 export_file_name: "processed_ap.xml"
 
 # Processing Configuration
-
 defaults:
   delta: 50
   gap_limit: 12
@@ -23,7 +25,6 @@ defaults:
   span: 10
 
 # Annalist Configuration
-analyst_name: "default"
 logfile: "hydrobot_logs.csv"
 format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
@@ -35,7 +36,6 @@ inspection_expiry:
     0:
         months: 4
 
-constant_check_shift: 0
 provisional_wq_measurement_name: "Field Baro Pressure (HRC)"
 
 archive_base_url: "http://hilltopdev.horizons.govt.nz/"

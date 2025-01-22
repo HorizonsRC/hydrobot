@@ -49,6 +49,7 @@ archive_standard_hts_filename: "Archive.hts"
 archive_check_hts_filename: "Archive.hts"
 archive_standard_measurement_name: "Water Temperature [Water Temperature]"
 
+# Optional settings
 frequency:
 from_date:
 to_date:
