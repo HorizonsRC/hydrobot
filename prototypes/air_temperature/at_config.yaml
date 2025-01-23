@@ -33,17 +33,8 @@ format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
   stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
 
-# Survey123 SQL Configuration
-s123_sql_server: "DBSurvey123Live.horizons.govt.nz"
-s123_database: "survey123"
-s123_query_type: "WaterTemp"
-# s123_sql_driver: "SQL Server" # If on Windows
-s123_sql_driver: "/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.5.1" # If on WSL
-
 inspection_expiry:
     500:
         months: 2
     0:
         months: 4
-
-constant_check_shift: 0

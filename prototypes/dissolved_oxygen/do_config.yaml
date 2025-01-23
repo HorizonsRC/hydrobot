@@ -51,7 +51,7 @@ archive_base_url: "http://hilltopdev.horizons.govt.nz/"
 archive_standard_hts_filename: "Archive.hts"
 archive_check_hts_filename: "Archive.hts"
 
-constant_check_shift: 0
+# Optional settings
 frequency:
-from_date: "2023-04-19 13:45"
-to_date: "2024-03-13 13:45"
+from_date:
+to_date:

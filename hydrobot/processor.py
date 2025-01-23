@@ -320,8 +320,7 @@ class Processor:
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
-        if constant_check_shift is not None:
-            self._quality_code_evaluator.constant_check_shift = constant_check_shift
+        self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         # Load data for the first time
         get_check = self.check_hts_filename is not None

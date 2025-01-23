@@ -30,5 +30,3 @@ inspection_expiry:
         months: 2
     0:
         months: 4
-
-constant_check_shift: 0
