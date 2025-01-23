@@ -211,6 +211,12 @@ class Processor:
                 comment=f"from_date inferred as: {str(from_date)}",
                 message_type="info",
             )
+        if pd.isna(to_date):
+            to_date = pd.Timestamp.now().round("s")
+            self.report_processing_issue(
+                comment=f"to_date inferred as: {str(to_date)}",
+                message_type="info",
+            )
 
         # set input values
         self._base_url = base_url

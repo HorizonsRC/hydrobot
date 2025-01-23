@@ -92,6 +92,33 @@ def water_temperature_hydro_inspections(from_date, to_date, site):
     return wt_checks
 
 
+def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
+    """Returns all info from inspection query."""
+    do_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("dissolved_oxygen_check.sql")
+        .read_text()
+    )
+
+    do_checks = pd.read_sql(
+        do_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+
+    do_checks["Index"] = do_checks.loc[:, "inspection_time"].fillna(
+        do_checks.loc[:, "arrival_time"]
+    )
+    do_checks = do_checks.set_index("Index")
+    do_checks.index = pd.to_datetime(do_checks.index)
+    do_checks.index.name = None
+    return do_checks
+
+
 def atmospheric_pressure_inspections(from_date, to_date, site):
     """Get atmospheric pressure inspection data."""
     ap_query = db.text(
@@ -205,7 +232,7 @@ def water_temperature_hydro_check_data(from_date, to_date, site):
     inspection_check_data["Value"] = inspection_check_data.loc[:, "Raw"]
     inspection_check_data["Comment"] = utils.combine_comments(
         inspection_check_data[["notes", "do_notes", "wl_notes"]].rename(
-            columns={"notes": "WT", "do_notes": "DO", "wl_notes": "WL"}
+            columns={"notes": "HYDRO", "do_notes": "DO", "wl_notes": "WL"}
         )
     )
     inspection_check_data["Changes"] = ""
@@ -219,6 +246,43 @@ def water_temperature_hydro_check_data(from_date, to_date, site):
             "Value",
             "Changes",
             "Logger Temp",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+
+    return inspection_check_data
+
+
+def dissolved_oxygen_hydro_check_data(from_date, to_date, site):
+    """Filters dissolved oxygen hydro inspection data to be in format for use as hydrobot check data."""
+    inspection_check_data = dissolved_oxygen_hydro_inspections(from_date, to_date, site)
+
+    inspection_check_data["Time"] = inspection_check_data.loc[
+        :, "inspection_time"
+    ].fillna(inspection_check_data.loc[:, "arrival_time"])
+
+    inspection_check_data = inspection_check_data.rename(
+        columns={"handheld_percent": "Raw", "logger_percent": "Logger DO"}
+    )
+    inspection_check_data["Value"] = inspection_check_data.loc[:, "Raw"]
+    inspection_check_data["Comment"] = utils.combine_comments(
+        inspection_check_data[["notes", "do_notes", "wl_notes"]].rename(
+            columns={"notes": "HYDRO", "do_notes": "DO", "wl_notes": "WL"}
+        )
+    )
+    inspection_check_data["Changes"] = ""
+    inspection_check_data["Source"] = "INS"
+    inspection_check_data["QC"] = True
+
+    inspection_check_data = inspection_check_data[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Logger DO",
             "Comment",
             "Source",
             "QC",

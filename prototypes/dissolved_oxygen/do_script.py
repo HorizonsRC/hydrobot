@@ -3,15 +3,10 @@
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
 from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
-from hydrobot.utils import merge_all_comments
+from hydrobot.utils import series_rounder
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -21,32 +16,37 @@ data, ann = DOProcessor.from_config_yaml("do_config.yaml")
 #######################################################################################
 # Importing all check data
 #######################################################################################
-inspections = import_inspections("DO_Inspections.csv")
-prov_wq = import_prov_wq("DO_ProvWQ.csv", use_for_qc=True)
-ncrs = import_ncr("DO_non-conformance_reports.csv")
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
+comments_inspections = source.dissolved_oxygen_hydro_inspections(
+    data.from_date, data.to_date, data.site
+)
+comments_soe = data.get_measurement_dataframe("Field DO Saturation (HRC)", "check")
+comments_soe.index = pd.to_datetime(comments_soe.index)
+comments_ncr = source.non_conformances(data.site)
 
-all_checks_list = [data.check_data, inspections, prov_wq]
-all_checks_list = [i for i in all_checks_list if not i.empty]
-
-all_checks = pd.concat(all_checks_list).sort_index()
-
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+dissolved_oxygen_inspections = series_rounder(
+    source.dissolved_oxygen_hydro_check_data(data.from_date, data.to_date, data.site),
+    "1min",
+)
+dissolved_oxygen_inspections = dissolved_oxygen_inspections[
+    ~dissolved_oxygen_inspections["Value"].isna()
+]
+soe_check = series_rounder(
+    source.soe_check_data(
+        data,
+        "Field DO Saturation (HRC)",
+    ),
+    "1min",
+)
+soe_check = soe_check
+check_data = [
+    dissolved_oxygen_inspections,
+    soe_check,
 ]
 
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
-check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-check_data_list = [i for i in check_data_list if not i.empty]
-data.check_data = pd.concat(check_data_list).sort_index()
-
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
-]
-
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
+data.check_data = pd.concat([i for i in check_data if not i.empty])
+data.check_data = data.check_data[
+    ~data.check_data.index.duplicated(keep="first")
+].sort_index()
 
 #######################################################################################
 # Common auto-processing steps
@@ -106,7 +106,11 @@ with open("check_table.html", "w", encoding="utf-8") as file:
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
-    all_comments.to_html(file)
+    comments_inspections.to_html(file)
+with open("soe_table.html", "w", encoding="utf-8") as file:
+    comments_soe.to_html(file)
+with open("ncr_table.html", "w", encoding="utf-8") as file:
+    comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name
@@ -120,6 +124,8 @@ merger = HtmlMerger(
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
+        "soe_table.html",
+        "ncr_table.html",
         "calibration_table.html",
         "potential_processing_issues.html",
     ],

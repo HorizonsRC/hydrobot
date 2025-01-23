@@ -190,7 +190,7 @@ History
 
 * Better batch processing support
 * Processor can now find from_date, to_date, & frequency from the archive file
-* AP and WT scripts work without R scripts (data gathered directly from database or hilltop)
+* AP, WT, and DO scripts work without R (data gathered directly from database and hilltop)
 * Rainfall - Fixed manual additional points from dipstick-only inspections making later inspections qc400
 * Rainfall - Added site points dictionary to issues for user verification
 * Rainfall - Rainfall site survey wind now defaults to 1 point when missing (better represents the region)
