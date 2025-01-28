@@ -121,7 +121,8 @@ def get_server_dataframe(
     to_date,
     tstype="Standard",
 ) -> pd.DataFrame:
-    """Call hilltop server and transform to pd.DataFrame.
+    """
+    Call hilltop server and transform to pd.DataFrame.
 
     Parameters
     ----------
@@ -147,6 +148,11 @@ def get_server_dataframe(
     -------
     pandas.DataFrame
         A dataframe containing the acquired time series data.
+
+    Raises
+    ------
+    KeyError
+        if there is no measurement for the given parameters
     """
     url = build_url(
         base_url,
@@ -160,22 +166,10 @@ def get_server_dataframe(
     )
 
     root = get_hilltop_xml(url)
-    """
-    if data_object is not None:
-        data = data_object[0].data.timeseries
-        if not data.empty:
-            mowsecs_offset = 946771200
-            if data_object[0].data.date_format == "mowsecs":
-                timestamps = data.index.map(
-                    lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
-                )
-                data.index = pd.to_datetime(timestamps)
-            else:
-                data.index = pd.to_datetime(data.index)
-    else:
-        data = pd.DataFrame({})
-    """
     data_list = []
+    if root.find("Measurement") is None:
+        raise KeyError(f"No measurement at the url: {url}")
+
     for child in root.find("Measurement").find("Data"):
         if child.tag == "E":
             data_dict = {}

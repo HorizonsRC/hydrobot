@@ -2178,11 +2178,25 @@ class Processor:
         else:
             raise ValueError(f"Invalid hts_type {hts_type}")
 
-        return data_acquisition.get_server_dataframe(
-            self._base_url,
-            hts,
-            self.site,
-            measurement,
-            self.from_date,
-            self.to_date,
-        )
+        try:
+            frame = data_acquisition.get_server_dataframe(
+                self._base_url,
+                hts,
+                self.site,
+                measurement,
+                self.from_date,
+                self.to_date,
+            )
+        except KeyError:
+            frame = pd.DataFrame(
+                columns=[
+                    "Time",
+                    "Raw",
+                    "Value",
+                    "Changes",
+                    "Comment",
+                    "Source",
+                    "QC",
+                ]
+            )
+        return frame

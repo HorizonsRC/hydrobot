@@ -125,6 +125,7 @@ def make_dsn(file_list, file_path, sub_dsn_number=0):
             next_file = file_path.split("\\")
             next_file[-1] = f"sub{sub_dsn_number}_{next_file[-1]}"
             next_file = "\\".join(next_file)
+            next_file = os.path.abspath(next_file)
             dsn.write(f'File20="{next_file}"\n')
         make_dsn(file_list[19:], file_path, sub_dsn_number)
 
@@ -138,5 +139,13 @@ def make_batch(file_list, file_path):
             runner.write(f'start python ".\\{os.path.split(file_name)[1]}"\n')
 
 
+def make_blank_files(file_list):
+    """Make blank .xml files so that the dsn still reads when a script fails."""
+    for f in file_list:
+        with open(f, "x") as _:
+            pass
+
+
 make_dsn(dsn_file_list, os.path.join(destination_base, dsn_name))
+make_blank_files(dsn_file_list)
 make_batch(run_files, os.path.join(destination_base, batch_name))

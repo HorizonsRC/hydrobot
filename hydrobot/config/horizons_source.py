@@ -371,5 +371,7 @@ def find_three_letter_code(site):
             "site": site,
         },
     )
-
-    return tlc_frame["AuxName2"].iloc[0]
+    if len(tlc_frame["AuxName2"]) > 0:
+        return tlc_frame["AuxName2"].iloc[0]
+    else:
+        raise KeyError(f"Unable to find code for {site} in the database.")
