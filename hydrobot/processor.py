@@ -251,7 +251,7 @@ class Processor:
 
         # standard hilltop
         standard_hilltop = Hilltop(base_url, standard_hts_filename)
-        self.enforce_site_in_hts(standard_hilltop, self.site)
+        data_acquisition.enforce_site_in_hts(standard_hilltop, self.site)
         self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
 
         def measurement_datasource_splitter(measurement_name):
@@ -275,7 +275,7 @@ class Processor:
         # check hilltop
         if check_hts_filename is not None:
             check_hilltop = Hilltop(base_url, check_hts_filename)
-            self.enforce_site_in_hts(check_hilltop, self.site)
+            data_acquisition.enforce_site_in_hts(check_hilltop, self.site)
             self.enforce_measurement_at_site(check_measurement_name, check_hilltop)
 
         (
@@ -344,15 +344,6 @@ class Processor:
                 f"{list(available_measurements.MeasurementName)}"
             )
         """
-
-    def enforce_site_in_hts(self, hts: Hilltop, site: str):
-        """Raise exception if site not in Hilltop file."""
-        if site not in hts.available_sites:
-            raise ValueError(
-                f"Site '{site}' not found in hilltop file."
-                f"Available sites in {hts} are: "
-                f"{[s for s in hts.available_sites]}"
-            )
 
     @classmethod
     def from_processing_parameters_dict(

@@ -7,7 +7,7 @@ import pandas as pd
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
-from hydrobot.data_acquisition import config_yaml_import
+from hydrobot.data_acquisition import config_yaml_import, enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
@@ -77,7 +77,7 @@ class DOProcessor(Processor):
         wt_hilltop = Hilltop(base_url, water_temperature_hts)
         ap_hilltop = Hilltop(base_url, atmospheric_pressure_hts)
 
-        self.enforce_site_in_hts(wt_hilltop, self.water_temperature_site)
+        enforce_site_in_hts(wt_hilltop, self.water_temperature_site)
         if self.water_temperature_site not in wt_hilltop.available_sites:
             raise ValueError(
                 f"Water Temperature site '{self.water_temperature_site}' not found for both base_url and hts combos."

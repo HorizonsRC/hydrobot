@@ -5,6 +5,7 @@ import urllib.parse
 import pandas as pd
 import yaml
 from annalist.annalist import Annalist
+from hilltoppy import Hilltop
 from hilltoppy.utils import build_url, get_hilltop_xml
 
 from hydrobot.data_structure import parse_xml
@@ -320,3 +321,13 @@ def find_last_time(
     return pd.Timestamp(
         get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
     )
+
+
+def enforce_site_in_hts(hts: Hilltop, site: str):
+    """Raise exception if site not in Hilltop file."""
+    if site not in hts.available_sites:
+        raise ValueError(
+            f"Site '{site}' not found in hilltop file."
+            f"Available sites in {hts} are: "
+            f"{[s for s in hts.available_sites]}"
+        )
