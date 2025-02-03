@@ -14,6 +14,7 @@ HTP: "Site inspections, imported from hilltop"
 INS: "Site Inspections, imported via R or similar process"
 SOE: "State of the environment checks"
 RFZ: "Rainfall zero: used for when zeroes are inserted into rainfall"
+DPF: "Depth Profile: Used for lakes where measurements are made at depth"
 
 # Issue codes
 RMT: "Rainfall manual tips issue: automatic removal of manual tips ran into problems"

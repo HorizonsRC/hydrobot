@@ -138,6 +138,7 @@ class Processor:
         archive_check_hts_filename: str | None = None,
         provisional_wq_filename: str | None = None,
         archive_standard_measurement_name: str | None = None,
+        depth: float | None = None,
         **kwargs,
     ):
         """
@@ -173,6 +174,8 @@ class Processor:
             Filename for provisional WQ data to be converted to check
         archive_standard_measurement_name : str, optional
             standard_measurement_name used in the archve file used to find last processed time and for final exported data
+        depth : numeric, optional
+            Depth of measurement used for
         kwargs : dict
             Additional keyword arguments.
         """
@@ -236,6 +239,7 @@ class Processor:
         self.archive_check_hts_filename = archive_check_hts_filename
         self.archive_standard_measurement_name = archive_standard_measurement_name
         self.provisional_wq_filename = provisional_wq_filename
+        self.depth = depth
 
         # Set other value initial values
         self._standard_data = EMPTY_STANDARD_DATA.copy()
@@ -2008,8 +2012,8 @@ class Processor:
         plotly.graph_objects.Figure
             The figure with the processing overview chart.
         """
-        tag_list = ["HTP", "INS", "SOE"]
-        check_names = ["Check data", "Inspections", "SOE checks"]
+        tag_list = ["HTP", "INS", "SOE", "DPF"]
+        check_names = ["Check data", "Inspections", "SOE checks", "Depth profile"]
 
         fig = plotter.plot_processing_overview_chart(
             self.standard_data,
@@ -2191,3 +2195,34 @@ class Processor:
                 ]
             )
         return frame
+
+    def interpolate_depth_profiles(self, depth):
+        """Looks up depth profile and find interpolates for given depth."""
+        profiles = data_acquisition.get_depth_profiles(
+            self._base_url,
+            "HydrobotCheckData.hts",
+            self.site,
+            "Water Temperature (Depth Profile)",
+            self.from_date,
+            self.to_date,
+        )
+
+        interpolated_data = {}
+        for sample in profiles:
+            series = profiles[sample]
+            lower_index = series.index[series.index <= depth].max()
+            higher_index = series.index[series.index >= depth].min()
+            if not pd.isna(lower_index):
+                if pd.isna(higher_index):
+                    weighted_average = series[lower_index]
+                elif lower_index == higher_index:
+                    weighted_average = (
+                        series[lower_index] + series[higher_index]
+                    ) / 2.0
+                else:
+                    weighted_average = (
+                        series[lower_index] * (depth - lower_index)
+                        + series[higher_index] * (higher_index - depth)
+                    ) / (higher_index - lower_index)
+                interpolated_data[sample] = weighted_average
+        return pd.Series(interpolated_data)

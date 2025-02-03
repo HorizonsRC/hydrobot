@@ -1,6 +1,7 @@
 # Fields to fill out
 analyst_name: "test_name"
 site: "Arawhata Drain at Dairy Track Bridge"
+depth: 0.5
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
@@ -9,7 +10,7 @@ check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
 standard_measurement_name: "Water Temperature (-500 mm)"
-check_measurement_name: "Water Temperature Check (-500mm)"
+check_measurement_name: "Water Temperature Check (-500mm) [Water Temperature (-500 mm)]"
 archive_standard_measurement_name: "Water Temperature (-500 mm)"
 
 # Export configuration

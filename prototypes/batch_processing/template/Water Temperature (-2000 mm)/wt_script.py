@@ -30,17 +30,22 @@ water_temperature_inspections = series_rounder(
 water_temperature_inspections = water_temperature_inspections[
     ~water_temperature_inspections["Value"].isna()
 ]
-soe_check = series_rounder(
-    source.soe_check_data(
-        data,
-        "Field Temperature (HRC)",
-    ),
-    "1min",
-)
-check_data = [
-    water_temperature_inspections,
-    soe_check,
-]
+
+
+depth_check = pd.DataFrame()
+soe_check = pd.DataFrame()
+if data.depth:
+    depth_check = data.interpolate_depth_profiles(data.depth)
+    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+else:
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field Temperature (HRC)",
+        ),
+        "1min",
+    )
+check_data = [water_temperature_inspections, soe_check, depth_check]
 
 data.check_data = pd.concat([i for i in check_data if not i.empty])
 data.check_data = data.check_data[
@@ -53,6 +58,7 @@ data.check_data = data.check_data[
 #######################################################################################
 data.pad_data_with_nan_to_set_freq()
 data.clip()
+# data.remove_flatlined_values()
 data.remove_spikes()
 
 #######################################################################################

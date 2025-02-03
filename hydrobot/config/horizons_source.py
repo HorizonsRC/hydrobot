@@ -375,3 +375,24 @@ def find_three_letter_code(site):
         return tlc_frame["AuxName2"].iloc[0]
     else:
         raise KeyError(f"Unable to find code for {site} in the database.")
+
+
+def water_temp_check_formatter(series: pd.Series, source: str):
+    """
+    Take a series and format it for water temp check data.
+
+    Parameters
+    ----------
+    series : pd.Series
+        The series to be turned into a dataframe
+    source : str
+    """
+    series.name = "Value"
+    frame = pd.DataFrame(series)
+    frame["Time"] = frame.index
+    frame["Raw"] = frame["Value"]
+    frame["Changes"] = ""
+    frame["Comment"] = ""
+    frame["Source"] = source
+    frame["QC"] = True
+    return frame
