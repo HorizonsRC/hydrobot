@@ -185,7 +185,7 @@ History
 * LTCO calculation supported
 * Script cleanup for rainfall/soil moisture/air temperature
 
-0.7.9 ()
+0.8.0 (2025-02-05)
 ----------------------------------
 
 * Better batch processing support
