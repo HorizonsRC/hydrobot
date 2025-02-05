@@ -1,13 +1,13 @@
 """General utilities."""
 
+import urllib.parse
 import warnings
 
 import numpy as np
 import pandas as pd
 import ruamel.yaml
+from hilltoppy.utils import get_hilltop_xml
 from pandas.tseries.frequencies import to_offset
-
-import hydrobot.data_acquisition as data_acquisition
 
 MOWSECS_OFFSET = 946771200
 
@@ -769,7 +769,7 @@ def set_config_from_date(config_file, base_url, hts_filename, site, measurement)
     None
         side effect: modifies the config.yaml
     """
-    last_time = data_acquisition.find_last_time(
+    last_time = find_last_time(
         base_url=base_url,
         hts=hts_filename,
         site=site,
@@ -810,3 +810,32 @@ def combine_comments(comment_frame: pd.DataFrame) -> pd.Series:
 
         output_series += next_part
     return output_series
+
+
+def find_last_time(
+    base_url,
+    hts,
+    site,
+    measurement,
+):
+    """
+    Find the last data point in the hts file for a given site/measurement pair.
+
+    Parameters
+    ----------
+    base_url : str
+    hts : str
+    site : str
+    measurement : str
+
+    Returns
+    -------
+    pd.Timestamp
+    """
+    timerange_url = (
+        f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
+        f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
+    )
+    return pd.Timestamp(
+        get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
+    )

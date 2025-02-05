@@ -1,7 +1,5 @@
 """Main module."""
 
-import urllib.parse
-
 import pandas as pd
 import yaml
 from annalist.annalist import Annalist
@@ -377,35 +375,6 @@ def config_yaml_import(file_name: str):
         processing_parameters["inspection_expiry"] = d
 
     return processing_parameters
-
-
-def find_last_time(
-    base_url,
-    hts,
-    site,
-    measurement,
-):
-    """
-    Find the last data point in the hts file for a given site/measurement pair.
-
-    Parameters
-    ----------
-    base_url : str
-    hts : str
-    site : str
-    measurement : str
-
-    Returns
-    -------
-    pd.Timestamp
-    """
-    timerange_url = (
-        f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
-        f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
-    )
-    return pd.Timestamp(
-        get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
-    )
 
 
 def enforce_site_in_hts(hts: Hilltop, site: str):

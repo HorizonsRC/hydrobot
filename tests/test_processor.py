@@ -435,6 +435,7 @@ def test_processor_init(
         frequency="15min",
         defaults=DEFAULTS,
         fetch_quality=True,
+        from_date="2024-01-01 00:00",
     )
 
     captured = capsys.readouterr()
@@ -561,6 +562,7 @@ def test_to_xml_data_structure(
             check_measurement_name=check,
             frequency="15min",
             defaults=DEFAULTS,
+            from_date="2024-01-01 00:00",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -1176,6 +1178,7 @@ def test_gap_closer(
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
+        from_date="2023-01-01 00:00",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1313,6 +1316,7 @@ def test_data_export(
         frequency="15min",
         defaults=DEFAULTS,
         fetch_quality=True,
+        from_date="2023-01-01 00:00",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)

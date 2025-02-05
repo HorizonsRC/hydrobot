@@ -204,7 +204,7 @@ class Processor:
         if archive_standard_measurement_name is None:
             archive_standard_measurement_name = standard_measurement_name
         if pd.isna(from_date):
-            from_date = data_acquisition.find_last_time(
+            from_date = utils.find_last_time(
                 archive_base_url,
                 archive_standard_hts_filename,
                 site,
