@@ -13,6 +13,7 @@ blinker==1.7.0
 build==1.0.3
 bump-my-version==0.17.3
 bump2version==1.0.1
+bumpversion==0.6.0
 cachetools==5.3.1
 cattrs==23.2.3
 certifi==2023.7.22
@@ -39,6 +40,7 @@ distlib==0.3.7
 docformatter==1.7.5
 docutils==0.20.1
 entrypoints==0.3
+et-xmlfile==1.1.0
 exceptiongroup==1.1.3
 executing==2.0.0
 filelock==3.12.4
@@ -48,8 +50,9 @@ fonttools==4.43.1
 furo==2024.1.29
 gitdb==4.0.11
 GitPython==3.1.43
+greenlet==3.0.3
 hilltop-py==2.3.1
--e git+https://github.com/HorizonsRC/hydrobot.git@7386b3048b162bfc5d6e4be5a0870ab992e04c3f#egg=hydrobot
+-e git+https://github.com/HorizonsRC/hydrobot.git@4a5e4fc49cf677772b558d45a86d64a493563d4e#egg=hydrobot
 identify==2.5.30
 idna==3.4
 imagesize==1.4.1
@@ -122,6 +125,9 @@ pyodbc==5.1.0
 pyparsing==3.1.1
 pyproject-api==1.6.1
 pyproject_hooks==1.0.0
+PyQt5==5.15.10
+PyQt5-Qt5==5.15.2
+PyQt5-sip==12.13.0
 pyright==1.1.338
 pytest==7.4.2
 pytest-cov==4.1.0
@@ -130,6 +136,8 @@ pytest-mock==3.12.0
 python-dateutil==2.8.2
 python-dotenv==1.0.1
 pytz==2023.3.post1
+pywin32==306
+pywin32-ctypes==0.2.2
 PyYAML==6.0.1
 pyzmq==25.1.1
 questionary==2.0.1
@@ -143,6 +151,8 @@ rfc3986==2.0.0
 rich==13.5.3
 rich-click==1.7.3
 rpds-py==0.18.0
+ruamel.yaml==0.18.6
+ruamel.yaml.clib==0.2.8
 ruff==0.1.6
 ruff-lsp==0.0.45
 scipy==1.11.3
@@ -160,6 +170,7 @@ sphinxcontrib-jsmath==1.0.1
 sphinxcontrib-qthelp==1.0.6
 sphinxcontrib-serializinghtml==1.1.9
 sphinxcontrib-websupport==1.2.4
+SQLAlchemy==2.0.30
 stack-data==0.6.3
 statsmodels==0.14.0
 streamlit==1.34.0
@@ -185,6 +196,3 @@ wcwidth==0.2.8
 Werkzeug==3.0.1
 widgetsnbextension==4.0.9
 zipp==3.17.0
-
-SQLAlchemy~=2.0.30
-setuptools~=65.5.1
