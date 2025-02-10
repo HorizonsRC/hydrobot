@@ -8,6 +8,7 @@ LIM: "Site quality code capped: Site has a quality code cap, additive"
 # Measurement specific quality code reasons
 CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, additive"
 SYN: "Synethic: data is 300"
+UCK: "Unchecked: data is 200"
 
 # Check source codes
 HTP: "Site inspections, imported from hilltop"
