@@ -5,10 +5,12 @@ CHK: "Base quality code: Deviation of check from logger determined this quality 
 OOV: "Out of Validation: Quality code lowered due to long period between checks"
 GAP: "Missing data: No valid data for this time"
 LIM: "Site quality code capped: Site has a quality code cap, additive"
+SYN: "Synthetic: data is 300"
+UCK: "Unchecked: data is 200"
+INI: "Initial: used for start of frame"
 # Measurement specific quality code reasons
 CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, additive"
-SYN: "Synethic: data is 300"
-UCK: "Unchecked: data is 200"
+
 
 # Check source codes
 HTP: "Site inspections, imported from hilltop"

@@ -1,4 +1,5 @@
 """Script to run through a processing task for Rainfall."""
+import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
@@ -6,7 +7,7 @@ import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.rf_processor import RFProcessor
-from hydrobot.utils import series_rounder
+from hydrobot.utils import rainfall_six_minute_repacker, series_rounder
 
 #######################################################################################
 # Manual interventions
@@ -17,7 +18,7 @@ checks_to_manually_ignore = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = RFProcessor.from_config_yaml("rain_config.yaml")
+data, ann = RFProcessor.from_config_yaml("rain_config.yaml", set_from_date=True)
 
 #######################################################################################
 # Importing external check data
@@ -69,19 +70,36 @@ flask_points = pd.Series(
 )
 
 manual_additional_points = [dipstick_points, flask_points]
-manual_additional_points = pd.concat(
-    [i for i in manual_additional_points if not i.empty]
-)
-manual_additional_points = manual_additional_points.sort_index()
+manual_additional_points = [i for i in manual_additional_points if not i.empty]
+if manual_additional_points:
+    manual_additional_points = pd.concat(
+        [i for i in manual_additional_points if not i.empty]
+    )
+    manual_additional_points = manual_additional_points.sort_index()
+else:
+    manual_additional_points = pd.Series({})
 
-data.quality_encoder(
-    manual_additional_points=manual_additional_points,
-    synthetic_checks=synthetic_checks,
-)
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.check_data["Value"],
-)
+if data.check_data.empty:
+    data.ramped_standard = rainfall_six_minute_repacker(data.standard_data["Value"])
+    data.quality_data = pd.DataFrame(
+        index=[data.ramped_standard.index[0], data.ramped_standard.index[-1]],
+        data={
+            "Time": [data.ramped_standard.index[0], data.ramped_standard.index[-1]],
+            "Raw": [np.nan, np.nan],
+            "Value": [200, 0],
+            "Code": ["UCK", ""],
+            "Details": ["", ""],
+        },
+    )
+else:
+    data.quality_encoder(
+        manual_additional_points=manual_additional_points,
+        synthetic_checks=synthetic_checks,
+    )
+    data.standard_data["Value"] = trim_series(
+        data.standard_data["Value"],
+        data.check_data["Value"],
+    )
 
 #######################################################################################
 # Export all data to XML file
