@@ -30,10 +30,7 @@ def rainfall_site_survey(site: str):
     """
     # Horizons sheet location
     if platform.system() == "Windows":
-        survey_excel_sheet = (
-            r"\\ares\HydrologySoftware\Survey "
-            r"123\RainfallSiteSurvey20220510_Pull\RainfallSiteSurvey20220510.xlsx"
-        )
+        survey_excel_sheet = r"\\ares\HydrologySoftware\Survey 123\RainfallSiteSurvey20220510_Pull\Rainfall_Site_Survey_20220510.xlsx"
         hostname = "SQL3.horizons.govt.nz"
     elif platform.system() == "Linux":
         # Support for Nic's personal WSL setup! Not generic linux support! Sorry!
