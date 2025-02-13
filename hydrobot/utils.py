@@ -839,3 +839,12 @@ def find_last_time(
     return pd.Timestamp(
         get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
     )
+
+
+def safe_concat(input_frames):
+    """Version of pd.concat that doesn't raise errors for empty dataframes/series."""
+    non_empty_input = [i for i in input_frames if not i.empty]
+    if non_empty_input:
+        return pd.concat(non_empty_input)
+    else:
+        return pd.DataFrame(columns=input_frames[0].columns)

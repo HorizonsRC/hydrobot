@@ -4,10 +4,10 @@ import pandas as pd
 
 import hydrobot.config.horizons_source as source
 import hydrobot.measurement_specific_functions.rainfall as rf
+import hydrobot.utils as utils
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.rf_processor import RFProcessor
-from hydrobot.utils import rainfall_six_minute_repacker, series_rounder
 
 #######################################################################################
 # Manual interventions
@@ -25,7 +25,7 @@ data, ann = RFProcessor.from_config_yaml("rain_config.yaml", set_from_date=True)
 #######################################################################################
 data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
 # Any manual removals
-for false_check in series_rounder(
+for false_check in utils.series_rounder(
     pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
 ).index:
     data.check_data = data.check_data.drop(pd.Timestamp(false_check))
@@ -72,15 +72,15 @@ flask_points = pd.Series(
 manual_additional_points = [dipstick_points, flask_points]
 manual_additional_points = [i for i in manual_additional_points if not i.empty]
 if manual_additional_points:
-    manual_additional_points = pd.concat(
-        [i for i in manual_additional_points if not i.empty]
-    )
+    manual_additional_points = utils.safe_concat(manual_additional_points)
     manual_additional_points = manual_additional_points.sort_index()
 else:
     manual_additional_points = pd.Series({})
 
 if data.check_data.empty:
-    data.ramped_standard = rainfall_six_minute_repacker(data.standard_data["Value"])
+    data.ramped_standard = utils.rainfall_six_minute_repacker(
+        data.standard_data["Value"]
+    )
     data.quality_data = pd.DataFrame(
         index=[data.ramped_standard.index[0], data.ramped_standard.index[-1]],
         data={
@@ -114,18 +114,28 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
     file.write(str(fig.to_json()))
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
-
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>Standard Data</p>")
+    data.standard_data.to_html(file)
 with open("check_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>Check Data</p>")
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>Quality Data</p>")
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>Inspections</p>")
     rainfall_inspections.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
-    source.calibrations(
-        data.site, measurement_name=data.standard_measurement_name
+    file.write("<p>Calibrations</p>")
+    utils.safe_concat(
+        [
+            source.calibrations(data.site, measurement_name="SCADA Rainfall"),
+            source.calibrations(data.site, measurement_name="Rainfall"),
+        ]
     ).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    file.write("<p>Issues</p>")
     data.processing_issues.to_html(file)
 
 merger = HtmlMerger(

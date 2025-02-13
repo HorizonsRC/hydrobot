@@ -17,7 +17,7 @@ from pathlib import Path
 
 
 class HtmlMerger:
-    r"""Merges html files into a fingle file.
+    r"""Merges html files into a single file.
 
     For each file, will extract the content between the <html><body><head> ... <\\head><\\body><\\html> or
     <html><body> ... <\\body><\\html> and put all those contents between those same tags in a new file. Simple as
