@@ -194,3 +194,9 @@ History
 * Rainfall - Fixed manual additional points from dipstick-only inspections making later inspections qc400
 * Rainfall - Added site points dictionary to issues for user verification
 * Rainfall - Rainfall site survey wind now defaults to 1 point when missing (better represents the region)
+
+0.8.1 (2025-02-13)
+----------------------------------
+
+* Various QOL improvements for rainfall
+* Rainfall with no check data fixes
