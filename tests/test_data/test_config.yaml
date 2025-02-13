@@ -8,6 +8,7 @@ site: "Mid Stream at Cowtoilet Farm"
 standard_measurement_name: "General Nastiness"
 check_measurement_name: "General Nastiness"
 frequency: "15min"
+from_date: "2023-01-01 00:00"
 
 # Processing Configuration
 # from_date: "2023-04-13 11:30:00"
@@ -30,5 +31,3 @@ inspection_expiry:
         months: 2
     0:
         months: 4
-
-constant_check_shift: 0

@@ -65,7 +65,10 @@ def rainfall_site_survey(site: str):
     site_index = site_lookup.SiteID.iloc[0]
 
     # get inspections at site
-    site_surveys = site_survey_frame[site_survey_frame["Site Name"] == site_index]
+    site_surveys = site_survey_frame[
+        (site_survey_frame["Site Name"] == site_index)
+        | (site_survey_frame["New/un-official Site Name"] == site)
+    ]
 
     # Most recent filter
     """recent_survey = site_surveys[
@@ -100,6 +103,9 @@ def rainfall_nems_site_matrix(site):
             Keys are rows of NEMS matrix, values are the points contributed
     """
     all_site_surveys = rainfall_site_survey(site)
+    with pd.option_context("future.no_silent_downcasting", True):
+        all_site_surveys = all_site_surveys.ffill().bfill()
+
     survey_points_dict = {
         "matrix_sum": [],
         "three_point_sum": [],
@@ -108,7 +114,6 @@ def rainfall_nems_site_matrix(site):
     }
     survey_points_index = []
     for survey in all_site_surveys.index:
-        pass
         site_surveys = all_site_surveys[
             all_site_surveys["Arrival Time"] <= all_site_surveys["Arrival Time"][survey]
         ]
@@ -139,7 +144,7 @@ def rainfall_nems_site_matrix(site):
         output_dict["Average annual windspeed"] = (
             int(matrix_dict["Average annual windspeed"])
             if not np.isnan(matrix_dict["Average annual windspeed"])
-            else 3
+            else 1  # 1 as region is almost all in the 3-6m/s category
         )
         # Obstructed Horizon
         output_dict["Obstructed Horizon"] = (
@@ -157,7 +162,7 @@ def rainfall_nems_site_matrix(site):
             output_dict["Distance Between Gauges"] = 3  # including nan
         # Orifice Height - Primary Reference Gauge
         splash = (
-            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] > 2
+            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] < 2
         )
         height = matrix_dict[
             "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
@@ -438,14 +443,16 @@ def manual_tip_filter(
         return std_series, None
     else:
         # Count the actual amount of events, which may be grouped in a single second bucket
-        events = (inspection_data.fillna(0).copy() / mode).astype(int)
+        events = (inspection_data.astype(np.float64).fillna(0.0).copy() / mode).astype(
+            int
+        )
         while not events[events > 1].empty:
             events = pd.concat(
                 [events - 1, events[events > 1].apply(lambda x: 1)]
             ).sort_index()
         events = events.astype(np.float64)
         events[inspection_data > 0] = mode
-        events[inspection_data.fillna(0) <= 0] = 0
+        events[inspection_data.astype(int).fillna(0) <= 0] = 0
 
         if weather in ["Fine", "Overcast"] and np.abs(len(events) - manual_tips) <= 1:
             # Off by 1 is probably just a typo, delete it all
@@ -463,7 +470,7 @@ def manual_tip_filter(
                 "end_time": departure_time,
                 "code": "RMT",
                 "comment": comment,
-                "series_type": "Standard and Check",
+                "series_type": "standard,check",
                 "message_type": "warning",
             }
 

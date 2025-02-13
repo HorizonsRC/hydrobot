@@ -10,6 +10,7 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
+import hydrobot
 from hydrobot import (
     data_acquisition,
     data_sources,
@@ -70,9 +71,9 @@ class Processor:
         The measurement to be checked.
     _base_url : str
         The base URL of the Hilltop server.
-    _standard_hts : str
+    _standard_hts_filename : str
         The standard Hilltop service.
-    _check_hts : str
+    _check_hts_filename : str
         The Hilltop service to be checked.
     _frequency : str
         The frequency of the data.
@@ -120,12 +121,12 @@ class Processor:
         self,
         base_url: str,
         site: str,
-        standard_hts: str,
+        standard_hts_filename: str,
         standard_measurement_name: str,
         frequency: str | None,
         from_date: str | None = None,
         to_date: str | None = None,
-        check_hts: str | None = None,
+        check_hts_filename: str | None = None,
         check_measurement_name: str | None = None,
         defaults: dict | None = None,
         interval_dict: dict | None = None,
@@ -135,6 +136,9 @@ class Processor:
         archive_base_url: str | None = None,
         archive_standard_hts_filename: str | None = None,
         archive_check_hts_filename: str | None = None,
+        provisional_wq_filename: str | None = None,
+        archive_standard_measurement_name: str | None = None,
+        depth: float | None = None,
         **kwargs,
     ):
         """
@@ -146,9 +150,9 @@ class Processor:
             The base URL of the Hilltop server.
         site : str
             The site to be processed.
-        standard_hts : str
+        standard_hts_filename : str
             The standard Hilltop service.
-        standard_measurement : str
+        standard_measurement_name : str
             The standard measurement to be processed.
         frequency : str
             The frequency of the data.
@@ -156,9 +160,9 @@ class Processor:
             The start date of the data (default is None).
         to_date : str, optional
             The end date of the data (default is None).
-        check_hts : str, optional
+        check_hts_filename : str, optional
             The Hilltop service to be checked (default is None).
-        check_measurement : str, optional
+        check_measurement_name : str, optional
             The measurement to be checked (default is None).
         defaults : dict, optional
             The default settings (default is None).
@@ -166,9 +170,16 @@ class Processor:
             Determines how data with old checks is downgraded
         export_file_name : string, optional
             Where the data is exported to. Used as default when exporting without specified filename.
+        provisional_wq_filename : str, optional
+            Filename for provisional WQ data to be converted to check
+        archive_standard_measurement_name : str, optional
+            standard_measurement_name used in the archve file used to find last processed time and for final exported data
+        depth : numeric, optional
+            Depth of measurement used for
         kwargs : dict
             Additional keyword arguments.
         """
+        # Processing issues reporting setup
         self.processing_issues = pd.DataFrame(
             {
                 "start_time": [],
@@ -179,78 +190,112 @@ class Processor:
                 "message_type": [],
             }
         ).astype(str)
-        self._defaults = defaults
+        self.report_processing_issue(
+            comment=f"Hydrobot Version: {hydrobot.__version__}",
+            message_type="info",
+            start_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
+        )
+
+        # replacements
         if check_measurement_name is None:
             check_measurement_name = standard_measurement_name
-
-        standard_hilltop = Hilltop(base_url, standard_hts, **kwargs)
-        if check_hts is not None:
-            check_hilltop = Hilltop(base_url, check_hts, **kwargs)
-            if site in check_hilltop.available_sites:
-                self._site = site
-            else:
-                raise ValueError(
-                    f"Site '{site}' not found for both base_url and hts combos."
-                    f"Available sites in check_hts are: "
-                    f"{[s for s in check_hilltop.available_sites]}"
-                )
-        else:
-            check_hilltop = None
-        if site in standard_hilltop.available_sites:
-            self._site = site
-        else:
-            raise ValueError(
-                f"Site '{site}' not found for both base_url and hts combos."
-                f"Available sites in standard_hts are: "
-                f"{[s for s in standard_hilltop.available_sites]}"
+        if interval_dict is None:
+            interval_dict = {}
+        if archive_standard_measurement_name is None:
+            archive_standard_measurement_name = standard_measurement_name
+        if pd.isna(from_date):
+            from_date = utils.find_last_time(
+                archive_base_url,
+                archive_standard_hts_filename,
+                site,
+                archive_standard_measurement_name,
+            )
+            self.report_processing_issue(
+                comment=f"from_date inferred as: {str(from_date)}",
+                message_type="info",
+            )
+        if pd.isna(to_date):
+            to_date = pd.Timestamp.now().round("s")
+            self.report_processing_issue(
+                comment=f"to_date inferred as: {str(to_date)}",
+                message_type="info",
             )
 
-        # standard
-        available_standard_measurements = standard_hilltop.get_measurement_list(site)
+        # set input values
+        self._base_url = base_url
+        self._site = site
+        self._standard_hts_filename = standard_hts_filename
         self._standard_measurement_name = standard_measurement_name
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", standard_measurement_name)
-
-        if matches is not None:
-            self.standard_item_name = matches.groups()[0].strip(" ")
-            self.standard_data_source_name = matches.groups()[2]
-            if self.standard_data_source_name is None:
-                self.standard_data_source_name = self.standard_item_name
-        if standard_measurement_name not in list(
-            available_standard_measurements.MeasurementName
-        ):
-            pass
-            """
-                raise ValueError(
-                    f"Standard measurement name '{standard_measurement_name}' not found at"
-                    f" site '{site}'. "
-                    "Available measurements are "
-                    f"{list(available_standard_measurements.MeasurementName)}"
-                )
-            """
-
-        # check
+        self._frequency = frequency
+        self._from_date = from_date
+        self._to_date = to_date
+        self._check_hts_filename = check_hts_filename
         self._check_measurement_name = check_measurement_name
-        matches = re.search(r"([^\[\n]+)(\[(.+)\])?", check_measurement_name)
-        if check_hilltop is not None:
-            available_check_measurements = check_hilltop.get_measurement_list(site)
-            if self._check_measurement_name not in list(
-                available_check_measurements.MeasurementName
-            ):
-                raise ValueError(
-                    f"Check measurement name '{self._check_measurement_name}' "
-                    f"not found at site '{site}'. "
-                    "Available measurements are "
-                    f"{list(available_check_measurements.MeasurementName)}"
-                )
+        self._defaults = defaults
+        self._interval_dict = interval_dict
+        self.export_file_name = export_file_name
+        self.archive_base_url = archive_base_url
+        self.archive_standard_hts_filename = archive_standard_hts_filename
+        self.archive_check_hts_filename = archive_check_hts_filename
+        self.archive_standard_measurement_name = archive_standard_measurement_name
+        self.provisional_wq_filename = provisional_wq_filename
+        self.depth = depth
 
-        if matches is not None:
-            self.check_item_name = matches.groups()[0].strip(" ")
-            self.check_data_source_name = matches.groups()[2]
-            if self.check_data_source_name is None:
-                self.check_data_source_name = self.check_item_name
+        # Set other value initial values
+        self._standard_data = EMPTY_STANDARD_DATA.copy()
+        self._check_data = EMPTY_CHECK_DATA.copy()
+        self._quality_data = EMPTY_QUALITY_DATA.copy()
+
+        self.raw_standard_blob = None
+        self.raw_standard_xml = None
+        self.raw_quality_blob = None
+        self.raw_quality_xml = None
+        self.raw_check_blob = None
+        self.raw_check_xml = None
+
+        # standard hilltop
+        standard_hilltop = Hilltop(base_url, standard_hts_filename)
+        data_acquisition.enforce_site_in_hts(standard_hilltop, self.site)
+        self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
+
+        def measurement_datasource_splitter(measurement_name):
+            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", measurement_name)
+            item_name = matches.groups()[0].strip(" ")
+            data_source_name = matches.groups()[2]
+            if data_source_name is None:
+                data_source_name = item_name
+            return item_name, data_source_name
+
+        (
+            self.standard_item_name,
+            self.standard_data_source_name,
+        ) = measurement_datasource_splitter(standard_measurement_name)
+
+        (
+            self.archive_standard_item_name,
+            self.archive_standard_data_source_name,
+        ) = measurement_datasource_splitter(archive_standard_measurement_name)
+
+        # check hilltop
+        if check_hts_filename is not None:
+            check_hilltop = Hilltop(base_url, check_hts_filename)
+            data_acquisition.enforce_site_in_hts(check_hilltop, self.site)
+            self.enforce_measurement_at_site(check_measurement_name, check_hilltop)
+
+        (
+            self.check_item_name,
+            self.check_data_source_name,
+        ) = measurement_datasource_splitter(check_measurement_name)
 
         self.standard_item_info = {
             "item_name": self.standard_item_name,
+            "item_format": "F",
+            "divisor": 1,
+            "units": "",
+            "number_format": "###.##",
+        }
+        self.archive_standard_item_info = {
+            "item_name": self.archive_standard_item_name,
             "item_format": "F",
             "divisor": 1,
             "units": "",
@@ -275,47 +320,34 @@ class Processor:
             "interpolation": "Discrete",
             "item_format": "45",
         }
-        self._base_url = base_url
-        self._standard_hts = standard_hts
-        self._check_hts = check_hts
-        self._frequency = frequency
-        self._from_date = from_date
-        self._to_date = to_date
+
         self._quality_code_evaluator = data_sources.get_qc_evaluator(
             standard_measurement_name
         )
-        self.export_file_name = export_file_name
-        if constant_check_shift is not None:
-            self._quality_code_evaluator.constant_check_shift = constant_check_shift
-
-        if interval_dict is None:
-            self._interval_dict = {}
-        else:
-            self._interval_dict = interval_dict
-
-        self._standard_data = EMPTY_STANDARD_DATA.copy()
-        self._check_data = EMPTY_CHECK_DATA.copy()
-        self._quality_data = EMPTY_QUALITY_DATA.copy()
-
-        self.raw_standard_blob = None
-        self.raw_standard_xml = None
-        self.raw_quality_blob = None
-        self.raw_quality_xml = None
-        self.raw_check_blob = None
-        self.raw_check_xml = None
-
-        get_check = self._check_hts is not None
+        self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         # Load data for the first time
+        get_check = self.check_hts_filename is not None
         self.import_data(
             from_date=self.from_date,
             to_date=self.to_date,
             check=get_check,
             quality=fetch_quality,
         )
-        self.archive_base_url = archive_base_url
-        self.archive_standard_hts_filename = archive_standard_hts_filename
-        self.archive_check_hts_filename = archive_check_hts_filename
+
+    def enforce_measurement_at_site(self, measurement_name, hilltop):
+        """Unimplemented test that measurement is in a given hilltop."""
+        pass
+        """
+        available_measurements = hilltop.get_measurement_list(self.site)
+        if measurement_name not in list(available_measurements.MeasurementName):
+            raise ValueError(
+                f"Measurement name '{measurement_name}' not found at"
+                f" site '{self.site}'. "
+                "Available measurements are "
+                f"{list(available_measurements.MeasurementName)}"
+            )
+        """
 
     @classmethod
     def from_processing_parameters_dict(
@@ -350,38 +382,10 @@ class Processor:
         ###################################################################################
         # Creating a Hydrobot Processor object which contains the data to be processed
         ###################################################################################
-        now = datetime.now()
-        return (
-            cls(
-                processing_parameters["base_url"],
-                processing_parameters["site"],
-                processing_parameters["standard_hts_filename"],
-                processing_parameters["standard_measurement_name"],
-                processing_parameters.get("frequency", None),
-                processing_parameters.get("from_date", None),
-                processing_parameters.get("to_date", now.strftime("%Y-%m-%d %H:%M")),
-                processing_parameters.get("check_hts_filename", None),
-                processing_parameters.get("check_measurement_name", None),
-                processing_parameters["defaults"],
-                processing_parameters.get("inspection_expiry", None),
-                constant_check_shift=processing_parameters.get(
-                    "constant_check_shift", 0
-                ),
-                fetch_quality=fetch_quality,
-                export_file_name=processing_parameters.get("export_file_name", None),
-                archive_base_url=processing_parameters.get("archive_base_url", None),
-                archive_standard_hts_filename=processing_parameters.get(
-                    "archive_standard_hts_filename", None
-                ),
-                archive_check_hts_filename=processing_parameters.get(
-                    "archive_check_hts_filename", None
-                ),
-            ),
-            ann,
-        )
+        return cls(**processing_parameters, fetch_quality=fetch_quality), ann
 
     @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False):
+    def from_config_yaml(cls, config_path, fetch_quality=False, set_from_date=False):
         """
         Initialises a Processor class given a config file.
 
@@ -391,12 +395,54 @@ class Processor:
             Path to config.yaml.
         fetch_quality : bool, optional
             Whether to fetch any existing quality data, default false
+        set_from_date : bool, optional
+            If true, from_date in the config yaml is overwritten by the last date on the archive
+            Requires "archive_base_url" and "archive_standard_hts_filename" in the yaml, in addition to "site" and
+            "standard_measurement_name"
 
         Returns
         -------
         Processor, Annalist
         """
         processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+        if set_from_date:
+            utils.set_config_from_date(
+                config_file=config_path,
+                base_url=processing_parameters["archive_base_url"],
+                hts_filename=processing_parameters["archive_standard_hts_filename"],
+                site=processing_parameters["site"],
+                measurement=processing_parameters["standard_measurement_name"],
+            )
+            # refresh the parameters
+            processing_parameters = data_acquisition.config_yaml_import(config_path)
+
+        if "to_date" not in processing_parameters:
+            processing_parameters["to_date"] = datetime.now().strftime(
+                "%d-%m-%Y %H:%M:%S"
+            )
+        keys_to_be_set_to_none_if_missing = [
+            "frequency",
+            "from_date",
+            "check_hts_filename",
+            "check_measurement_name",
+            "inspection_expiry",
+            "export_file_name",
+            "archive_base_url",
+            "archive_standard_hts_filename",
+            "archive_check_hts_filename",
+        ]
+        for k in keys_to_be_set_to_none_if_missing:
+            if k not in processing_parameters:
+                processing_parameters[k] = None
+
+        def isvalid(potential_nan):
+            return potential_nan is None or np.isnan(potential_nan)
+
+        if (not isinstance(processing_parameters["frequency"], str)) and isvalid(
+            processing_parameters["frequency"]
+        ):
+            processing_parameters["frequency"] = None
 
         return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 
@@ -431,14 +477,14 @@ class Processor:
         return self._base_url
 
     @property
-    def standard_hts(self):  # type: ignore
+    def standard_hts_filename(self):  # type: ignore
         """str: The standard Hilltop service."""
-        return self._standard_hts
+        return self._standard_hts_filename
 
     @property
-    def check_hts(self):  # type: ignore
+    def check_hts_filename(self):  # type: ignore
         """str: The Hilltop service to be checked."""
-        return self._check_hts
+        return self._check_hts_filename
 
     @property
     def quality_code_evaluator(self):  # type: ignore
@@ -488,7 +534,7 @@ class Processor:
     @ClassLogger
     def import_standard(
         self,
-        standard_hts: str | None = None,
+        standard_hts_filename: str | None = None,
         site: str | None = None,
         standard_measurement_name: str | None = None,
         standard_data_source_name: str | None = None,
@@ -505,7 +551,7 @@ class Processor:
 
         Parameters
         ----------
-        standard_hts : str or None, optional
+        standard_hts_filename : str or None, optional
             The standard Hilltop service. If None, defaults to the standard HTS.
         site : str or None, optional
             The site to be processed. If None, defaults to the site on the processor object.
@@ -567,8 +613,8 @@ class Processor:
         ...     from_date='2022-01-01', to_date='2022-01-10'
         ... )
         """
-        if standard_hts is None:
-            standard_hts = self._standard_hts
+        if standard_hts_filename is None:
+            standard_hts_filename = self._standard_hts_filename
         if site is None:
             site = self._site
         if standard_measurement_name is None:
@@ -590,7 +636,7 @@ class Processor:
 
         xml_tree, blob_list = data_acquisition.get_data(
             base_url,
-            standard_hts,
+            standard_hts_filename,
             site,
             standard_measurement_name,
             from_date,
@@ -679,6 +725,12 @@ class Processor:
                         raw_standard_data = raw_standard_data.asfreq(
                             frequency, fill_value=np.nan
                         )
+                        self.report_processing_issue(
+                            code="IRR",
+                            comment=f"frequency inferred as {frequency}",
+                            message_type="info",
+                        )
+                        self._frequency = frequency
                     else:
                         # infer_frequency is explicitly set to false and frequency is None
                         # Assuming irregular data
@@ -733,7 +785,7 @@ class Processor:
     @ClassLogger
     def import_quality(
         self,
-        standard_hts: str | None = None,
+        standard_hts_filename: str | None = None,
         site: str | None = None,
         standard_measurement_name: str | None = None,
         standard_data_source_name: str | None = None,
@@ -777,8 +829,8 @@ class Processor:
         ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
         ... )
         """
-        if standard_hts is None:
-            standard_hts = self._standard_hts
+        if standard_hts_filename is None:
+            standard_hts_filename = self._standard_hts_filename
         if site is None:
             site = self.site
         if standard_measurement_name is None:
@@ -796,7 +848,7 @@ class Processor:
 
         xml_tree, blob_list = data_acquisition.get_data(
             base_url,
-            standard_hts,
+            standard_hts_filename,
             site,
             standard_measurement_name,
             from_date,
@@ -876,7 +928,7 @@ class Processor:
     @ClassLogger
     def import_check(
         self,
-        check_hts: str | None = None,
+        check_hts_filename: str | None = None,
         site: str | None = None,
         check_measurement_name: str | None = None,
         check_data_source_name: str | None = None,
@@ -892,7 +944,7 @@ class Processor:
 
         Parameters
         ----------
-        check_hts : str or None, optional
+        check_hts_filename : str or None, optional
             Where to get check data from
         site : str or None, optional
             Which site to get data from
@@ -938,8 +990,8 @@ class Processor:
         ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
         ... )
         """
-        if check_hts is None:
-            check_hts = self._check_hts
+        if check_hts_filename is None:
+            check_hts_filename = self.check_hts_filename
         if site is None:
             site = self._site
         if check_measurement_name is None:
@@ -961,7 +1013,7 @@ class Processor:
 
         xml_tree, blob_list = data_acquisition.get_data(
             base_url,
-            check_hts,
+            check_hts_filename,
             site,
             check_measurement_name,
             from_date,
@@ -986,9 +1038,10 @@ class Processor:
             data_source_options = []
             for blob in blob_list:
                 data_source_options += [blob.data_source.name]
-                if (blob.data_source.name == check_data_source_name) and (
-                    blob.data_source.ts_type == "CheckSeries"
-                ):
+                if (
+                    blob.data_source.name
+                    in [check_data_source_name, self.standard_data_source_name]
+                ) and (blob.data_source.ts_type == "CheckSeries"):
                     # Found it. Now we extract it.
                     blob_found = True
 
@@ -1115,7 +1168,7 @@ class Processor:
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_standard(
-                standard_hts=self.standard_hts,
+                standard_hts_filename=self.standard_hts_filename,
                 site=self.site,
                 standard_measurement_name=self._standard_measurement_name,
                 standard_data_source_name=self.standard_data_source_name,
@@ -1132,7 +1185,7 @@ class Processor:
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_quality(
-                standard_hts=self._standard_hts,
+                standard_hts_filename=self.standard_hts_filename,
                 site=self._site,
                 standard_measurement_name=self._standard_measurement_name,
                 standard_data_source_name=self.standard_data_source_name,
@@ -1147,7 +1200,7 @@ class Processor:
                 self.raw_standard_xml,
                 self.raw_standard_blob,
             ) = self.import_check(
-                check_hts=self._check_hts,
+                check_hts_filename=self.check_hts_filename,
                 site=self._site,
                 check_measurement_name=self._check_measurement_name,
                 check_data_source_name=self.check_data_source_name,
@@ -1775,7 +1828,7 @@ class Processor:
         trimmed=True,
     ):
         """
-        Export data to CSV file.
+        Export data to file.
 
         Parameters
         ----------
@@ -1959,8 +2012,8 @@ class Processor:
         plotly.graph_objects.Figure
             The figure with the processing overview chart.
         """
-        tag_list = ["HTP", "INS", "SOE"]
-        check_names = ["Check data", "Inspections", "SOE checks"]
+        tag_list = ["HTP", "INS", "SOE", "DPF"]
+        check_names = ["Check data", "Inspections", "SOE checks", "Depth profile"]
 
         fig = plotter.plot_processing_overview_chart(
             self.standard_data,
@@ -2007,8 +2060,8 @@ class Processor:
         if standard:
             data_blob_list += [
                 data_structure.standard_to_xml_structure(
-                    self.standard_item_info,
-                    self.standard_data_source_name,
+                    self.archive_standard_item_info,
+                    self.archive_standard_data_source_name,
                     self.standard_data_source_info,
                     self.standard_data["Value"],
                     self.site,
@@ -2053,7 +2106,7 @@ class Processor:
         if quality:
             data_blob_list += [
                 data_structure.quality_to_xml_structure(
-                    data_source_name=self.standard_data_source_name,
+                    data_source_name=self.archive_standard_data_source_name,
                     quality_series=self.quality_data["Value"],
                     site=self.site,
                 )
@@ -2093,10 +2146,83 @@ class Processor:
         self.processing_issues = pd.concat(
             [
                 pd.DataFrame(
-                    [[start_time, end_time, code, comment, series_type, message_type]],
+                    [
+                        [
+                            start_time,
+                            end_time,
+                            code,
+                            comment,
+                            series_type,
+                            message_type,
+                        ]
+                    ],
                     columns=self.processing_issues.columns,
+                    dtype=object,
                 ),
                 self.processing_issues,
             ],
             ignore_index=True,
         )
+
+    def get_measurement_dataframe(self, measurement, hts_type):
+        """Get a dataframe of a given measurement for other processor parameters."""
+        if hts_type == "standard":
+            hts = self._standard_hts_filename
+        elif hts_type == "check":
+            hts = self._check_hts_filename
+        else:
+            raise ValueError(f"Invalid hts_type {hts_type}")
+
+        try:
+            frame = data_acquisition.get_server_dataframe(
+                self._base_url,
+                hts,
+                self.site,
+                measurement,
+                self.from_date,
+                self.to_date,
+            )
+        except KeyError:
+            frame = pd.DataFrame(
+                columns=[
+                    "Time",
+                    "Raw",
+                    "Value",
+                    "Changes",
+                    "Comment",
+                    "Source",
+                    "QC",
+                ]
+            )
+        return frame
+
+    def interpolate_depth_profiles(self, depth):
+        """Looks up depth profile and find interpolates for given depth."""
+        profiles = data_acquisition.get_depth_profiles(
+            self._base_url,
+            "HydrobotCheckData.hts",
+            self.site,
+            "Water Temperature (Depth Profile)",
+            self.from_date,
+            self.to_date,
+        )
+
+        interpolated_data = {}
+        for sample in profiles:
+            series = profiles[sample]
+            lower_index = series.index[series.index <= depth].max()
+            higher_index = series.index[series.index >= depth].min()
+            if not pd.isna(lower_index):
+                if pd.isna(higher_index):
+                    weighted_average = series[lower_index]
+                elif lower_index == higher_index:
+                    weighted_average = (
+                        series[lower_index] + series[higher_index]
+                    ) / 2.0
+                else:
+                    weighted_average = (
+                        series[lower_index] * (depth - lower_index)
+                        + series[higher_index] * (higher_index - depth)
+                    ) / (higher_index - lower_index)
+                interpolated_data[sample] = weighted_average
+        return pd.Series(interpolated_data)

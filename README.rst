@@ -49,7 +49,7 @@ some external tools are still required to do a full processing. Importantly,
 the hybrid workflow relies on some R scripts to obtain check data from sources
 other than Hilltop. Further processing using Hilltop manager is also supported.
 
-NOTE: Hydrobot 0.7.8 does not support all NEMs data sources currently,
+NOTE: Hydrobot 0.8.0 does not support all NEMs data sources currently,
 but more measurements will be supported in patches as the processing
 progresses.
 
@@ -60,17 +60,17 @@ Initial Setup (Repeat for each release)
 
 #. In your favourite shell (if you don't know what that is, use powershell -
    it's already installed on windows), create a new virtual environment using
-   this python interpreter and name it "hydrobot0.7.8". It's important that
+   this python interpreter and name it "hydrobot0.8.0". It's important that
    this is stored somewhere locally. For example, it could be stored in a
    "Hydrobot" folder in the C: drive, which would need the command::
 
-    python -m venv C:/Hydrobot/hydrobot0.7.8/
-    cd C:/Hydrobot/hydrobot0.7.8/
+    python -m venv C:/Hydrobot/hydrobot0.8.0/
+    cd C:/Hydrobot/hydrobot0.8.0/
 
 #. Activate this virtual environment. In powershell this should be something
    like::
 
-    C:/Hydrobot/hydrobot0.7.8/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.8.0/Scripts/Activate.ps1
 
 #. With your venv active, install the latest version of Hydrobot using pip::
 
@@ -83,8 +83,9 @@ Initial Setup (Repeat for each release)
     pip freeze > dependencies.txt
 
 
-Processing Steps
-^^^^^^^^^^^^^^^^
+Manual Processing Steps
+^^^^^^^^^^^^^^^^^^^^^^^
+For processing one particular site:
 
 #. Open Logsheet Loader. Fill it as normal, and note the start date of your
    processing period (i.e. end date of the previous period).
@@ -112,7 +113,7 @@ Processing Steps
    instructions) and activate it. To activate, in your shell type the location
    of the "Activate.ps1" script in the venv/Scripts folder, e.g.::
 
-    C:/Hydrobot/hydrobot0.7.8/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.8.0/Scripts/Activate.ps1
 
    You can ensure it is active by typing `gcm python` and confirm that your
    python interpreter (under "Source") is running from your venv folder.
@@ -148,6 +149,21 @@ Processing Steps
    copy into the hts batch file.
 
 #. Copy to provisional automation when complete.
+
+Batch Processing Steps
+^^^^^^^^^^^^^^^^^^^^^^
+For processing many sites at once
+
+#. For each measurement you are processing, copy the script and yaml into a
+   directory named after the measurement
+
+#. Fill in the batch_config.csv with the sites that are to be processed
+   (to_date and frequency can be ommitted, which will be inferred)
+
+#. Run the batch_copy.py script
+
+#. Run the batch_runner.bat
+
 
 Credits
 -------

@@ -642,9 +642,7 @@ def test_failed_requests(tmp_path):
                 processing_parameters["check_measurement_name"],
                 processing_parameters["defaults"],
             )
-        assert "Site 'Notarealsite' not found for both base_url and hts combos." in str(
-            excinfo.value
-        )
+        assert "Site 'Notarealsite' not found in hilltop file." in str(excinfo.value)
 
         """
         with pytest.raises(ValueError, match=r"Standard measurement name.*") as excinfo:
@@ -727,8 +725,8 @@ def test_failed_requests(tmp_path):
 
         with pytest.raises(
             ValueError,
-            match=r"Check measurement name 'Notarealmeasurement' not found ",
-        ) as excinfo:
+            match="No Data Source for Notarealmeasurement at this site.",
+        ):
             _ = Processor(
                 processing_parameters["base_url"],
                 processing_parameters["site"],
@@ -742,7 +740,3 @@ def test_failed_requests(tmp_path):
                 "Notarealmeasurement",
                 processing_parameters["defaults"],
             )
-        print(excinfo)
-        assert "Check measurement name 'Notarealmeasurement' not found at site " in str(
-            excinfo.value
-        )

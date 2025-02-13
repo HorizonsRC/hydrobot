@@ -1,0 +1,39 @@
+# Fields to fill out
+analyst_name: "script_default"
+site: "Air Quality at Taihape"
+from_date: "2024-03-07 11:45"
+to_date: "2024-07-01 11:00"
+
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+standard_hts_filename: "RawLoggerNet.hts"
+# check_hts_filename: "HydrobotCheckData.hts"
+
+# Data Source Configuration
+standard_measurement_name: "Air Temperature (1.5m)"
+# check_measurement_name: "Air Temperature"
+frequency: "10min"
+
+# Export configuration
+export_file_name: "processed_at.xml"
+
+# Processing Configuration
+defaults:
+  delta: 5
+  gap_limit: 12
+  high_clip: 100
+  low_clip: 0
+  max_qc: 200
+  span: 10
+
+# Annalist Configuration
+logfile: "hydrobot_logs.csv"
+format:
+  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+  stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
+
+inspection_expiry:
+    500:
+        months: 2
+    0:
+        months: 4

@@ -1,0 +1,46 @@
+# Fields to fill out
+analyst_name: "test_name"
+site: "Arawhata Drain at Dairy Track Bridge"
+depth: 2.
+
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+standard_hts_filename: "RawLoggerNet.hts"
+check_hts_filename: "HydrobotCheckData.hts"
+
+# Data Source Configuration
+standard_measurement_name: "Water Temperature (-2000 mm)"
+check_measurement_name: "Water Temperature Check (-2000 mm) [Water Temperature (-2000 mm)]"
+archive_standard_measurement_name: "Water Temperature (-2000 mm)"
+
+# Export configuration
+export_file_name: "processed_wt.xml"
+
+# Processing Configuration
+defaults:
+  delta: 5
+  gap_limit: 12
+  high_clip: 35
+  low_clip: 0
+  max_qc: 600
+  span: 10
+
+# Annalist Configuration
+logfile: "hydrobot_logs.csv"
+format:
+  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+  stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
+
+inspection_expiry:
+    500:
+        months: 2
+    0:
+        months: 4
+
+archive_base_url: "http://hilltopdev.horizons.govt.nz/"
+archive_standard_hts_filename: "Archive.hts"
+archive_check_hts_filename: "Archive.hts"
+
+frequency:
+from_date:
+to_date:

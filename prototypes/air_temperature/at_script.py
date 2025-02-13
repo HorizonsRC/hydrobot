@@ -51,14 +51,18 @@ with open("check_table.html", "w", encoding="utf-8") as file:
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    data.processing_issues.to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
+        "potential_processing_issues.html",
     ],
     encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
 merger.merge()

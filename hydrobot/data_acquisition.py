@@ -1,10 +1,9 @@
 """Main module."""
 
-from xml.etree import ElementTree
-
 import pandas as pd
 import yaml
 from annalist.annalist import Annalist
+from hilltoppy import Hilltop
 from hilltoppy.utils import build_url, get_hilltop_xml
 
 from hydrobot.data_structure import parse_xml
@@ -112,7 +111,7 @@ def get_time_range(
     return hilltop_xml, data_object
 
 
-def get_series(
+def get_server_dataframe(
     base_url,
     hts,
     site,
@@ -120,8 +119,9 @@ def get_series(
     from_date,
     to_date,
     tstype="Standard",
-) -> tuple[ElementTree.Element, pd.DataFrame]:
-    """Pack data from get_data as a pd.Series.
+) -> pd.DataFrame:
+    """
+    Call hilltop server and transform to pd.DataFrame.
 
     Parameters
     ----------
@@ -145,36 +145,141 @@ def get_series(
 
     Returns
     -------
-    pandas.Series or pandas.DataFrame
-        A pd.Series containing the acquired time series data.
+    pandas.DataFrame
+        A dataframe containing the acquired time series data.
+
+    Raises
+    ------
+    KeyError
+        if there is no measurement for the given parameters
     """
-    xml, data_object = get_data(
+    url = build_url(
         base_url,
         hts,
-        site,
-        measurement,
-        from_date,
-        to_date,
-        tstype,
+        "GetData",
+        site=site,
+        measurement=measurement,
+        from_date=from_date,
+        to_date=to_date,
+        tstype=tstype,
     )
-    if data_object is not None:
-        data = data_object[0].data.timeseries
-        if not data.empty:
-            mowsecs_offset = 946771200
-            if data_object[0].data.date_format == "mowsecs":
-                timestamps = data.index.map(
-                    lambda x: pd.Timestamp(int(x) - mowsecs_offset, unit="s")
+
+    root = get_hilltop_xml(url)
+    data_list = []
+    if root.find("Measurement") is None:
+        raise KeyError(f"No measurement at the url: {url}")
+
+    for child in root.find("Measurement").find("Data"):
+        if child.tag == "E":
+            data_dict = {}
+            for element in child:
+                if element.tag == "Parameter":
+                    data_dict[element.attrib["Name"]] = element.attrib["Value"]
+
+                else:
+                    data_dict[element.tag] = element.text
+
+            data_list += [data_dict]
+        elif child.tag == "V":
+            if child.text is not None:
+                timestamp, data_val = child.text.split(" ")
+                data_dict = {
+                    "T": timestamp,
+                    "V": data_val,
+                }
+                data_list += [data_dict]
+        elif child.tag == "Gap":
+            pass
+        else:
+            raise ValueError(
+                "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
+            )
+
+    timeseries = pd.DataFrame(data_list).set_index("T")
+    return timeseries
+
+
+def get_depth_profiles(
+    base_url,
+    hts,
+    site,
+    measurement,
+    from_date,
+    to_date,
+    tstype="Standard",
+) -> [pd.Series]:
+    """
+    Call hilltop server for depth profiles.
+
+    Parameters
+    ----------
+    base_url : str
+        The base URL of the web service.
+    hts : str
+        The Hilltop Time Series (HTS) identifier.
+    site : str
+        The site name or location.
+    measurement : str
+        The type of measurement to retrieve.
+    from_date : str
+        The start date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
+    to_date : str
+        The end date and time for data retrieval
+        in the format 'YYYY-MM-DD HH:mm'.
+    tstype : str
+        Type of data that is sought
+        (default 'Standard', can be Standard, Check, or Quality)
+
+    Returns
+    -------
+    [pandas.Series]
+        A list of pandas series each giving a depth profile.
+
+    Raises
+    ------
+    KeyError
+        if there is no measurement for the given parameters
+    """
+    url = build_url(
+        base_url,
+        hts,
+        "GetData",
+        site=site,
+        measurement=measurement,
+        from_date=from_date,
+        to_date=to_date,
+        tstype=tstype,
+    )
+
+    root = get_hilltop_xml(url)
+    if root.find("Section") is None:
+        raise KeyError(f"No depth profiles at the url: {url}")
+
+    depth_profiles = {}
+    for child in root:
+        if child.tag == "Section":
+            data_dict = {}
+            for element in child.find("Data"):
+                data_dict[float(element.find("O").text)] = float(
+                    element.find("I1").text
                 )
-                data.index = pd.to_datetime(timestamps)
-            else:
-                data.index = pd.to_datetime(data.index)
-    else:
-        data = pd.DataFrame({})
-    return xml, data
+
+            depth_profiles[pd.Timestamp(child.find("SurveyTime").text)] = pd.Series(
+                data_dict
+            )
+
+    return depth_profiles
 
 
-def import_inspections(filename, check_col, logger_col, source="INS", use_for_qc=True):
-    """Import inspections as generated by R script."""
+def import_inspections(
+    filename, check_col="Value", logger_col="Logger", source="INS", use_for_qc=True
+):
+    """
+    Import inspections as generated by R script.
+
+    DEPRECATED
+    """
     try:
         insp_df = pd.read_csv(filename)
         if not insp_df.empty:
@@ -195,8 +300,14 @@ def import_inspections(filename, check_col, logger_col, source="INS", use_for_qc
     return insp_df
 
 
-def import_prov_wq(filename, check_col, logger_col, source="SOE", use_for_qc=False):
-    """Import prov_wq checks as obtained by R script."""
+def import_prov_wq(
+    filename, check_col="Value", logger_col="Logger", source="SOE", use_for_qc=False
+):
+    """
+    Import prov_wq checks as obtained by R script.
+
+    DEPRECATED
+    """
     try:
         prov_df = pd.read_csv(filename)
         if not prov_df.empty:
@@ -218,7 +329,11 @@ def import_prov_wq(filename, check_col, logger_col, source="SOE", use_for_qc=Fal
 
 
 def import_ncr(filename):
-    """Import non conformance data as obtained by R script."""
+    """
+    Import non conformance data as obtained by R script.
+
+    DEPRECATED
+    """
     try:
         ncr_df = pd.read_csv(filename)
         if not ncr_df.empty:
@@ -229,9 +344,9 @@ def import_ncr(filename):
                 axis=1,
             )
         else:
-            ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+            ncr_df = pd.DataFrame({"Time": [], "Value": [], "Comment": []})
     except FileNotFoundError:
-        ncr_df = pd.DataFrame({"Time": [], "Temp Check": [], "Comment": []})
+        ncr_df = pd.DataFrame({"Time": [], "Value": [], "Comment": []})
     return ncr_df
 
 
@@ -260,3 +375,13 @@ def config_yaml_import(file_name: str):
         processing_parameters["inspection_expiry"] = d
 
     return processing_parameters
+
+
+def enforce_site_in_hts(hts: Hilltop, site: str):
+    """Raise exception if site not in Hilltop file."""
+    if site not in hts.available_sites:
+        raise ValueError(
+            f"Site '{site}' not found in hilltop file."
+            f"Available sites in {hts} are: "
+            f"{[s for s in hts.available_sites]}"
+        )

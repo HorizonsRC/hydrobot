@@ -1,8 +1,6 @@
 # Fields to fill out
-analyst_name: "CraigB"
+analyst_name: "test_name"
 site: "Arawhata Drain at Dairy Track Bridge"
-from_date: "2024-03-07 11:45"
-# to_date: "2024-07-01 11:00"
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
@@ -12,7 +10,6 @@ check_hts_filename: "HydrobotCheckData.hts"
 # Data Source Configuration
 standard_measurement_name: "Water Temperature [Dissolved Oxygen sensor]"
 check_measurement_name: "Water Temperature Check [Water Temperature]"
-frequency: "15min"
 
 # Export configuration
 export_file_name: "processed_wt.xml"
@@ -32,17 +29,18 @@ format:
   file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
   stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
 
-# Survey123 SQL Configuration
-s123_sql_server: "DBSurvey123Live.horizons.govt.nz"
-s123_database: "survey123"
-s123_query_type: "WaterTemp"
-# s123_sql_driver: "SQL Server" # If on Windows
-s123_sql_driver: "/opt/microsoft/msodbcsql17/lib64/libmsodbcsql-17.10.so.5.1" # If on WSL
-
 inspection_expiry:
     500:
         months: 2
     0:
         months: 4
 
-constant_check_shift: 0
+archive_base_url: "http://hilltopdev.horizons.govt.nz/"
+archive_standard_hts_filename: "Archive.hts"
+archive_check_hts_filename: "Archive.hts"
+archive_standard_measurement_name: "Water Temperature [Water Temperature]"
+
+# Optional settings
+frequency:
+from_date:
+to_date:

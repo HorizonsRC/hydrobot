@@ -6,11 +6,14 @@ import shutil
 import pandas as pd
 import ruamel.yaml
 
+import hydrobot.config.horizons_source as source
+
 # file locations
 template_base = ".\\template\\"
 destination_base = ".\\output_dump\\"
 site_config = pd.read_csv("batch_config.csv")
 annalist = "analyst_name"
+batch_no = "400"
 dsn_name = "batch_dsn.dsn"
 batch_name = "batch_runner.bat"
 
@@ -19,8 +22,9 @@ dsn_file_list = []
 
 # for each site
 for site_index in site_config.index:
+    site_code = source.find_three_letter_code(site_config.loc[site_index].site_name)
     # find base files
-    files_to_copy = [
+    base_files_to_copy = [
         os.path.join(template_base, f)
         for f in os.listdir(template_base)
         if os.path.isfile(os.path.join(template_base, f))
@@ -28,7 +32,7 @@ for site_index in site_config.index:
     # for each measurement at the site
     for measurement in site_config.loc[site_index].list_of_measurements.split(";"):
         # find measurement specific files
-        files_to_copy += [
+        files_to_copy = base_files_to_copy + [
             os.path.join(template_base, measurement, f)
             for f in os.listdir(os.path.join(template_base, measurement))
             if os.path.isfile(os.path.join(template_base, measurement, f))
@@ -38,7 +42,7 @@ for site_index in site_config.index:
             destination_base,
             measurement,
             site_config.loc[site_index].site_name,
-            str(site_config.loc[site_index].batch_no),
+            batch_no,
         )
         # make sure it exists
         os.makedirs(site_destination, exist_ok=True)
@@ -53,13 +57,7 @@ for site_index in site_config.index:
             if ext in [".hts", ".accdb"]:
                 # rename files
                 path, file_suffix = os.path.split(file)
-                new_file_name = (
-                    str(site_config.loc[site_index].batch_no)
-                    + "_"
-                    + str(site_config.loc[site_index].site_code)
-                    + "_"
-                    + file_suffix
-                )
+                new_file_name = "_".join([batch_no, site_code, file_suffix])
                 os.rename(file, os.path.join(path, new_file_name))
 
             if ext in [".yaml"]:
@@ -73,13 +71,20 @@ for site_index in site_config.index:
                     data["to_date"] = site_config.loc[site_index].to_date
                     data["frequency"] = site_config.loc[site_index].frequency
                     data["analyst_name"] = annalist
-                    data["standard_measurement_name"] = measurement
                     dsn_file_list.append(
                         os.path.join(site_destination, data["export_file_name"])
                     )
 
                 with open(file, "w") as fp:
-                    yaml.dump(data, fp)
+                    yaml.dump(
+                        {
+                            key: (value if not pd.isna(value) else None)
+                            for key, value in zip(
+                                data.keys(), data.values(), strict=True
+                            )
+                        },
+                        fp,
+                    )
 
             if ext in [".py"]:
                 # prep for running
@@ -96,13 +101,33 @@ def remove_prefix_dots(string):
         return string
 
 
-def make_dsn(file_list, file_path):
+def make_dsn(file_list, file_path, sub_dsn_number=0):
     """Makes the hilltop dsn."""
-    with open(file_path, "w") as dsn:
-        dsn.write("[Hilltop]\n")
-        dsn.write("Style=Merge\n")
-        for index, file_name in enumerate(file_list):
-            dsn.write(f'File{index + 1}="{os.path.abspath(file_name)}"\n')
+    if sub_dsn_number == 0:
+        dsn_name = file_path
+    else:
+        dsn_name = file_path.split("\\")
+        dsn_name[-1] = f"sub{sub_dsn_number}_{dsn_name[-1]}"
+        dsn_name = "\\".join(dsn_name)
+    if len(file_list) <= 20:  # hilltop dsn max files is 20
+        with open(dsn_name, "w") as dsn:
+            dsn.write("[Hilltop]\n")
+            dsn.write("Style=Merge\n")
+            for index, file_name in enumerate(file_list):
+                dsn.write(f'File{index + 1}="{os.path.abspath(file_name)}"\n')
+    else:  # chaining dsns together
+        sub_dsn_number += 1
+        with open(dsn_name, "w") as dsn:
+            dsn.write("[Hilltop]\n")
+            dsn.write("Style=Merge\n")
+            for index, file_name in enumerate(file_list[:19]):
+                dsn.write(f'File{index + 1}="{os.path.abspath(file_name)}"\n')
+            next_file = file_path.split("\\")
+            next_file[-1] = f"sub{sub_dsn_number}_{next_file[-1]}"
+            next_file = "\\".join(next_file)
+            next_file = os.path.abspath(next_file)
+            dsn.write(f'File20="{next_file}"\n')
+        make_dsn(file_list[19:], file_path, sub_dsn_number)
 
 
 def make_batch(file_list, file_path):
@@ -114,17 +139,13 @@ def make_batch(file_list, file_path):
             runner.write(f'start python ".\\{os.path.split(file_name)[1]}"\n')
 
 
-make_dsn(dsn_file_list, os.path.join(destination_base, dsn_name))
-make_batch(run_files, os.path.join(destination_base, batch_name))
+def make_blank_files(file_list):
+    """Make blank .xml files so that the dsn still reads when a script fails."""
+    for f in file_list:
+        with open(f, "x") as _:
+            pass
 
-"""
-base_dir = os.getcwd()
-# run the scripts
-for file in run_files:
-    print(file)
-    os.chdir(os.path.split(file)[0])
-    importlib.import_module(
-        remove_prefix_dots(os.path.splitext(file)[0].replace("\\", "."))
-    )
-    os.chdir(base_dir)
-"""
+
+make_dsn(dsn_file_list, os.path.join(destination_base, dsn_name))
+make_blank_files(dsn_file_list)
+make_batch(run_files, os.path.join(destination_base, batch_name))

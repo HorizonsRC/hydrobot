@@ -428,13 +428,14 @@ def test_processor_init(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
-        check_hts="OceansOfEffluent.hts",
+        check_hts_filename="OceansOfEffluent.hts",
         check_measurement_name=CHECK_MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
         fetch_quality=True,
+        from_date="2024-01-01 00:00",
     )
 
     captured = capsys.readouterr()
@@ -556,11 +557,12 @@ def test_to_xml_data_structure(
         pr = processor.Processor(
             base_url="https://greenwashed.and.pleasant/",
             site=SITES[1],
-            standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+            standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
             standard_measurement_name=meas,
             check_measurement_name=check,
             frequency="15min",
             defaults=DEFAULTS,
+            from_date="2024-01-01 00:00",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -659,7 +661,7 @@ def test_import_data(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -762,7 +764,7 @@ def test_remove_range(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -869,7 +871,7 @@ def test_clip(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -971,7 +973,7 @@ def test_remove_spikes(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -1069,7 +1071,7 @@ def test_remove_flatlined_values(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         from_date=from_date,
@@ -1172,10 +1174,11 @@ def test_gap_closer(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
+        from_date="2023-01-01 00:00",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1306,13 +1309,14 @@ def test_data_export(
     pr = processor.Processor(
         base_url="https://greenwashed.and.pleasant/",
         site=SITES[1],
-        standard_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
-        check_hts="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        standard_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
+        check_hts_filename="GreenPasturesAreNaturalAndEcoFriendlyISwear.hts",
         standard_measurement_name=MEASUREMENTS[0],
         check_measurement_name=MEASUREMENTS[0],
         frequency="15min",
         defaults=DEFAULTS,
         fetch_quality=True,
+        from_date="2023-01-01 00:00",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)

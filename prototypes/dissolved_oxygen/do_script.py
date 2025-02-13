@@ -1,93 +1,63 @@
-r"""Script to run through a processing task with the processor class.
-
-Run command:
-
-cd .\prototypes\dissolved_oxygen
-streamlit run .\do_script.py
-
-"""
+"""Script to run through a processing task for Dissolved Oxygen."""
 
 import pandas as pd
-import streamlit as st
 
-import hydrobot
-from hydrobot.data_acquisition import (
-    import_inspections,
-    import_ncr,
-    import_prov_wq,
-)
+import hydrobot.config.horizons_source as source
 from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
-from hydrobot.plotter import make_processing_dash
-from hydrobot.utils import merge_all_comments
+from hydrobot.htmlmerger import HtmlMerger
+from hydrobot.utils import series_rounder
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-
 data, ann = DOProcessor.from_config_yaml("do_config.yaml")
 
-st.set_page_config(
-    page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-)
-st.title(f"{data.site}")
-st.header(f"{data.standard_measurement_name}")
-
 #######################################################################################
-# Importing all check data that is not obtainable from Hilltop
-# (So far Hydrobot only speaks to Hilltop)
+# Importing all check data
 #######################################################################################
-
-check_col = "Value"
-logger_col = "Logger"
-
-inspections = import_inspections(
-    "DO_Inspections.csv", check_col=check_col, logger_col=logger_col
+comments_inspections = source.dissolved_oxygen_hydro_inspections(
+    data.from_date, data.to_date, data.site
 )
-prov_wq = import_prov_wq(
-    "DO_ProvWQ.csv", check_col=check_col, logger_col=logger_col, use_for_qc=True
+comments_soe = data.get_measurement_dataframe("Field DO Saturation (HRC)", "check")
+comments_soe.index = pd.to_datetime(comments_soe.index)
+comments_ncr = source.non_conformances(data.site)
+
+dissolved_oxygen_inspections = series_rounder(
+    source.dissolved_oxygen_hydro_check_data(data.from_date, data.to_date, data.site),
+    "1min",
 )
-ncrs = import_ncr("DO_non-conformance_reports.csv")
-inspections_no_dup = inspections.drop(data.check_data.index, errors="ignore")
-prov_wq_no_dup = prov_wq.drop(data.check_data.index, errors="ignore")
-
-all_checks_list = [data.check_data, inspections, prov_wq]
-all_checks_list = [i for i in all_checks_list if not i.empty]
-
-all_checks = pd.concat(all_checks_list).sort_index()
-
-all_checks = all_checks.loc[
-    (all_checks.index >= data.from_date) & (all_checks.index <= data.to_date)
+dissolved_oxygen_inspections = dissolved_oxygen_inspections[
+    ~dissolved_oxygen_inspections["Value"].isna()
+]
+soe_check = series_rounder(
+    source.soe_check_data(
+        data,
+        "Field DO Saturation (HRC)",
+    ),
+    "1min",
+)
+soe_check = soe_check
+check_data = [
+    dissolved_oxygen_inspections,
+    soe_check,
 ]
 
-# For any constant shift in the check data, default 0
-# data.quality_code_evaluator.constant_check_shift = -1.9
-check_data_list = [data.check_data, inspections_no_dup, prov_wq_no_dup]
-check_data_list = [i for i in check_data_list if not i.empty]
-data.check_data = pd.concat(check_data_list).sort_index()
-
-data.check_data = data.check_data.loc[
-    (data.check_data.index >= data.from_date) & (data.check_data.index <= data.to_date)
-]
-
-all_comments = merge_all_comments(data.check_data, prov_wq, inspections, ncrs)
+data.check_data = pd.concat([i for i in check_data if not i.empty])
+data.check_data = data.check_data[
+    ~data.check_data.index.duplicated(keep="first")
+].sort_index()
 
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
 data.pad_data_with_nan_to_set_freq()
-
-# Clipping all data outside of low_clip and high_clip
 data.clip()
-
-# Remove obvious spikes using FBEWMA algorithm
 data.remove_spikes()
 
 #######################################################################################
 # DO specific operation
 #######################################################################################
-
 data.correct_do()
 
 #######################################################################################
@@ -121,25 +91,46 @@ data.standard_data["Value"] = trim_series(
 # Export all data to XML file
 #######################################################################################
 data.data_exporter()
-# data.data_exporter("hilltop_csv", ftype="hilltop_csv")
-# data.data_exporter("processed.csv", ftype="csv")
 
 #######################################################################################
-# Launch Hydrobot Processing Visualiser (HPV)
-# Known issues:
-# - No manual changes to check data points reflected in visualiser at this point
+# Write visualisation files
 #######################################################################################
-fig = data.plot_qc_series(show=False)
+fig = data.plot_processing_overview_chart()
+with open("pyplot.json", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_json()))
+with open("pyplot.html", "w", encoding="utf-8") as file:
+    file.write(str(fig.to_html()))
 
-fig_subplots = make_processing_dash(
-    fig,
-    data,
-    all_checks,
+with open("check_table.html", "w", encoding="utf-8") as file:
+    data.check_data.to_html(file)
+with open("quality_table.html", "w", encoding="utf-8") as file:
+    data.quality_data.to_html(file)
+with open("inspections_table.html", "w", encoding="utf-8") as file:
+    comments_inspections.to_html(file)
+with open("soe_table.html", "w", encoding="utf-8") as file:
+    comments_soe.to_html(file)
+with open("ncr_table.html", "w", encoding="utf-8") as file:
+    comments_ncr.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    data.processing_issues.to_html(file)
+
+merger = HtmlMerger(
+    [
+        "pyplot.html",
+        "check_table.html",
+        "quality_table.html",
+        "inspections_table.html",
+        "soe_table.html",
+        "ncr_table.html",
+        "calibration_table.html",
+        "potential_processing_issues.html",
+    ],
+    encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
-st.plotly_chart(fig_subplots, use_container_width=True)
-
-st.dataframe(all_comments, use_container_width=True)
-# st.dataframe(data.standard_data, use_container_width=True)
-st.dataframe(data.check_data, use_container_width=True)
-st.dataframe(data.quality_data, use_container_width=True)
+merger.merge()

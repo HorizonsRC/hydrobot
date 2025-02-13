@@ -1,0 +1,35 @@
+site: Arawhata Drain at Kane Farm
+analyst_name: Sam Irvine
+from_date:
+to_date: "2024-11-29 06:00"
+
+# Hilltop Server Configuration
+base_url: "http://hilltopdev.horizons.govt.nz/"
+standard_hts_filename: "RawLoggerNet.hts"
+check_hts_filename: "HydrobotCheckData.hts"
+
+# Data Source Configuration
+standard_measurement_name: "Rainfall [SCADA Rainfall]"
+check_measurement_name: "Check Gauge Total [SCADA Rainfall]"
+standard_backup: "Rainfall [SCADA Rainfall]"
+check_backup: "Check Gauge Total [Rainfall]"
+
+# Export configuration
+export_file_name: "processed_rf.xml"
+
+# Processing Configuration
+defaults:
+  high_clip: 2.1
+  low_clip: -0.1
+  max_qc: 600
+
+# Annalist Configuration
+logfile: "hydrobot_logs.csv"
+format:
+  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+  stream: "%(asctime)s, %(function_name)s"
+
+# Archive hts
+archive_base_url: "http://hilltopdev.horizons.govt.nz/"
+archive_standard_hts_filename: "Archive.hts"
+archive_check_hts_filename: "Archive.hts"

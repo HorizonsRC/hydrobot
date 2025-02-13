@@ -1,9 +1,12 @@
 """General utilities."""
 
+import urllib.parse
 import warnings
 
 import numpy as np
 import pandas as pd
+import ruamel.yaml
+from hilltoppy.utils import get_hilltop_xml
 from pandas.tseries.frequencies import to_offset
 
 MOWSECS_OFFSET = 946771200
@@ -742,3 +745,106 @@ def find_last_indices(base_series, check_series):
         nearest_indices.append(nearest_index)
 
     return nearest_indices
+
+
+def set_config_from_date(config_file, base_url, hts_filename, site, measurement):
+    """
+    Set config.yaml parameter from_date based on last data from archive file.
+
+    Parameters
+    ----------
+    config_file : str
+        Path to config.yaml to modify
+    base_url : str
+        Base url for archive file
+    hts_filename
+        Archive hts file name
+    site :str
+        The site to test
+    measurement : str
+        The measurement to test
+
+    Returns
+    -------
+    None
+        side effect: modifies the config.yaml
+    """
+    last_time = find_last_time(
+        base_url=base_url,
+        hts=hts_filename,
+        site=site,
+        measurement=measurement,
+    )
+
+    yaml = ruamel.yaml.YAML()
+    with open(config_file) as fp:
+        data = yaml.load(fp)
+        data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
+    with open(config_file, "w") as fp:
+        yaml.dump(data, fp)
+
+
+def combine_comments(comment_frame: pd.DataFrame) -> pd.Series:
+    """
+    For multiple comments in multiple columns, combine comments with column headers as delimiters.
+
+    Parameters
+    ----------
+    comment_frame : pd.DataFrame
+        Comments to be combined
+
+    Returns
+    -------
+    pd.Series
+        All columns combined
+    """
+    comment_frame = comment_frame.copy()
+    output_series = pd.Series(index=comment_frame.index, data="")
+    for count, label in enumerate(comment_frame.columns):
+        next_part = comment_frame[label]
+        next_part[next_part.notna()] = label + ": " + next_part[next_part.notna()]
+
+        if count < len(comment_frame.columns) - 1:
+            next_part[next_part.notna()] += "; "
+        next_part = next_part.fillna("")
+
+        output_series += next_part
+    return output_series
+
+
+def find_last_time(
+    base_url,
+    hts,
+    site,
+    measurement,
+):
+    """
+    Find the last data point in the hts file for a given site/measurement pair.
+
+    Parameters
+    ----------
+    base_url : str
+    hts : str
+    site : str
+    measurement : str
+
+    Returns
+    -------
+    pd.Timestamp
+    """
+    timerange_url = (
+        f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
+        f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
+    )
+    return pd.Timestamp(
+        get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
+    )
+
+
+def safe_concat(input_frames):
+    """Version of pd.concat that doesn't raise errors for empty dataframes/series."""
+    non_empty_input = [i for i in input_frames if not i.empty]
+    if non_empty_input:
+        return pd.concat(non_empty_input)
+    else:
+        return pd.DataFrame(columns=input_frames[0].columns)

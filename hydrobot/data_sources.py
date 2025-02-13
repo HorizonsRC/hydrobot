@@ -144,6 +144,10 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
                 qc = 400
         return qc
 
+    def __repr__(self):
+        """QualityCodeEvaluator representation."""
+        return repr(f"TwoLevelQualityCodeEvaluator '{self.name}'")
+
 
 class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
     """QualityCodeEvaluator for data without checks.
@@ -175,6 +179,10 @@ class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
 
         """
         return 200
+
+    def __repr__(self):
+        """QualityCodeEvaluator representation."""
+        return repr(f"UncheckedQualityCodeEvaluator '{self.name}'")
 
 
 class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
@@ -242,6 +250,10 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         else:
             qc = 400
         return qc
+
+    def __repr__(self):
+        """QualityCodeEvaluator representation."""
+        return repr(f"DissolvedOxygenQualityCodeEvaluator '{self.name}'")
 
 
 def get_qc_evaluator_dict():

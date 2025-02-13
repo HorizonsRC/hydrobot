@@ -1,7 +1,8 @@
-"""Script to run through a processing task for soil moisture."""
+"""Script to run through a processing task for Soil Moisture."""
 
 import pandas as pd
 
+import hydrobot.config.horizons_source as source
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 
@@ -38,7 +39,6 @@ data.data_exporter()
 #######################################################################################
 # Write visualisation files
 #######################################################################################
-
 fig = data.plot_processing_overview_chart()
 
 with open("pyplot.json", "w", encoding="utf-8") as file:
@@ -52,14 +52,23 @@ with open("check_table.html", "w", encoding="utf-8") as file:
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    data.processing_issues.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
+        "calibration_table.html",
+        "potential_processing_issues.html",
     ],
     encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
 merger.merge()
