@@ -268,7 +268,7 @@ def plot_check_data(
             checks = (
                 (
                     tag_check["Value"].diff().to_numpy()
-                    / standard_series.loc[timestamps].diff()
+                    / standard_series.loc[timestamps].diff().replace(0, -1)
                     * 100
                     - 100
                 )

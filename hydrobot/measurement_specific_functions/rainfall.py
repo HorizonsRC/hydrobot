@@ -449,7 +449,7 @@ def manual_tip_filter(
             ).sort_index()
         events = events.astype(np.float64)
         events[inspection_data > 0] = mode
-        events[inspection_data.astype(int).fillna(0) <= 0] = 0
+        events[inspection_data.fillna(0).astype(int) <= 0] = 0
 
         if weather in ["Fine", "Overcast"] and np.abs(len(events) - manual_tips) <= 1:
             # Off by 1 is probably just a typo, delete it all
