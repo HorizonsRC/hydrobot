@@ -356,7 +356,7 @@ class RFProcessor(Processor):
             checks_for_qcing["Value"] if "Value" in checks_for_qcing else pd.Series({})
         )
 
-        # List of synethic checks to find
+        # List of synthetic checks to find
         list_of_replaced_checks = [pd.Timestamp(time) for time in synthetic_checks]
         list_of_replaced_checks.sort()
         checks_to_300 = utils.series_rounder(
