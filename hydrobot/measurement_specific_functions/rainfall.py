@@ -517,7 +517,9 @@ def calculate_common_offset(
         check_series,
     )
     check_quality = quality_series.reindex(scada_difference.index, method="bfill")
-    usable_checks = scada_difference[check_quality >= threshold]
+    usable_checks = scada_difference[
+        (check_quality >= threshold) & (np.abs(scada_difference - 1) < 0.2)
+    ]
     return usable_checks.mean()
 
 
