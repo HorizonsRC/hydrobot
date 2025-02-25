@@ -117,6 +117,10 @@ class RFProcessor(Processor):
 
         Parameters
         ----------
+        from_date : str, optional
+            Start of data to import, will attempt to find last automation date if not set
+        to_date : str, optional
+            End of data to import, will default to current time if not set
         standard : bool, optional
             Whether to import standard data, by default True.
         check : bool, optional
@@ -230,6 +234,8 @@ class RFProcessor(Processor):
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
             data.
+        base_url : str, optional
+            Base of the url to use for the hilltop server request. Defaults to the Processor value.
 
         Returns
         -------
@@ -476,7 +482,7 @@ class RFProcessor(Processor):
         data["Value"] = data["Value"].cumsum()
         return data
 
-    def filter_manual_tips(self, check_query: pd.DataFrame):
+    def filter_manual_tips(self, check_query: pd.DataFrame, buffer_minutes: int = None):
         """
         Attempts to remove manual tips from standard_series.
 
@@ -484,19 +490,31 @@ class RFProcessor(Processor):
         ----------
         check_query : pd.DataFrame
             The DataFrame of all the checks that have been done
+        buffer_minutes : int, optional
+            Amount of time to increase search radius for manual tips by
 
         Returns
         -------
         None, self.standard_data modified
         """
         for _, check in check_query.iterrows():
-            self.standard_data["Value"], issue = rf.manual_tip_filter(
-                self.standard_data["Value"],
-                check["start_time"],
-                check["end_time"],
-                check["primary_manual_tips"],
-                check["weather"],
-            )
+            if buffer_minutes is None:
+                self.standard_data["Value"], issue = rf.manual_tip_filter(
+                    self.standard_data["Value"],
+                    check["start_time"],
+                    check["end_time"],
+                    check["primary_manual_tips"],
+                    check["weather"],
+                )
+            else:
+                self.standard_data["Value"], issue = rf.manual_tip_filter(
+                    self.standard_data["Value"],
+                    check["start_time"],
+                    check["end_time"],
+                    check["primary_manual_tips"],
+                    check["weather"],
+                    buffer_minutes=buffer_minutes,
+                )
             if issue is not None:
                 self.report_processing_issue(**issue)
 

@@ -390,6 +390,7 @@ def manual_tip_filter(
     departure_time: pd.Timestamp,
     manual_tips: int,
     weather: str = "",
+    buffer_minutes: int = 10,
 ):
     """
     Sets any manual tips to 0 for a single inspection.
@@ -406,6 +407,8 @@ def manual_tip_filter(
         Number of manual tips
     weather : str
         Type of weather at inspection
+    buffer_minutes : int
+        Increases search radius for tips that might be manual
 
     Returns
     -------
@@ -426,7 +429,7 @@ def manual_tip_filter(
         )
         std_series.index = pd.DatetimeIndex(std_series.index)
 
-    offset = pd.Timedelta(minutes=5)
+    offset = pd.Timedelta(minutes=buffer_minutes)
     inspection_data = std_series[
         (std_series.index > arrival_time - offset)
         & (std_series.index < departure_time + offset)
@@ -435,7 +438,7 @@ def manual_tip_filter(
     if manual_tips == 0:
         # No manual tips to remove
         return std_series, None
-    elif inspection_data.sum() <= ((manual_tips - 1) * mode):
+    elif inspection_data.sum() <= ((manual_tips - 1.5) * mode):
         # Manual tips presumed to be in inspection mode, no further action
         return std_series, None
     else:
