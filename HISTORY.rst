@@ -201,7 +201,7 @@ History
 * Various QOL improvements for rainfall
 * Rainfall with no check data fixes
 
-0.8.2 (?)
+0.8.2 (2025-03-07)
 ----------------------------------
 
 * Extreme data filter for ltco (in addition to the qc filter)
