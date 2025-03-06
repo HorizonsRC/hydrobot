@@ -77,7 +77,7 @@ if manual_additional_points:
 else:
     manual_additional_points = pd.Series({})
 
-if data.check_data.empty:
+if data.check_data.Value.isna().all():
     data.ramped_standard = utils.rainfall_six_minute_repacker(
         data.standard_data["Value"]
     )

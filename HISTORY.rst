@@ -200,3 +200,10 @@ History
 
 * Various QOL improvements for rainfall
 * Rainfall with no check data fixes
+
+0.8.2 (?)
+----------------------------------
+
+* Extreme data filter for ltco (in addition to the qc filter)
+* Further rainfall with no check data fixes
+* Loosened requirements for filtering manual rainfall tips, made buffer offset modifiable.

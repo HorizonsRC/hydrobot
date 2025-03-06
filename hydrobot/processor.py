@@ -964,6 +964,8 @@ class Processor:
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
             data.
+        base_url : str, optional
+            Base of the url to use for the hilltop server request. Defaults to the Processor value.
 
         Returns
         -------
