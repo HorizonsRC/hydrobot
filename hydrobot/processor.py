@@ -139,6 +139,7 @@ class Processor:
         provisional_wq_filename: str | None = None,
         archive_standard_measurement_name: str | None = None,
         depth: float | None = None,
+        infer_frequency: bool = False,
         **kwargs,
     ):
         """
@@ -173,7 +174,8 @@ class Processor:
         provisional_wq_filename : str, optional
             Filename for provisional WQ data to be converted to check
         archive_standard_measurement_name : str, optional
-            standard_measurement_name used in the archve file used to find last processed time and for final exported data
+            standard_measurement_name used in the archive file used to find last processed time and for final
+            exported data
         depth : numeric, optional
             Depth of measurement used for
         kwargs : dict
@@ -240,6 +242,7 @@ class Processor:
         self.archive_standard_measurement_name = archive_standard_measurement_name
         self.provisional_wq_filename = provisional_wq_filename
         self.depth = depth
+        self.infer_frequency = infer_frequency
 
         # Set other value initial values
         self._standard_data = EMPTY_STANDARD_DATA.copy()
@@ -333,6 +336,7 @@ class Processor:
             to_date=self.to_date,
             check=get_check,
             quality=fetch_quality,
+            infer_frequency=self.infer_frequency,
         )
 
     def enforce_measurement_at_site(self, measurement_name, hilltop):
@@ -543,7 +547,7 @@ class Processor:
         from_date: str | None = None,
         to_date: str | None = None,
         frequency: str | None = None,
-        infer_frequency: bool = True,
+        infer_frequency: bool = False,
         base_url: str | None = None,
     ):
         """
@@ -1129,6 +1133,7 @@ class Processor:
         standard: bool = True,
         check: bool = True,
         quality: bool = True,
+        infer_frequency: bool = False,
     ):
         """
         Import data using the class parameter range.
@@ -1145,6 +1150,8 @@ class Processor:
             Whether to import check data, by default True.
         quality : bool, optional
             Whether to import quality data, by default False.
+        infer_frequency : bool, optional
+            Whether import_standard should infer_frequency, default False.
 
         Returns
         -------
