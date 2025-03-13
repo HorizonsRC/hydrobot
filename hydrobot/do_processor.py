@@ -7,6 +7,7 @@ import pandas as pd
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
+import hydrobot.config.horizons_source as source
 from hydrobot.data_acquisition import config_yaml_import, enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.processor import (
@@ -27,7 +28,6 @@ class DOProcessor(Processor):
         standard_hts_filename: str,
         standard_measurement_name: str,
         frequency: str | None,
-        site_altitude: float,
         water_temperature_site: str | None,
         atmospheric_pressure_site: str | None,
         water_temperature_hts: str | None,
@@ -35,6 +35,7 @@ class DOProcessor(Processor):
         atmospheric_pressure_frequency: str,
         water_temperature_frequency: str,
         atmospheric_pressure_site_altitude: float | None,
+        site_altitude: float | None = None,
         water_temperature_measurement_name: str | None = "Water Temperature",
         atmospheric_pressure_measurement_name: str | None = "Atmospheric Pressure",
         from_date: str | None = None,
@@ -70,7 +71,9 @@ class DOProcessor(Processor):
         else:
             self.water_temperature_site = water_temperature_site
         if atmospheric_pressure_site is None:
-            self.atmospheric_pressure_site = self.site
+            self.atmospheric_pressure_site = source.site_info_lookup(self.site)[
+                "BARO_CLOSEST"
+            ]
         else:
             self.atmospheric_pressure_site = atmospheric_pressure_site
 
@@ -150,9 +153,15 @@ class DOProcessor(Processor):
         self.water_temperature_frequency = water_temperature_frequency
         self.atmospheric_pressure_frequency = atmospheric_pressure_frequency
 
-        self.site_altitude = site_altitude
+        if site_altitude is None:
+            self.site_altitude = float(source.site_info_lookup(self.site)["BARO_RL"])
+        else:
+            self.site_altitude = site_altitude
+
         if atmospheric_pressure_site_altitude is None:
-            self.atmospheric_pressure_site_altitude = self.site_altitude
+            self.atmospheric_pressure_site_altitude = float(
+                source.site_info_lookup(self.site)["BARO_CLOSEST_RL"]
+            )
         else:
             self.atmospheric_pressure_site_altitude = atmospheric_pressure_site_altitude
 

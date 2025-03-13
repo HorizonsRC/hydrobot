@@ -6,6 +6,7 @@ import platform
 import numpy as np
 import pandas as pd
 import sqlalchemy as db
+import xmltodict
 from sqlalchemy.engine import URL
 
 from hydrobot import utils
@@ -396,3 +397,36 @@ def water_temp_check_formatter(series: pd.Series, source: str):
     frame["Source"] = source
     frame["QC"] = True
     return frame
+
+
+def site_info_lookup(site: str):
+    """
+    Find the hilltop site_info xml from the sql table and parses it as a dict.
+
+    Parameters
+    ----------
+    site : str
+        site to lookup
+
+    Returns
+    -------
+    dict
+        site_info xml as a dict
+    """
+    query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("site_info_lookup.sql")
+        .read_text()
+    )
+
+    result = pd.read_sql(
+        query,
+        hilltop_db_engine(),
+        params={
+            "site": site,
+        },
+    )
+
+    xml_string = result.loc[0, "SiteInfo"]
+
+    return xmltodict.parse(xml_string)["SiteInfo"]

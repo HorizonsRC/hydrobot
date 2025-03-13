@@ -139,7 +139,7 @@ class Processor:
         provisional_wq_filename: str | None = None,
         archive_standard_measurement_name: str | None = None,
         depth: float | None = None,
-        infer_frequency: bool = False,
+        infer_frequency: bool = True,
         **kwargs,
     ):
         """
@@ -1186,6 +1186,7 @@ class Processor:
                 from_date=from_date,
                 to_date=to_date,
                 frequency=self._frequency,
+                infer_frequency=infer_frequency,
             )
         if quality:
             (

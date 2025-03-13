@@ -1,6 +1,8 @@
 """General filtering utilities."""
 
 
+import warnings
+
 import numpy as np
 import pandas as pd
 from annalist.annalist import Annalist
@@ -209,7 +211,9 @@ def remove_range(
     return series_to_return.sort_index()
 
 
-def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
+def trim_series(
+    std_series: pd.Series, check_series: pd.Series | pd.Timestamp
+) -> pd.Series:
     """
     Remove end of std series to match check series.
 
@@ -222,7 +226,7 @@ def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     ----------
     std_series : pd.Series
         The series to be trimmed
-    check_series : pd.Series | pd.DataFrame
+    check_series : pd.Series | pd.DataFrame | pd.Timestamp
         Indicates the end of the usable data
 
     Returns
@@ -230,11 +234,18 @@ def trim_series(std_series: pd.Series, check_series: pd.Series) -> pd.Series:
     pd.Series
         std_series with the unchecked elements trimmed
     """
-    if check_series.empty:
-        return std_series
-    else:
-        last_check_date = check_series.index[-1]
+    if isinstance(check_series, (pd.DataFrame | pd.Series)):
+        if check_series.empty:
+            return std_series
+        else:
+            last_check_date = check_series.index[-1]
+            return std_series.loc[:last_check_date]
+    elif isinstance(check_series, pd.Timestamp):
+        last_check_date = check_series
         return std_series.loc[:last_check_date]
+    else:
+        warnings.warn("Invalid trim filter used, no filtering was done", stacklevel=2)
+        return std_series
 
 
 def flatline_value_remover(
