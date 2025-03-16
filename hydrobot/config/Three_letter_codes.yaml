@@ -10,6 +10,8 @@ UCK: "Unchecked: data is 200"
 INI: "Initial: used for start of frame"
 # Measurement specific quality code reasons
 CAP: "Above calibration cap: Dissolved oxygen is capped at QC500 for DO% > 100, additive"
+APD: "Atmospheric pressure data: Supplemental data source AP was a lower quality"
+WTD: "Water temperature data: Supplemental data source WT was a lower quality"
 
 
 # Check source codes

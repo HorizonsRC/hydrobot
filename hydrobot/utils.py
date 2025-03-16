@@ -836,9 +836,13 @@ def find_last_time(
         f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
         f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
     )
-    return pd.Timestamp(
-        get_hilltop_xml(timerange_url).find("To").text.split("+")[0], tz=None
-    )
+    hilltop_xml = get_hilltop_xml(timerange_url)
+    if hilltop_xml.find("To") is None:
+        raise ValueError(
+            f"No data found for this site. If no previous processing is done, a from_date is required. "
+            f"URL:{timerange_url}"
+        )
+    return pd.Timestamp(hilltop_xml.find("To").text.split("+")[0], tz=None)
 
 
 def safe_concat(input_frames):
