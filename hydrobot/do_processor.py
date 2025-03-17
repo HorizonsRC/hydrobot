@@ -255,6 +255,7 @@ class DOProcessor(Processor):
             ap_altitude = self.atmospheric_pressure_site_altitude
         if do_altitude is None:
             do_altitude = self.site_altitude
+
         self.standard_data["Value"] = correct_dissolved_oxygen(
             diss_ox["Value"], atm_pres["Value"], ap_altitude, do_altitude
         )

@@ -48,6 +48,16 @@ data.check_data = data.check_data[
     ~data.check_data.index.duplicated(keep="first")
 ].sort_index()
 
+data.check_data["Value"] = trim_series(
+    data.check_data["Value"],
+    data.ap_standard_data["Value"],
+)
+data.check_data["Value"] = trim_series(
+    data.check_data["Value"],
+    data.wt_standard_data["Value"],
+)
+
+
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
@@ -78,15 +88,7 @@ data.correct_do()
 data.quality_encoder()
 data.standard_data["Value"] = trim_series(
     data.standard_data["Value"],
-    data.check_data["Value"],
-)
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.ap_standard_data["Value"],
-)
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.wt_standard_data["Value"],
+    data.check_data[~data.check_data["Value"].isna()],
 )
 
 # ann.logger.info(
