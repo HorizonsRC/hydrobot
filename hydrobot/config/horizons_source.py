@@ -160,6 +160,18 @@ def calibrations(site, measurement_name):
         hilltop_db_engine(),
         params={"site": site, "measurement_name": measurement_name},
     )
+    if calibration_df.empty:
+        calibration_query = db.text(
+            pkg_resources.files("hydrobot.config.horizons_sql")
+            .joinpath("sonde_calibration_query.sql")
+            .read_text()
+        )
+
+        calibration_df = pd.read_sql(
+            calibration_query,
+            hilltop_db_engine(),
+            params={"site": site},
+        )
     return calibration_df
 
 

@@ -10,6 +10,7 @@ from hilltoppy import Hilltop
 import hydrobot.config.horizons_source as source
 from hydrobot.data_acquisition import config_yaml_import, enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
+from hydrobot.filters import trim_series
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
@@ -90,7 +91,7 @@ class DOProcessor(Processor):
 
         if self.atmospheric_pressure_site not in ap_hilltop.available_sites:
             raise ValueError(
-                f"Atmospheric Pressure site '{site}' not found for both base_url and hts combos."
+                f"Atmospheric Pressure site '{self.atmospheric_pressure_site}' not found for both base_url and hts combos."
                 f"Available sites in {atmospheric_pressure_hts} are: "
                 f"{[s for s in ap_hilltop.available_sites]}"
             )
@@ -197,17 +198,6 @@ class DOProcessor(Processor):
             to_date=self.to_date,
             frequency=self.atmospheric_pressure_frequency,
         )
-
-        self.ap_quality_data, _, _, _ = self.import_quality(
-            standard_hts_filename=self.atmospheric_pressure_hts,
-            site=self.atmospheric_pressure_site,
-            standard_measurement_name=self.atmospheric_pressure_measurement_name,
-            standard_data_source_name=self.ap_data_source_name,
-            quality_data=self.ap_quality_data,
-            from_date=self.from_date,
-            to_date=self.to_date,
-        )
-
         self.wt_standard_data, _, _, _ = self.import_standard(
             standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
@@ -219,12 +209,41 @@ class DOProcessor(Processor):
             to_date=self.to_date,
             frequency=self.water_temperature_frequency,
         )
+        if self.ap_standard_data.empty or self.wt_standard_data.empty:
+            raise ValueError(
+                f"DO processing requires WT and AP data, but WT missing: {self.wt_standard_data.empty}, "
+                f"AP missing: {self.ap_standard_data.empty}."
+            )
+
+        ap_last_time = self.ap_standard_data.index[-1]
+        wt_last_time = self.wt_standard_data.index[-1]
+        self.wt_standard_data = self.wt_standard_data.reindex(
+            self.standard_data[self.standard_data.index <= wt_last_time].index,
+            method="nearest",
+        )
+        self.ap_standard_data = self.ap_standard_data.reindex(
+            self.standard_data[self.standard_data.index <= ap_last_time].index,
+            method="nearest",
+        )
+        self.standard_data["Value"] = trim_series(
+            self.standard_data["Value"], min([ap_last_time, wt_last_time])
+        )
+
         self.wt_quality_data, _, _, _ = self.import_quality(
             standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
             standard_measurement_name=self.water_temperature_measurement_name,
             standard_data_source_name=self.wt_data_source_name,
             quality_data=self.wt_quality_data,
+            from_date=self.from_date,
+            to_date=self.to_date,
+        )
+        self.ap_quality_data, _, _, _ = self.import_quality(
+            standard_hts_filename=self.atmospheric_pressure_hts,
+            site=self.atmospheric_pressure_site,
+            standard_measurement_name=self.atmospheric_pressure_measurement_name,
+            standard_data_source_name=self.ap_data_source_name,
+            quality_data=self.ap_quality_data,
             from_date=self.from_date,
             to_date=self.to_date,
         )
