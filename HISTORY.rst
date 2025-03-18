@@ -207,3 +207,13 @@ History
 * Extreme data filter for ltco (in addition to the qc filter)
 * Further rainfall with no check data fixes
 * Loosened requirements for filtering manual rainfall tips, made buffer offset modifiable.
+
+0.8.3 (2025-03-18)
+----------------------------------
+
+* Infer frequency as an option for non-constant timestep data
+* DO batch processing working
+* DO takes metadata from site table
+* DO filters based on end of WT/AP data in prov auto
+* More explicit error handling
+* Calibraitons table for data sources on Sonde "fixed"
