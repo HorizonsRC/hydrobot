@@ -3,6 +3,7 @@
 import re
 from datetime import datetime
 
+import numpy as np
 import pandas as pd
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -217,6 +218,13 @@ class DOProcessor(Processor):
 
         ap_last_time = self.ap_standard_data.index[-1]
         wt_last_time = self.wt_standard_data.index[-1]
+        self.report_processing_issue(
+            start_time=self.to_date,
+            end_time=min([ap_last_time, wt_last_time]),
+            comment="Changing to_date to end of AP/WT processing.",
+            message_type="info",
+        )
+        self._to_date = min([ap_last_time, wt_last_time])
         self.wt_standard_data = self.wt_standard_data.reindex(
             self.standard_data[self.standard_data.index <= wt_last_time].index,
             method="nearest",
@@ -227,6 +235,9 @@ class DOProcessor(Processor):
         )
         self.standard_data["Value"] = trim_series(
             self.standard_data["Value"], min([ap_last_time, wt_last_time])
+        )
+        self.check_data["Value"] = trim_series(
+            self.check_data["Value"], min([ap_last_time, wt_last_time])
         )
 
         self.wt_quality_data, _, _, _ = self.import_quality(
@@ -393,3 +404,18 @@ class DOProcessor(Processor):
         return cls.from_processing_parameters_dict(
             processing_parameters, fetch_quality=fetch_quality
         )
+
+    def remove_qc100_data(self):
+        """For when WT is QC100and making standard data qc100."""
+        starts_of_qc100_data = self.quality_data.index[
+            self.quality_data["Value"] == 100
+        ]
+        ends_of_qc100_data = self.quality_data.index[
+            self.quality_data.shift()["Value"] == 100
+        ]
+        for qc100_section in zip(starts_of_qc100_data, ends_of_qc100_data, strict=True):
+            self.standard_data.loc[
+                (self.standard_data.index > qc100_section[0])
+                & (self.standard_data.index < qc100_section[1]),
+                "Value",
+            ] = np.nan

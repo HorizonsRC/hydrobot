@@ -76,6 +76,7 @@ if [i for i in check_data if not i.empty]:
 else:
     # no check
     data.check_data = EMPTY_CHECK_DATA.copy()
+data.check_data["Value"] = trim_series(data.check_data["Value"], data.to_date)
 
 # Any manual removals
 for false_check in series_rounder(
@@ -124,6 +125,11 @@ if not data.check_data.empty:
 # data.quality_series["2023-09-04T11:26:40"] = 500
 
 #######################################################################################
+# Delete any QC100 data that may have snuck in
+#######################################################################################
+data.remove_qc100_data()
+
+#######################################################################################
 # Export all data to XML file
 #######################################################################################
 data.data_exporter()
@@ -170,11 +176,11 @@ merger = HtmlMerger(
         "pyplot.html",
         "potential_processing_issues.html",
         "check_table.html",
-        "quality_table.html",
         "inspections_table.html",
         "soe_table.html",
         "ncr_table.html",
         "calibration_table.html",
+        "quality_table.html",
     ],
     encoding="utf-8",
     header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
