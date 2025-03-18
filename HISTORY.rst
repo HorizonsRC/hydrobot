@@ -217,3 +217,4 @@ History
 * DO filters based on end of WT/AP data in prov auto
 * More explicit error handling
 * Calibraitons table for data sources on Sonde "fixed"
+* Added capability to removing data which is marked as qc100 without being np.nan
