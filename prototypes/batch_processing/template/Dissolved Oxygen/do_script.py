@@ -1,17 +1,29 @@
 """Script to run through a processing task for Dissolved Oxygen."""
 
+import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
 from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
+from hydrobot.processor import EMPTY_CHECK_DATA
 from hydrobot.utils import series_rounder
+
+checks_to_manually_ignore = []
+data_sections_to_delete = []
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = DOProcessor.from_config_yaml("do_config.yaml")
+
+for bad_section in data_sections_to_delete:
+    data.standard_data.loc[
+        (data.standard_data.index > bad_section[0])
+        & (data.standard_data.index < bad_section[1]),
+        "Value",
+    ] = np.nan
 
 #######################################################################################
 # Importing all check data
@@ -19,8 +31,11 @@ data, ann = DOProcessor.from_config_yaml("do_config.yaml")
 comments_inspections = source.dissolved_oxygen_hydro_inspections(
     data.from_date, data.to_date, data.site
 )
-comments_soe = data.get_measurement_dataframe("Field DO Saturation (HRC)", "check")
-comments_soe.index = pd.to_datetime(comments_soe.index)
+if data.check_hts_filename is not None:
+    comments_soe = data.get_measurement_dataframe("Field DO Saturation (HRC)", "check")
+    comments_soe.index = pd.to_datetime(comments_soe.index)
+else:
+    comments_soe = pd.DataFrame()
 comments_ncr = source.non_conformances(data.site)
 
 dissolved_oxygen_inspections = series_rounder(
@@ -30,23 +45,43 @@ dissolved_oxygen_inspections = series_rounder(
 dissolved_oxygen_inspections = dissolved_oxygen_inspections[
     ~dissolved_oxygen_inspections["Value"].isna()
 ]
-soe_check = series_rounder(
-    source.soe_check_data(
-        data,
-        "Field DO Saturation (HRC)",
-    ),
-    "1min",
-)
+
+depth_check = pd.DataFrame()
+soe_check = pd.DataFrame()
+if data.depth:
+    depth_check = data.interpolate_depth_profiles(
+        data.depth, "Dissolved Oxygen (Depth Profile)"
+    )
+    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+elif data.check_hts_filename is not None:
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field DO Saturation (HRC)",
+        ),
+        "1min",
+    )
+
 soe_check = soe_check
 check_data = [
     dissolved_oxygen_inspections,
     soe_check,
+    depth_check,
 ]
+if [i for i in check_data if not i.empty]:
+    data.check_data = pd.concat([i for i in check_data if not i.empty])
+    data.check_data = data.check_data[
+        ~data.check_data.index.duplicated(keep="first")
+    ].sort_index()
+else:
+    # no check
+    data.check_data = EMPTY_CHECK_DATA.copy()
 
-data.check_data = pd.concat([i for i in check_data if not i.empty])
-data.check_data = data.check_data[
-    ~data.check_data.index.duplicated(keep="first")
-].sort_index()
+# Any manual removals
+for false_check in series_rounder(
+    pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore)), "1min"
+).index:
+    data.check_data = data.check_data.drop(pd.Timestamp(false_check))
 
 #######################################################################################
 # Common auto-processing steps
@@ -76,18 +111,11 @@ data.correct_do()
 # Assign quality codes
 #######################################################################################
 data.quality_encoder()
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.check_data["Value"],
-)
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.ap_standard_data["Value"],
-)
-data.standard_data["Value"] = trim_series(
-    data.standard_data["Value"],
-    data.wt_standard_data["Value"],
-)
+if not data.check_data.empty:
+    data.standard_data["Value"] = trim_series(
+        data.standard_data["Value"],
+        data.check_data["Value"],
+    )
 
 # ann.logger.info(
 #     "Upgrading chunk to 500 because only logger was replaced which shouldn't affect "
@@ -112,6 +140,9 @@ with open("pyplot.html", "w", encoding="utf-8") as file:
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
     file.write("<p>Hydrobot Run Issues</p>")
     data.processing_issues.to_html(file)
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>Standard Data</p>")
+    data.standard_data.to_html(file)
 with open("check_table.html", "w", encoding="utf-8") as file:
     file.write("<p>Check Data</p>")
     data.check_data.to_html(file)
@@ -150,4 +181,3 @@ merger = HtmlMerger(
 )
 
 merger.merge()
-pass
