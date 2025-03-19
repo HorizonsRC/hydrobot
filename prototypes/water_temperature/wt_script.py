@@ -1,5 +1,6 @@
 """Script to run through a processing task for Water Temperature."""
 
+import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
@@ -8,10 +9,20 @@ from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 from hydrobot.utils import series_rounder
 
+checks_to_manually_ignore = []
+data_sections_to_delete = []
+
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = Processor.from_config_yaml("wt_config.yaml")
+
+for bad_section in data_sections_to_delete:
+    data.standard_data.loc[
+        (data.standard_data.index > bad_section[0])
+        & (data.standard_data.index < bad_section[1]),
+        "Value",
+    ] = np.nan
 
 #######################################################################################
 # Importing all check data
@@ -35,22 +46,19 @@ water_temperature_inspections = water_temperature_inspections[
 depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
-    try:
-        depth_check = data.interpolate_depth_profiles(
-            data.depth, "Water Temperature (Depth Profile)"
-        )
-        depth_check = source.water_temp_check_formatter(depth_check, "DPF")
-    except KeyError:
-        pass
+    depth_check = data.interpolate_depth_profiles(
+        data.depth, "Water Temperature (Depth Profile)"
+    )
+    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+else:
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field Temperature (HRC)",
+        ),
+        "1min",
+    )
 
-
-soe_check = series_rounder(
-    source.soe_check_data(
-        data,
-        "Field Temperature (HRC)",
-    ),
-    "1min",
-)
 check_data = [water_temperature_inspections, soe_check, depth_check]
 
 data.check_data = pd.concat([i for i in check_data if not i.empty])
@@ -58,6 +66,11 @@ data.check_data = data.check_data[
     ~data.check_data.index.duplicated(keep="first")
 ].sort_index()
 
+# Any manual removals
+for false_check in series_rounder(
+    pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore)), "1min"
+).index:
+    data.check_data = data.check_data.drop(pd.Timestamp(false_check))
 
 #######################################################################################
 # Common auto-processing steps
