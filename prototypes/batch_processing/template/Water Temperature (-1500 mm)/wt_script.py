@@ -46,7 +46,9 @@ water_temperature_inspections = water_temperature_inspections[
 depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
-    depth_check = data.interpolate_depth_profiles(data.depth)
+    depth_check = data.interpolate_depth_profiles(
+        data.depth, "Water Temperature (Depth Profile)"
+    )
     depth_check = source.water_temp_check_formatter(depth_check, "DPF")
 else:
     soe_check = series_rounder(

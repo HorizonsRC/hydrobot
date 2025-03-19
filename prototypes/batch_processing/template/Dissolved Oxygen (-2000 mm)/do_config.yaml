@@ -8,13 +8,13 @@ standard_hts_filename: "RawLoggerNet.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
-check_measurement_name: "DO saturation check"
+standard_measurement_name: "Dissolved Oxygen Saturation (-2000 mm)"
+check_measurement_name: "Sample Check [Dissolved Oxygen Saturation (-2000 mm)]"
 
 #Supplemental site info
 water_temperature_hts: "ProvisionalAuto.hts"
 water_temperature_frequency: "15min"
-water_temperature_measurement_name: "Water Temperature"
+water_temperature_measurement_name: "Water Temperature (-2000 mm)"
 
 atmospheric_pressure_hts: "ProvisionalAuto.hts"
 atmospheric_pressure_frequency: "15min"

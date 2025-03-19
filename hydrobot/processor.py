@@ -2206,7 +2206,7 @@ class Processor:
             )
         return frame
 
-    def interpolate_depth_profiles(self, depth, measurement):
+    def interpolate_depth_profiles(self, depth, measurement, site=None):
         """
         Looks up depth profile and find interpolates for given depth.
 
@@ -2217,11 +2217,15 @@ class Processor:
         measurement : str
             measurement + data source name
             e.g. "Water Temperature (Depth Profile)"
+        site : str | None
+            site to use to look for depth profiles, if none will use default
         """
+        if site is None:
+            site = self.site
         profiles = data_acquisition.get_depth_profiles(
             self._base_url,
             "HydrobotCheckData.hts",
-            self.site,
+            site,
             measurement,
             self.from_date,
             self.to_date,

@@ -1,4 +1,6 @@
 DO Saturation,6,3,0.1,0.05
 DO Saturation [Dissolved Oxygen (%)],6,3,0.1,0.05
-Dissolved Oxygen Saturation (-2000 mm) [Dissolved Oxygen Saturation (-2000 mm)],6,3,0.1,0.05
+Dissolved Oxygen Saturation (-500 mm),6,3,0.1,0.05
 Dissolved Oxygen Saturation (-500 mm) [Dissolved Oxygen Saturation (-500 mm)],6,3,0.1,0.05
+Dissolved Oxygen Saturation (-2000 mm),6,3,0.1,0.05
+Dissolved Oxygen Saturation (-2000 mm) [Dissolved Oxygen Saturation (-2000 mm)],6,3,0.1,0.05

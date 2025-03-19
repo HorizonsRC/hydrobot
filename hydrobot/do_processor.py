@@ -360,6 +360,8 @@ class DOProcessor(Processor):
         )
         self.quality_data = cap_frame
         # self._apply_quality(cap_frame)
+        if self.quality_data["Value"].iloc[-1] == 100:
+            self.quality_data.loc[self.to_date, "Value"] = 0
 
     @classmethod
     def from_config_yaml(cls, config_path, fetch_quality=False):

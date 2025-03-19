@@ -218,3 +218,10 @@ History
 * More explicit error handling
 * Calibraitons table for data sources on Sonde "fixed"
 * Added capability to removing data which is marked as qc100 without being np.nan
+
+0.8.4 (2025-03-19)
+----------------------------------
+
+* DO at depth now supported
+* Trailing qc 100 quality codes are now removed in DO
+* Depth profiles can be drawn from separate sites
