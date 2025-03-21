@@ -1,3 +1,5 @@
 site_name,list_of_measurements,from_date,to_date,frequency
-Lake William,Water Temperature (-500 mm);Water Temperature (-1000 mm);Water Temperature (-1500 mm);Water Temperature (-2000 mm),2024-03-31 15:55,,
-Lake Wiritoa,Water Temperature (-500 mm),2024-09-05 15:00,,
+Lake Horowhenua at Buoy,Dissolved Oxygen (-500 mm);Dissolved Oxygen (-2000 mm),,,
+Lake Koitiata,Dissolved Oxygen (-500 mm);Dissolved Oxygen (-2000 mm),,,
+Lake William,Dissolved Oxygen (-500 mm),,,
+Lake Wiritoa,Dissolved Oxygen (-500 mm),,,
