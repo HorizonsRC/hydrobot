@@ -111,8 +111,10 @@ def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
         },
     )
 
-    do_checks["Index"] = do_checks.loc[:, "inspection_time"].fillna(
-        do_checks.loc[:, "arrival_time"]
+    do_checks["Index"] = (
+        do_checks.loc[:, "inspection_time"]
+        .astype("datetime64[ns]")
+        .fillna(do_checks.loc[:, "arrival_time"])
     )
     do_checks = do_checks.set_index("Index")
     do_checks.index = pd.to_datetime(do_checks.index)
@@ -272,9 +274,11 @@ def dissolved_oxygen_hydro_check_data(from_date, to_date, site):
     """Filters dissolved oxygen hydro inspection data to be in format for use as hydrobot check data."""
     inspection_check_data = dissolved_oxygen_hydro_inspections(from_date, to_date, site)
 
-    inspection_check_data["Time"] = inspection_check_data.loc[
-        :, "inspection_time"
-    ].fillna(inspection_check_data.loc[:, "arrival_time"])
+    inspection_check_data["Time"] = (
+        inspection_check_data.loc[:, "inspection_time"]
+        .astype("datetime64[ns]")
+        .fillna(inspection_check_data.loc[:, "arrival_time"])
+    )
 
     inspection_check_data = inspection_check_data.rename(
         columns={"handheld_percent": "Raw", "logger_percent": "Logger DO"}
