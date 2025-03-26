@@ -9,7 +9,7 @@ check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
 standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
-check_measurement_name: "DO saturation check"
+check_measurement_name: "DO saturation check [Dissolved Oxygen (%)]"
 
 #Supplemental site info
 water_temperature_hts: "ProvisionalAuto.hts"
