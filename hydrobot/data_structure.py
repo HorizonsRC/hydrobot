@@ -1084,9 +1084,13 @@ def check_to_xml_structure(
             group = match.group(1)
             dp = len(group)
             float_format = "{:." + str(dp) + "f}"
-            check_data.loc[:, "Value"] = check_data.loc[:, "Value"].map(
-                lambda x, f=float_format: f.format(x)
+            temp = (
+                check_data.loc[:, "Value"]
+                .map(lambda x, f=float_format: f.format(x))
+                .astype("string")
             )
+            check_data = check_data.astype({"Value": "string"})
+            check_data.loc[:, "Value"] = temp
 
     check_data["Recorder Time"] = utils.datetime_index_to_mowsecs(check_data.index)
     check_data = Data(
