@@ -10,6 +10,7 @@ standard_hts_filename: "RawLoggerNet.hts"
 # check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
+data_family: "Unchecked"
 standard_measurement_name: "Air Temperature (1.5m)"
 # check_measurement_name: "Air Temperature"
 # frequency: "15min"

@@ -1,9 +1,45 @@
 """Handling for different types of data sources."""
-import csv
-from pathlib import Path
 
 import numpy as np
 import pandas as pd
+
+DATA_FAMILY_DICT = {
+    "Dissolved Oxygen": {
+        "QC_evaluator_type": "DO",
+        "QC_evaluator_values": [6, 3, 0.1, 0.05],
+        "Processor_type": "DO",
+    },
+    "Water Temperature": {
+        "QC_evaluator_type": "Base",
+        "QC_evaluator_values": [1.2, 0.8],
+        "Processor_type": "Base",
+    },
+    "Atmospheric Pressure": {
+        "QC_evaluator_type": "Base",
+        "QC_evaluator_values": [5, 2.5],
+        "Processor_type": "Base",
+    },
+    "Rainfall": {
+        "QC_evaluator_type": "Base",
+        "QC_evaluator_values": [20, 10],
+        "Processor_type": "RF",
+    },
+    "Stage": {
+        "QC_evaluator_type": "TwoLevel",
+        "QC_evaluator_values": [10, 3, 0.5, 0.2, 2000],
+        "Processor_type": "Base",
+    },
+    "Groundwater": {
+        "QC_evaluator_type": "Base",
+        "QC_evaluator_values": [20, 10],
+        "Processor_type": "Base",
+    },
+    "Unchecked": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
+        "Processor_type": "Base",
+    },
+}
 
 
 class QualityCodeEvaluator:
@@ -256,88 +292,6 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         return repr(f"DissolvedOxygenQualityCodeEvaluator '{self.name}'")
 
 
-def get_qc_evaluator_dict():
-    """Return all qc_evaluators in a dictionary.
-
-    Returns
-    -------
-    dict of string-qc_evaluator pairs
-    """
-    qc_evaluator_dict = {}
-    script_dir = Path(__file__).parent
-    # script_dir = os.path.dirname(os.path.abspath(__file__))
-
-    # Plain QualityCodeEvaluators
-    template_path = (script_dir / "config/QualityCodeEvaluator_QC_config.csv").resolve()
-    with open(template_path) as csv_file:
-        reader = csv.reader(csv_file)
-
-        for row in reader:
-            qc_evaluator_dict[row[0]] = QualityCodeEvaluator(
-                float(row[1]), float(row[2]), row[0]
-            )
-        csv_file.close()
-
-    # Two stage QualityCodeEvaluators
-    template_path = (
-        script_dir / "config/TwoLevelQualityCodeEvaluator_QC_config.csv"
-    ).resolve()
-    with open(template_path) as csv_file:
-        reader = csv.reader(csv_file)
-
-        for row in reader:
-            qc_evaluator_dict[row[0]] = TwoLevelQualityCodeEvaluator(
-                float(row[1]),
-                float(row[2]),
-                float(row[3]),
-                float(row[4]),
-                float(row[5]),
-                row[0],
-            )
-        csv_file.close()
-
-    # DO QualityCodeEvaluator
-    template_path = (
-        script_dir / "config/DissolvedOxygenQualityCodeEvaluator_QC_config.csv"
-    ).resolve()
-    with open(template_path) as csv_file:
-        reader = csv.reader(csv_file)
-
-        for row in reader:
-            qc_evaluator_dict[row[0]] = DissolvedOxygenQualityCodeEvaluator(
-                float(row[1]),
-                float(row[2]),
-                float(row[3]),
-                float(row[4]),
-                row[0],
-            )
-        csv_file.close()
-
-    return qc_evaluator_dict
-
-
-def get_qc_evaluator(qc_evaluator_name):
-    """Return qc_evaluator that matches the given name.
-
-    Raises exception if evaluator is not in the config.
-
-    Parameters
-    ----------
-    qc_evaluator_name : string
-        Name of the qc_evaluator as defined in the config
-
-    Returns
-    -------
-    QualityCodeEvaluator
-        The QualityCodeEvaluator class initiated with the standard config data
-    """
-    qce_dict = get_qc_evaluator_dict()
-    if qc_evaluator_name in qce_dict:
-        return qce_dict[qc_evaluator_name]
-    else:
-        return UncheckedQualityCodeEvaluator()
-
-
 def series_export_to_csv(
     file_location: str,
     series: list[pd.Series],
@@ -421,3 +375,21 @@ def hilltop_export(
     )
 
     export_check_df.to_csv(str(file_location) + "_check.csv")
+
+
+def get_qc_evaluator(family: str):
+    """Get QC evaluator from data family name."""
+    qc_string = DATA_FAMILY_DICT[family]["QC_evaluator_type"]
+    match qc_string:
+        case "Base":
+            qc_evaluator = QualityCodeEvaluator
+        case "TwoLevel":
+            qc_evaluator = TwoLevelQualityCodeEvaluator
+        case "DO":
+            qc_evaluator = DissolvedOxygenQualityCodeEvaluator
+        case "Unchecked":
+            qc_evaluator = UncheckedQualityCodeEvaluator
+        case _:
+            raise KeyError(f"QC_evaluator: {qc_string} has not been implemented yet")
+    qc_evaluator = qc_evaluator(*DATA_FAMILY_DICT[family]["QC_evaluator_values"])
+    return qc_evaluator

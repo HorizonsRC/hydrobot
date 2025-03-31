@@ -2,13 +2,10 @@
 
 import pandas as pd
 import yaml
-from annalist.annalist import Annalist
 from hilltoppy import Hilltop
 from hilltoppy.utils import build_url, get_hilltop_xml
 
 from hydrobot.data_structure import parse_xml
-
-annalizer = Annalist()
 
 
 def get_data(

@@ -124,6 +124,7 @@ class Processor:
         standard_hts_filename: str,
         standard_measurement_name: str,
         frequency: str | None,
+        data_family: str,
         from_date: str | None = None,
         to_date: str | None = None,
         check_hts_filename: str | None = None,
@@ -157,6 +158,8 @@ class Processor:
             The standard measurement to be processed.
         frequency : str
             The frequency of the data.
+        data_family : str
+            The type of data processing to be done
         from_date : str, optional
             The start date of the data (default is None).
         to_date : str, optional
@@ -223,6 +226,7 @@ class Processor:
                 message_type="info",
             )
 
+        self.data_family = data_family
         # set input values
         self._base_url = base_url
         self._site = site
@@ -324,9 +328,7 @@ class Processor:
             "item_format": "45",
         }
 
-        self._quality_code_evaluator = data_sources.get_qc_evaluator(
-            standard_measurement_name
-        )
+        self._quality_code_evaluator = data_sources.get_qc_evaluator(self.data_family)
         self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         # Load data for the first time
