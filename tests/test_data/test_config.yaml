@@ -4,6 +4,7 @@ standard_hts_filename: "GreenPasturesAreNaturalAndEcoFriendlyISwear.hts"
 check_hts_filename: "OceansOfEffluent.hts"
 
 # Data Source Configuration
+data_family: "Unchecked"
 site: "Mid Stream at Cowtoilet Farm"
 standard_measurement_name: "General Nastiness"
 check_measurement_name: "General Nastiness"

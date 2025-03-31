@@ -73,17 +73,9 @@ def mock_measurement_list():
 
 
 @pytest.fixture()
-def mock_qc_evaluator_dict():
-    """Mock response from get_qc_evaluator_dict lookup method."""
-    qc_500_limits = [2.5, 5.4, 230]
-    qc_600_limits = [4, 0.9, 480]
-    config_data = {}
-    for i, meas in enumerate(MEASUREMENTS):
-        config_data[meas] = QualityCodeEvaluator(
-            qc_500_limits[i],
-            qc_600_limits[i],
-            meas,
-        )
+def mock_qc_evaluator():
+    """Mock response from get_qc_evaluator lookup method."""
+    config_data = QualityCodeEvaluator(*[2.5, 5.4, "230"])
 
     return config_data
 
@@ -356,7 +348,7 @@ def test_processor_init(
     mock_site_list,
     mock_measurement_list,
     mock_xml_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the initialization of the Processor class.
@@ -373,7 +365,7 @@ def test_processor_init(
         Mocked data for the measurement list.
     mock_xml_data : Any
         Mocked data for Hilltop XML.
-    mock_qc_evaluator_dict : Any
+    mock_qc_evaluator : Any
         Mocked data for the QC evaluator dictionary.
 
     Notes
@@ -406,9 +398,9 @@ def test_processor_init(
         _ = args, kwargs
         return mock_xml_data
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -417,8 +409,8 @@ def test_processor_init(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in these cases, we need to patch the INSTANCE as imported in
@@ -436,6 +428,7 @@ def test_processor_init(
         defaults=DEFAULTS,
         fetch_quality=True,
         from_date="2024-01-01 00:00",
+        data_family="Unchecked",
     )
 
     captured = capsys.readouterr()
@@ -486,7 +479,7 @@ def test_to_xml_data_structure(
     mock_site_list,
     mock_measurement_list,
     mock_xml_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
     tmp_path,
     sample_data_source_xml_file,
 ):
@@ -503,7 +496,7 @@ def test_to_xml_data_structure(
         Mocked list of measurement names.
     mock_xml_data : str
         Mocked XML data content.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
     sample_data_source_xml_file : str
         Path to the sample XML data file.
@@ -532,9 +525,9 @@ def test_to_xml_data_structure(
         _ = args, kwargs
         return mock_xml_data
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -543,8 +536,8 @@ def test_to_xml_data_structure(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -563,6 +556,7 @@ def test_to_xml_data_structure(
             frequency="15min",
             defaults=DEFAULTS,
             from_date="2024-01-01 00:00",
+            data_family="Unchecked",
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -590,7 +584,7 @@ def test_import_data(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the import_data method of the Processor class.
@@ -605,7 +599,7 @@ def test_import_data(
         Mocked list of measurement names.
     mock_get_data : Callable
         Mocked get_data function.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
 
     Notes
@@ -636,9 +630,9 @@ def test_import_data(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -647,8 +641,8 @@ def test_import_data(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -667,6 +661,7 @@ def test_import_data(
         from_date=from_date,
         to_date=to_date,
         defaults=DEFAULTS,
+        data_family="Unchecked",
     )
     print(pr.standard_data)
     assert isinstance(pr.standard_data, pd.DataFrame)
@@ -693,7 +688,7 @@ def test_remove_range(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the remove_range method of the Processor class.
@@ -708,7 +703,7 @@ def test_remove_range(
         Mocked list of measurement names.
     mock_get_data : Callable
         Mocked get_data function.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
 
     Notes
@@ -739,9 +734,9 @@ def test_remove_range(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -750,8 +745,8 @@ def test_remove_range(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -770,6 +765,7 @@ def test_remove_range(
         from_date=from_date,
         to_date=to_date,
         defaults=DEFAULTS,
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -800,7 +796,7 @@ def test_clip(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the clip method of the Processor class.
@@ -815,7 +811,7 @@ def test_clip(
         Mocked list of measurement names.
     mock_get_data : Callable
         Mocked get_data function.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
 
     Notes
@@ -846,9 +842,9 @@ def test_clip(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -857,8 +853,8 @@ def test_clip(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -877,6 +873,7 @@ def test_clip(
         from_date=from_date,
         to_date=to_date,
         defaults=DEFAULTS,
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -902,7 +899,7 @@ def test_remove_spikes(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the remove_spikes method of the Processor class.
@@ -917,7 +914,7 @@ def test_remove_spikes(
         Mocked list of measurement names.
     mock_get_data : Callable
         Mocked get_data function.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
 
     Notes
@@ -948,9 +945,9 @@ def test_remove_spikes(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -959,8 +956,8 @@ def test_remove_spikes(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -979,6 +976,7 @@ def test_remove_spikes(
         from_date=from_date,
         to_date=to_date,
         defaults=DEFAULTS,
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1000,7 +998,7 @@ def test_remove_flatlined_values(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the remove_flatlined_values method of the Processor class.
@@ -1015,7 +1013,7 @@ def test_remove_flatlined_values(
         Mocked list of measurement names.
     mock_get_data : Callable
         Mocked get_data function.
-    mock_qc_evaluator_dict : Dict[str, Any]
+    mock_qc_evaluator : Dict[str, Any]
         Mocked QC evaluator dictionary.
 
     Notes
@@ -1046,9 +1044,9 @@ def test_remove_flatlined_values(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -1057,8 +1055,8 @@ def test_remove_flatlined_values(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -1077,6 +1075,7 @@ def test_remove_flatlined_values(
         from_date=from_date,
         to_date=to_date,
         defaults=DEFAULTS,
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1101,7 +1100,7 @@ def test_gap_closer(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """
     Test the 'gap_closer' method of the Processor class.
@@ -1116,7 +1115,7 @@ def test_gap_closer(
         Mocked response for the measurement list.
     mock_get_data : pytest fixture
         Mock response for the get_data server call method.
-    mock_qc_evaluator_dict : pytest fixture
+    mock_qc_evaluator : pytest fixture
         Mocked response for the quality control evaluator dictionary.
 
     Notes
@@ -1152,9 +1151,9 @@ def test_gap_closer(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -1163,8 +1162,8 @@ def test_gap_closer(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -1179,6 +1178,7 @@ def test_gap_closer(
         frequency="15min",
         defaults=DEFAULTS,
         from_date="2023-01-01 00:00",
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1270,7 +1270,7 @@ def test_data_export(
     mock_site_list,
     mock_measurement_list,
     mock_get_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
     tmp_path,
 ):
     """Test the 'data_exporter' method of the Processor class."""
@@ -1287,9 +1287,9 @@ def test_data_export(
         xml, data_func = mock_get_data
         return xml, data_func(*args, **kwargs)
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     ann.configure(stream_format_str="%(function_name)s | %(site)s")
 
@@ -1298,8 +1298,8 @@ def test_data_export(
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in this case, we need to patch the INSTANCE as imported in
@@ -1317,6 +1317,7 @@ def test_data_export(
         defaults=DEFAULTS,
         fetch_quality=True,
         from_date="2023-01-01 00:00",
+        data_family="Unchecked",
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1413,7 +1414,7 @@ def test_from_yaml_config(
     mock_site_list,
     mock_measurement_list,
     mock_xml_data,
-    mock_qc_evaluator_dict,
+    mock_qc_evaluator,
 ):
     """Test the initialization of the Processor class from a config yaml file."""
 
@@ -1429,17 +1430,17 @@ def test_from_yaml_config(
         _ = args, kwargs
         return mock_xml_data
 
-    def get_mock_qc_evaluator_dict(*args, **kwargs):
+    def get_mock_qc_evaluator(*args, **kwargs):
         _ = args, kwargs
-        return mock_qc_evaluator_dict
+        return mock_qc_evaluator
 
     # Here we patch the Hilltop Class
     monkeypatch.setattr(Hilltop, "get_site_list", get_mock_site_list)
     monkeypatch.setattr(Hilltop, "get_measurement_list", get_mock_measurement_list)
     monkeypatch.setattr(
         data_sources,
-        "get_qc_evaluator_dict",
-        get_mock_qc_evaluator_dict,
+        "get_qc_evaluator",
+        get_mock_qc_evaluator,
     )
 
     # However, in these cases, we need to patch the INSTANCE as imported in
