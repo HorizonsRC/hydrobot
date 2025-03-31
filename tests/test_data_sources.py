@@ -1,5 +1,4 @@
 """Test the data_sources module."""
-import pytest
 from annalist.annalist import Annalist
 
 import hydrobot.data_sources as data_sources
@@ -8,31 +7,15 @@ ann = Annalist()
 ann.configure()
 
 
-@pytest.mark.dependency(name="test_get_measurement_dict")
-def test_get_measurement_dict():
-    """Testing the measurement dictionary."""
-    m_dict = data_sources.get_qc_evaluator_dict()
-    assert isinstance(m_dict, dict), "not a dict somehow"
-    assert (
-        "Water Temperature [Dissolved Oxygen sensor]" in m_dict
-    ), "Missing data source water temp"
-    assert (
-        m_dict["Water Temperature [Dissolved Oxygen sensor]"].qc_500_limit > 0
-    ), "Water temp qc_500 limit not set up correctly"
-
-
-@pytest.mark.dependency(depends=["test_get_measurement_dict"])
 def test_get_measurement():
     """Testing the get_measurement method."""
-    wt_meas = data_sources.get_qc_evaluator(
-        "Water Temperature [Dissolved Oxygen sensor]"
-    )
+    wt_meas = data_sources.get_qc_evaluator("Water Temperature")
     assert wt_meas.qc_500_limit > 0, "Water temp qc_500 limit not set up correctly"
     assert wt_meas.find_qc(1.3, 0) == 400, "bad data not given bad qc"
     assert wt_meas.find_qc(1, 0) == 500, "fair data not given fair qc"
     assert wt_meas.find_qc(0.7, 0) == 600, "good data not given good qc"
 
-    stage_meas = data_sources.get_qc_evaluator("Water level statistics: Point Sample")
+    stage_meas = data_sources.get_qc_evaluator("Stage")
     assert stage_meas.find_qc(1999, 1988) == 400, "bad data not given bad qc, static"
     assert (
         stage_meas.find_qc(1999, 1990) == 500
@@ -75,7 +58,7 @@ def test_get_measurement():
         stage_meas.find_qc(0, 2) == 600
     ), "good data not given good qc, low static perc"
 
-    do_meas = data_sources.get_qc_evaluator("DO Saturation")
+    do_meas = data_sources.get_qc_evaluator("Dissolved Oxygen")
     assert do_meas.find_qc(100, 107.9) == 600, "data at 100, should be qc600"
     assert do_meas.find_qc(100, 108.1) == 500, "data at 100, should be qc500 not 600"
     assert do_meas.find_qc(100, 115.9) == 500, "data at 100, should be qc500 not 400"
