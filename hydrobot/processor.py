@@ -338,7 +338,6 @@ class Processor:
             to_date=self.to_date,
             check=get_check,
             quality=fetch_quality,
-            infer_frequency=self.infer_frequency,
         )
 
     def enforce_measurement_at_site(self, measurement_name, hilltop):
@@ -549,7 +548,6 @@ class Processor:
         from_date: str | None = None,
         to_date: str | None = None,
         frequency: str | None = None,
-        infer_frequency: bool = False,
         base_url: str | None = None,
     ):
         """
@@ -581,13 +579,8 @@ class Processor:
             data.
         frequency : str or None, optional
             The frequency of the data. If None, defaults to the frequency on the
-            processor object. If that's also None, the infer_frequency is consulted to
+            processor object. If that's also None, sellf.infer_frequency is consulted to
             determine whether to infer the frequency from the data.
-        infer_frequency : bool, optional
-            Whether to infer the frequency from the data. If True, the frequency is
-            inferred from the data. If False, the frequency is set to None. Only used if
-            the frequency is not provided as a parameter AND not specified on the
-            processor object.
         base_url : str or None, optional
             URL to look for hilltop server. Will use self.base_url if None.
 
@@ -723,7 +716,7 @@ class Processor:
                         frequency, fill_value=np.nan
                     )
                 else:
-                    if infer_frequency:
+                    if self.infer_frequency:
                         # We have been asked to infer the frequency
                         frequency = utils.infer_frequency(
                             raw_standard_data.index, method="mode"
@@ -744,7 +737,7 @@ class Processor:
                             code="IRR",
                             comment="No frequency provided and infer_frequency is set to False. "
                             "Assuming irregular data.",
-                            message_type="warning",
+                            message_type="info",
                         )
 
             if self.raw_standard_blob is not None:
@@ -1135,7 +1128,6 @@ class Processor:
         standard: bool = True,
         check: bool = True,
         quality: bool = True,
-        infer_frequency: bool = False,
     ):
         """
         Import data using the class parameter range.
@@ -1152,8 +1144,6 @@ class Processor:
             Whether to import check data, by default True.
         quality : bool, optional
             Whether to import quality data, by default False.
-        infer_frequency : bool, optional
-            Whether import_standard should infer_frequency, default False.
 
         Returns
         -------
@@ -1188,7 +1178,6 @@ class Processor:
                 from_date=from_date,
                 to_date=to_date,
                 frequency=self._frequency,
-                infer_frequency=infer_frequency,
             )
         if quality:
             (

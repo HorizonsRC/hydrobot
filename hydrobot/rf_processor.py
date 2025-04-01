@@ -160,7 +160,6 @@ class RFProcessor(Processor):
                 standard_data=self._standard_data,
                 from_date=from_date,
                 to_date=to_date,
-                infer_frequency=False,
             )
         if quality:
             (
@@ -744,7 +743,6 @@ class RFProcessor(Processor):
             standard_hts_filename=self.archive_standard_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
-            infer_frequency=False,
             base_url=self.archive_base_url,
             standard_data=processor.EMPTY_STANDARD_DATA.copy(),
         )
