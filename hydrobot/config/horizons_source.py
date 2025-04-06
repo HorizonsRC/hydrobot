@@ -228,6 +228,8 @@ def rainfall_check_data(from_date, to_date, site):
         ]
     ]
 
+    check_data = check_data[~check_data.duplicated()]
+
     return utils.series_rounder(check_data)
 
 

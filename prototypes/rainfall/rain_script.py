@@ -141,11 +141,11 @@ with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
 merger = HtmlMerger(
     [
         "pyplot.html",
+        "potential_processing_issues.html",
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
         "calibration_table.html",
-        "potential_processing_issues.html",
     ],
     encoding="utf-8",
     header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",

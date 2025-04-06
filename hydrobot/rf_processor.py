@@ -415,7 +415,9 @@ class RFProcessor(Processor):
                 .bfill()
             )
         self.report_processing_issue(
-            message_type="info", comment=str(site_survey_frame["output_dict"].iloc[-1])
+            message_type="info",
+            comment=str(site_survey_frame["output_dict"].iloc[-1]),
+            series_type="quality",
         )
         site_survey_frame = site_survey_frame[site_survey_frame.index >= self.from_date]
 

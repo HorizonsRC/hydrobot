@@ -14,6 +14,7 @@ standard_measurement_name: Rainfall [SCADA Rainfall]
 check_measurement_name: Check Gauge Total [SCADA Rainfall]
 standard_backup: Rainfall [SCADA Rainfall]
 check_backup: Check Gauge Total [Rainfall]
+infer_frequency: False
 
 # Export configuration
 export_file_name: processed_rf.xml

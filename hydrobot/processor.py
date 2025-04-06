@@ -579,7 +579,7 @@ class Processor:
             data.
         frequency : str or None, optional
             The frequency of the data. If None, defaults to the frequency on the
-            processor object. If that's also None, sellf.infer_frequency is consulted to
+            processor object. If that's also None, self.infer_frequency is consulted to
             determine whether to infer the frequency from the data.
         base_url : str or None, optional
             URL to look for hilltop server. Will use self.base_url if None.
