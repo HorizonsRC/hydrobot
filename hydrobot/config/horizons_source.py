@@ -46,6 +46,26 @@ def hilltop_db_engine():
     return db.create_engine(ht_connection_url)
 
 
+def hydro_inspections(from_date, to_date, site):
+    """Returns hydro inspection info for site."""
+    hydro_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("hydro_inspection.sql")
+        .read_text()
+    )
+
+    inspections = pd.read_sql(
+        hydro_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date) - pd.Timedelta("3min"),
+            "end_time": pd.Timestamp(to_date) + pd.Timedelta("3min"),
+            "site": site,
+        },
+    )
+    return inspections
+
+
 def rainfall_inspections(from_date, to_date, site):
     """Returns all info from rainfall inspection query."""
     rainfall_query = db.text(

@@ -134,6 +134,9 @@ with open("calibration_table.html", "w", encoding="utf-8") as file:
             source.calibrations(data.site, measurement_name="Rainfall"),
         ]
     ).to_html(file)
+with open("inspections_table.html", "w", encoding="utf-8") as file:
+    file.write("<p>All hydro inspections</p>")
+    source.hydro_inspections(data.from_date, data.to_date, data.site).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
     file.write("<p>Issues</p>")
     data.processing_issues.to_html(file)
