@@ -770,17 +770,16 @@ def set_config_from_date(config_file, base_url, hts_filename, site, measurement)
     None
         side effect: modifies the config.yaml
     """
-    last_time = find_last_time(
-        base_url=base_url,
-        hts=hts_filename,
-        site=site,
-        measurement=measurement,
-    )
-
     yaml = ruamel.yaml.YAML()
     with open(config_file) as fp:
         data = yaml.load(fp)
         if "from_date" not in data or data["from_date"] is None:
+            last_time = find_last_time(
+                base_url=base_url,
+                hts=hts_filename,
+                site=site,
+                measurement=measurement,
+            )
             data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
     with open(config_file, "w") as fp:
         yaml.dump(data, fp)

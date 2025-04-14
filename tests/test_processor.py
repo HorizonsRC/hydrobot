@@ -429,6 +429,7 @@ def test_processor_init(
         fetch_quality=True,
         from_date="2024-01-01 00:00",
         data_family="Unchecked",
+        infer_frequency=False,
     )
 
     captured = capsys.readouterr()
@@ -557,6 +558,7 @@ def test_to_xml_data_structure(
             defaults=DEFAULTS,
             from_date="2024-01-01 00:00",
             data_family="Unchecked",
+            infer_frequency=False,
         )
 
         data_source_blob_list += pr.to_xml_data_structure()
@@ -662,6 +664,7 @@ def test_import_data(
         to_date=to_date,
         defaults=DEFAULTS,
         data_family="Unchecked",
+        infer_frequency=False,
     )
     print(pr.standard_data)
     assert isinstance(pr.standard_data, pd.DataFrame)
@@ -766,6 +769,7 @@ def test_remove_range(
         to_date=to_date,
         defaults=DEFAULTS,
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -874,6 +878,7 @@ def test_clip(
         to_date=to_date,
         defaults=DEFAULTS,
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -977,6 +982,7 @@ def test_remove_spikes(
         to_date=to_date,
         defaults=DEFAULTS,
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1076,6 +1082,7 @@ def test_remove_flatlined_values(
         to_date=to_date,
         defaults=DEFAULTS,
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1179,6 +1186,7 @@ def test_gap_closer(
         defaults=DEFAULTS,
         from_date="2023-01-01 00:00",
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)
@@ -1318,6 +1326,7 @@ def test_data_export(
         fetch_quality=True,
         from_date="2023-01-01 00:00",
         data_family="Unchecked",
+        infer_frequency=False,
     )
     assert isinstance(pr.standard_data, pd.DataFrame)
     assert isinstance(pr.quality_data, pd.DataFrame)

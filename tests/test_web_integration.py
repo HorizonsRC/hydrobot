@@ -228,6 +228,7 @@ def test_processor_integration(tmp_path):
         "from_date": "2021-01-01 00:00",
         "to_date": "2021-02-02 23:00",
         "frequency": "5min",
+        "infer_frequency": False,
         "data_family": "Stage",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
@@ -265,6 +266,7 @@ def test_processor_integration(tmp_path):
         processing_parameters["check_measurement_name"],
         processing_parameters["defaults"],
         fetch_quality=True,
+        infer_frequency=False,
     )
 
     assert isinstance(data.standard_data, pd.DataFrame)

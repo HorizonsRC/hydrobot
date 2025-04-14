@@ -1,15 +1,17 @@
 # Hilltop Server Configuration
-base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "GreenPasturesAreNaturalAndEcoFriendlyISwear.hts"
-check_hts_filename: "OceansOfEffluent.hts"
+base_url: http://hilltopdev.horizons.govt.nz/
+standard_hts_filename: GreenPasturesAreNaturalAndEcoFriendlyISwear.hts
+check_hts_filename: OceansOfEffluent.hts
 
 # Data Source Configuration
-data_family: "Unchecked"
-site: "Mid Stream at Cowtoilet Farm"
-standard_measurement_name: "General Nastiness"
-check_measurement_name: "General Nastiness"
-frequency: "15min"
-from_date: "2023-01-01 00:00"
+data_family: Unchecked
+site: Mid Stream at Cowtoilet Farm
+standard_measurement_name: General Nastiness
+check_measurement_name: General Nastiness
+frequency: 15min
+from_date: 2023-01-01 00:00
+to_date: 2025-01-01 00:00
+infer_frequency: false
 
 # Processing Configuration
 # from_date: "2023-04-13 11:30:00"
@@ -22,13 +24,18 @@ defaults:
   span: 10
 
 # Annalist Configuration
-analyst_name: "Testificate"
+analyst_name: Testificate
 format:
-  stream: "%(function_name)s | %(site)s"
+  stream: '%(function_name)s | %(site)s'
 
 
 inspection_expiry:
-    500:
-        months: 2
-    0:
-        months: 4
+  500:
+    months: 2
+  0:
+    months: 4
+
+archive_base_url:
+archive_standard_hts_filename:
+archive_check_hts_filename:
+export_file_name:
