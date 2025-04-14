@@ -11,12 +11,15 @@ import hydrobot.config.horizons_source as source
 from hydrobot.data_acquisition import enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.filters import trim_series
+from hydrobot.measurement_specific_functions.dissolved_oxygen import (
+    correct_dissolved_oxygen,
+)
 from hydrobot.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
     Processor,
 )
-from hydrobot.utils import compare_two_qc_take_min, correct_dissolved_oxygen
+from hydrobot.utils import compare_two_qc_take_min
 
 
 class DOProcessor(Processor):
