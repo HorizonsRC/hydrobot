@@ -391,14 +391,13 @@ class RFProcessor(Processor):
             )
 
         # Repack the standard data to 6 minute interval
-        six_minute_data = utils.rainfall_six_minute_repacker(
-            self.standard_data["Value"]
-        )
+        six_minute_data = rf.rainfall_six_minute_repacker(self.standard_data["Value"])
 
         # Ramp standard data to go through the check data points
-        ramped_standard, deviation_points = utils.check_data_ramp_and_quality(
-            six_minute_data, checks_for_qcing
-        )
+        (
+            ramped_standard,
+            deviation_points,
+        ) = rf.check_data_ramp_and_quality(six_minute_data, checks_for_qcing)
 
         time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
 
@@ -544,9 +543,10 @@ class RFProcessor(Processor):
 
         zeroed_cumulative_check_data = self.cumulative_check_data.copy()
         if not zeroed_cumulative_check_data.empty:
-            zeroed_cumulative_check_data["Value"] = zeroed_cumulative_check_data[
-                "Value"
-            ].fillna(0)
+            with pd.option_context("future.no_silent_downcasting", True):
+                zeroed_cumulative_check_data["Value"] = zeroed_cumulative_check_data[
+                    "Value"
+                ].fillna(0)
 
             zeroed_cumulative_check_data["Value"] = (
                 zeroed_cumulative_check_data["Value"]
@@ -802,7 +802,7 @@ class RFProcessor(Processor):
             )
 
             # How much rainfall has occurred according to scada
-            incremental_series = utils.rainfall_six_minute_repacker(
+            incremental_series = rf.rainfall_six_minute_repacker(
                 self.standard_data["Value"]
             ).cumsum()
             try:

@@ -8,8 +8,6 @@ import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
 
-import hydrobot.utils as utils
-
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
 
@@ -516,8 +514,8 @@ def calculate_common_offset(
     numeric
         The common offset
     """
-    scada_difference = utils.calculate_scada_difference(
-        utils.rainfall_six_minute_repacker(standard_series),
+    scada_difference = calculate_scada_difference(
+        rainfall_six_minute_repacker(standard_series),
         check_series,
     )
     check_quality = quality_series.reindex(scada_difference.index, method="bfill")
@@ -555,3 +553,199 @@ def add_zeroes_at_checks(standard_data: pd.DataFrame, check_data: pd.DataFrame):
     ]
     standard_data = pd.concat([standard_data, empty_check_values]).sort_index()
     return standard_data
+
+
+def add_empty_rainfall_to_std(std_series: pd.Series, check_series: pd.Series):
+    """
+    Add zeroes to the std_series where checks happen (if no SCADA event then).
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series which might be missing the zeroes
+    check_series : pd.Series
+        Where to add the zeroes if they don't exist
+
+    Returns
+    -------
+    pd.Series
+        std_series with zeroes added
+
+    """
+    # Prevent side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # Find places for new zeroes
+    additional_index_values = check_series.index.difference(std_series.index)
+    additional_series = pd.Series(0, additional_index_values)
+
+    if not additional_series.empty:
+        std_series = pd.concat([std_series, additional_series])
+    std_series = std_series.sort_index()
+
+    return std_series
+
+
+def calculate_scada_difference(std_series, check_series):
+    """
+    Calculate multiplicative difference between scada totals and check data.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be ramped. Values are required at each check value (can be zero)
+    check_series : pd.Series
+        The data to ramp it to
+
+    Returns
+    -------
+    pd.Series
+        Deviation of check series from scada totals
+    """
+    # Avoid side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    # How much rainfall has occurred according to scada
+    incremental_series = std_series.cumsum()
+
+    # Filter to when checks occur
+    try:
+        recorded_totals = incremental_series[check_series.index]
+    except KeyError as e:
+        raise KeyError("Check data times not found in the standard series") from e
+
+    # Multiplier of difference between check and scada
+    scada_difference = check_series / recorded_totals.diff().astype(np.float64).replace(
+        0, np.nan
+    )
+    return scada_difference
+
+
+def check_data_ramp_and_quality(std_series: pd.Series, check_series: pd.Series):
+    """
+    Ramps standard data to fit the check data.
+
+    Parameters
+    ----------
+    std_series : pd.Series
+        The series to be ramped. Values are required at each check value (can be zero)
+    check_series : pd.Series
+        The data to ramp it to
+
+    Returns
+    -------
+    (pd.Series, pd.Series)
+        First element is std_series but ramped
+        Second element is quality_series
+    """
+    # Avoid side effects
+    std_series = std_series.copy()
+    check_series = check_series.copy()
+
+    scada_difference = calculate_scada_difference(std_series, check_series)
+
+    # Fill out to all scada events
+    multiplier = scada_difference.reindex(std_series.index, method="bfill")
+    # Multiply to find std_data
+    std_series = std_series * multiplier.astype(np.float64).fillna(0.0)
+
+    # Boolean whether it meets qc 600 standard
+    points0 = (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    points3 = ((scada_difference >= 0.8) & (scada_difference <= 1.2)) & ~(
+        (scada_difference >= 0.9) & (scada_difference <= 1.1)
+    )
+    points12 = ~((scada_difference >= 0.8) & (scada_difference <= 1.2))
+
+    # Either QC 600 or 400
+    # noinspection PyUnresolvedReferences
+    quality_code = (
+        points0.astype(np.float64) * 0
+        + points3.astype(np.float64) * 3
+        + points12.astype(np.float64) * 12
+    )
+    # Shift quality codes for hilltop convention
+    quality_code = quality_code.shift(periods=-1)
+    quality_code = quality_code.fillna(-1000).astype(np.int64)
+
+    return std_series, quality_code
+
+
+def rainfall_six_minute_repacker(series: pd.Series):
+    """
+    Repacks SCADA rainfall (rainfall bucket events) as 6 minute totals.
+
+    Parameters
+    ----------
+    series : pd.Series
+        SCADA rainfall series to be repacked as a 6 minute totals series
+        expects a datetime index, will throw warning if it is not while it converts
+
+    Returns
+    -------
+    pd.Series
+        Repacked series with datetime index
+    """
+    series = series.copy()
+
+    if not isinstance(series.index, pd.DatetimeIndex):
+        warnings.warn(
+            "INPUT_WARNING: Index is not DatetimeIndex, index type will be changed",
+            stacklevel=2,
+        )
+        series.index = pd.DatetimeIndex(series.index)
+
+    scada_index = series.index
+    floor_index = scada_index.floor("6min")
+    ceil_index = scada_index.ceil("6min")
+
+    diff_filter = scada_index.diff() < pd.Timedelta(minutes=6)
+    dup_filter = floor_index.duplicated()
+
+    # Case 1, diff > 6
+
+    time_delta_index_case1 = (scada_index - floor_index) / pd.Timedelta(minutes=6)
+
+    floor_series = series[~diff_filter] * (1 - time_delta_index_case1[~diff_filter])
+    floor_series.index = floor_index[~diff_filter]
+
+    ceil_series = series[~diff_filter] * time_delta_index_case1[~diff_filter]
+    ceil_series.index = ceil_index[~diff_filter]
+
+    case1 = pd.concat([ceil_series, floor_series]).round()
+    case1 = case1.groupby(case1.index).sum()
+
+    # Case 2, diff < 6 & last scada within timespan
+
+    case2 = series[diff_filter & dup_filter]
+    case2.index = ceil_index[diff_filter & dup_filter]
+    case2 = case2.groupby(case2.index).sum()
+
+    # Case 3, diff < 6 & last scada in other timespan
+
+    time_delta_index_case3 = (scada_index - floor_index) / (scada_index.diff())
+
+    floor_series = series[diff_filter & ~dup_filter] * (
+        1 - time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    floor_series.index = floor_index[diff_filter & ~dup_filter]
+
+    ceil_series = (
+        series[diff_filter & ~dup_filter]
+        * time_delta_index_case3[diff_filter & ~dup_filter]
+    )
+    ceil_series.index = ceil_index[diff_filter & ~dup_filter]
+
+    case3 = pd.concat([ceil_series, floor_series]).round()
+    case3 = case3.groupby(case3.index).sum()
+
+    # Putting it together
+
+    rainfall_series = pd.concat([case1, case2, case3])
+    rainfall_series = rainfall_series.groupby(rainfall_series.index).sum()
+
+    # fill it up with zeroes
+    rainfall_series = rainfall_series.asfreq(freq="6min", fill_value=0.0)
+
+    return rainfall_series

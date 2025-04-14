@@ -78,9 +78,7 @@ else:
     manual_additional_points = pd.Series({})
 
 if data.check_data.Value.isna().all():
-    data.ramped_standard = utils.rainfall_six_minute_repacker(
-        data.standard_data["Value"]
-    )
+    data.ramped_standard = rf.rainfall_six_minute_repacker(data.standard_data["Value"])
     data.quality_data = pd.DataFrame(
         index=[data.ramped_standard.index[0], data.ramped_standard.index[-1]],
         data={

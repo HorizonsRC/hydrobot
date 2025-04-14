@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import hydrobot.measurement_specific_functions.rainfall as rf
 import hydrobot.utils as utils
 
 mowsecs_data_dict = {
@@ -278,7 +279,7 @@ def test_rainfall_six_minute_repacker():
     original = series.copy()
 
     with warnings.catch_warnings(record=True) as w:
-        repacked = utils.rainfall_six_minute_repacker(series)
+        repacked = rf.rainfall_six_minute_repacker(series)
         assert len(w) == 1, "Incorrect number of warnings"
         assert "INPUT_WARNING" in str(w[0].message), "Wrong kind of warning"
     assert original.equals(series), "Original modified"
@@ -300,7 +301,7 @@ def test_rainfall_six_minute_repacker():
     )
     series.index = pd.DatetimeIndex(series.index)
 
-    repacked = utils.rainfall_six_minute_repacker(series)
+    repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
             "2021-01-01 01:54": 67.0,
@@ -320,7 +321,7 @@ def test_rainfall_six_minute_repacker():
     )
     series.index = pd.DatetimeIndex(series.index)
 
-    repacked = utils.rainfall_six_minute_repacker(series)
+    repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
             "2021-01-01 01:54": 0.0,
@@ -340,7 +341,7 @@ def test_rainfall_six_minute_repacker():
     )
     series.index = pd.DatetimeIndex(series.index)
 
-    repacked = utils.rainfall_six_minute_repacker(series)
+    repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
             "2021-01-01 01:48": 0.0,
@@ -361,7 +362,7 @@ def test_rainfall_six_minute_repacker():
     )
     series.index = pd.DatetimeIndex(series.index)
 
-    repacked = utils.rainfall_six_minute_repacker(series)
+    repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
             "2021-01-01 01:48": 67.0,
@@ -382,7 +383,7 @@ def test_rainfall_six_minute_repacker():
     )
     series.index = pd.DatetimeIndex(series.index)
 
-    repacked = utils.rainfall_six_minute_repacker(series)
+    repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
             "2021-01-01 01:00": 100.0,
@@ -436,9 +437,10 @@ def test_check_data_ramp_and_quality():
     )
     expected_quality.index = pd.DatetimeIndex(expected_quality.index)
 
-    actual_std, actual_quality = utils.check_data_ramp_and_quality(
-        start_std, start_check
-    )
+    (
+        actual_std,
+        actual_quality,
+    ) = rf.check_data_ramp_and_quality(start_std, start_check)
 
     assert start_std.equals(original_std), "original std modified"
     assert start_check.equals(original_check), "original check modified"
@@ -512,9 +514,10 @@ def test_check_data_ramp_and_quality():
     )
     expected_quality.index = pd.DatetimeIndex(expected_quality.index)
 
-    actual_std, actual_quality = utils.check_data_ramp_and_quality(
-        start_std, start_check
-    )
+    (
+        actual_std,
+        actual_quality,
+    ) = rf.check_data_ramp_and_quality(start_std, start_check)
 
     assert start_std.equals(original_std), "original std modified 2"
     assert start_check.equals(original_check), "original check modified 2"
@@ -574,17 +577,17 @@ def test_check_data_ramp_and_quality():
 
     with pytest.raises(KeyError):
         (
-            utils.check_data_ramp_and_quality(start_std, start_check1),
+            rf.check_data_ramp_and_quality(start_std, start_check1),
             "First check missing breaks it",
         )
     with pytest.raises(KeyError):
         (
-            utils.check_data_ramp_and_quality(start_std, start_check2),
+            rf.check_data_ramp_and_quality(start_std, start_check2),
             "Middle check missing breaks it",
         )
     with pytest.raises(KeyError):
         (
-            utils.check_data_ramp_and_quality(start_std, start_check3),
+            rf.check_data_ramp_and_quality(start_std, start_check3),
             "Last check missing breaks it",
         )
 
@@ -688,9 +691,9 @@ def test_add_empty_rainfall_to_std():
     )
     expected_std3.index = pd.DatetimeIndex(expected_std3.index)
 
-    actual_std1 = utils.add_empty_rainfall_to_std(start_std, start_check1)
-    actual_std2 = utils.add_empty_rainfall_to_std(start_std, start_check2)
-    actual_std3 = utils.add_empty_rainfall_to_std(start_std, start_check3)
+    actual_std1 = rf.add_empty_rainfall_to_std(start_std, start_check1)
+    actual_std2 = rf.add_empty_rainfall_to_std(start_std, start_check2)
+    actual_std3 = rf.add_empty_rainfall_to_std(start_std, start_check3)
 
     assert start_std.equals(original_std), "standard data modified, side effect"
     assert start_check1.equals(original_check1), "check data 1 modified, side effect"

@@ -265,16 +265,17 @@ def plot_check_data(
             timestamps = tag_check.index
 
         if rain_control:
-            checks = (
-                (
-                    tag_check["Value"].diff().to_numpy()
-                    / standard_series.loc[timestamps].diff().replace(0, -1)
-                    * 100
-                    - 100
+            with pd.option_context("future.no_silent_downcasting", True):
+                checks = (
+                    (
+                        tag_check["Value"].diff().to_numpy()
+                        / standard_series.loc[timestamps].diff().replace(0, -1)
+                        * 100
+                        - 100
+                    )
+                    .astype(np.float64)
+                    .fillna(0)
                 )
-                .astype(np.float64)
-                .fillna(0)
-            )
         elif diffs:
             checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
         else:
