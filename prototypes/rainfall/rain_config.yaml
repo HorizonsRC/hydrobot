@@ -1,6 +1,7 @@
+# Fields to fill out
+analyst_name: script_default
 site: Ahuahu at Te Tuhi Junction
-analyst_name: Sam Irvine
-from_date: 2025-01-10 09:30
+from_date:
 to_date:
 
 # Hilltop Server Configuration
@@ -15,6 +16,7 @@ check_measurement_name: Check Gauge Total [SCADA Rainfall]
 standard_backup: Rainfall [SCADA Rainfall]
 check_backup: Check Gauge Total [Rainfall]
 infer_frequency: false
+frequency:
 
 # Export configuration
 export_file_name: processed_rf.xml

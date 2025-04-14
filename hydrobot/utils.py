@@ -2,6 +2,7 @@
 
 import urllib.parse
 import warnings
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -779,9 +780,68 @@ def set_config_from_date(config_file, base_url, hts_filename, site, measurement)
     yaml = ruamel.yaml.YAML()
     with open(config_file) as fp:
         data = yaml.load(fp)
-        data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
+        if "from_date" not in data or data["from_date"] is None:
+            data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
     with open(config_file, "w") as fp:
         yaml.dump(data, fp)
+
+
+def set_config_to_date_to_current_time(config_file):
+    """
+    Set to_date to current time if no time is present.
+
+    Parameters
+    ----------
+    config_file : str
+        Path to config.yaml to modify
+
+    Returns
+    -------
+    None
+        side effect: modifies the config.yaml
+    """
+    yaml = ruamel.yaml.YAML()
+    with open(config_file) as fp:
+        data = yaml.load(fp)
+        if "to_date" not in data or data["to_date"] is None:
+            data["to_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
+    with open(config_file, "w") as fp:
+        yaml.dump(data, fp)
+
+
+def enforce_config_values_not_missing(config_file, parameters_to_check):
+    """
+    Raises parameters to None if not present in config file.
+
+    Parameters
+    ----------
+    config_file : str
+        Path to config.yaml to modify
+    parameters_to_check : [str]
+        List of parameters to enforce being part of
+
+    Returns
+    -------
+    None
+
+    Raises
+    ------
+    ______
+    ValueError
+        If any of the parameters are missing
+    """
+    missing_parameters = []
+    yaml = ruamel.yaml.YAML()
+    with open(config_file) as fp:
+        data = yaml.load(fp)
+        for parameter in parameters_to_check:
+            if parameter not in data:
+                missing_parameters.append(parameter)
+    if missing_parameters:
+        raise ValueError(
+            f"Required parameters missing in config file {config_file}. Add these values to config.yaml "
+            f"file:{missing_parameters} (these values can likely be set to None)"
+        )
 
 
 def combine_comments(comment_frame: pd.DataFrame) -> pd.Series:

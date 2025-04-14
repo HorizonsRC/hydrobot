@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
-from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
+from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 from hydrobot.processor import EMPTY_CHECK_DATA
 from hydrobot.utils import series_rounder
 
@@ -16,7 +16,7 @@ data_sections_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = DOProcessor.from_config_yaml("do_config.yaml")
+data, ann = initialise_hydrobot_from_yaml("do_config.yaml")
 
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[

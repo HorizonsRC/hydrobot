@@ -7,7 +7,7 @@ import hydrobot.measurement_specific_functions.rainfall as rf
 import hydrobot.utils as utils
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
-from hydrobot.rf_processor import RFProcessor
+from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 
 #######################################################################################
 # Manual interventions
@@ -18,7 +18,7 @@ checks_to_manually_ignore = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = RFProcessor.from_config_yaml("rain_config.yaml", set_from_date=True)
+data, ann = initialise_hydrobot_from_yaml("rain_config.yaml")
 
 #######################################################################################
 # Importing external check data

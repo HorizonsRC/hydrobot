@@ -409,47 +409,63 @@ class Processor:
         -------
         Processor, Annalist
         """
+        cls.complete_yaml_parameters(config_path)
         processing_parameters = data_acquisition.config_yaml_import(config_path)
 
-        if set_from_date:
-            utils.set_config_from_date(
-                config_file=config_path,
-                base_url=processing_parameters["archive_base_url"],
-                hts_filename=processing_parameters["archive_standard_hts_filename"],
-                site=processing_parameters["site"],
-                measurement=processing_parameters["standard_measurement_name"],
-            )
-            # refresh the parameters
-            processing_parameters = data_acquisition.config_yaml_import(config_path)
+        return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 
-        if "to_date" not in processing_parameters:
-            processing_parameters["to_date"] = datetime.now().strftime(
-                "%d-%m-%Y %H:%M:%S"
-            )
-        keys_to_be_set_to_none_if_missing = [
+    @staticmethod
+    def _keys_to_be_set_to_none_if_missing():
+        keys = [
             "frequency",
             "from_date",
             "check_hts_filename",
             "check_measurement_name",
-            "inspection_expiry",
             "export_file_name",
             "archive_base_url",
             "archive_standard_hts_filename",
             "archive_check_hts_filename",
         ]
-        for k in keys_to_be_set_to_none_if_missing:
-            if k not in processing_parameters:
-                processing_parameters[k] = None
+        return keys
 
-        def isvalid(potential_nan):
-            return potential_nan is None or np.isnan(potential_nan)
+    @classmethod
+    def complete_yaml_parameters(cls, config_path):
+        """Ensure a yaml holds all relevant parameters, filling in missing from/to dates."""
+        processing_parameters = data_acquisition.config_yaml_import(config_path)
 
-        if (not isinstance(processing_parameters["frequency"], str)) and isvalid(
-            processing_parameters["frequency"]
-        ):
-            processing_parameters["frequency"] = None
+        # Set to_date if missing
+        utils.set_config_to_date_to_current_time(config_path)
 
-        return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
+        def key_and_substitute(key, sub, values):
+            """Returns values[key] if that is valid, otherwise returns values[sub]."""
+            if key in values and values[key] is not None:
+                return values[key]
+            else:
+                return values[sub]
+
+        # Set from_date if missing
+        utils.set_config_from_date(
+            config_file=config_path,
+            base_url=key_and_substitute(
+                "archive_base_url", "base_url", processing_parameters
+            ),
+            hts_filename=key_and_substitute(
+                "archive_standard_hts_filename",
+                "standard_hts_filename",
+                processing_parameters,
+            ),
+            site=processing_parameters["site"],
+            measurement=key_and_substitute(
+                "archive_standard_measurement_name",
+                "standard_measurement_name",
+                processing_parameters,
+            ),
+        )
+
+        # Ensure these keys are not missing - raises error if it is
+        utils.enforce_config_values_not_missing(
+            config_path, cls._keys_to_be_set_to_none_if_missing()
+        )
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -549,6 +565,7 @@ class Processor:
         to_date: str | None = None,
         frequency: str | None = None,
         base_url: str | None = None,
+        infer_frequency: bool | None = None,
     ):
         """
         Import standard data.
@@ -583,6 +600,9 @@ class Processor:
             determine whether to infer the frequency from the data.
         base_url : str or None, optional
             URL to look for hilltop server. Will use self.base_url if None.
+        infer_frequency : str or None, optional.
+            Whether to look for frequency. Uses self.infer_frequency if None. If True and frequency is provided will
+            issue a warning.
 
         Returns
         -------
@@ -632,6 +652,8 @@ class Processor:
             standard_data = self._standard_data
         if base_url is None:
             base_url = self._base_url
+        if infer_frequency is None:
+            infer_frequency = self.infer_frequency
 
         xml_tree, blob_list = data_acquisition.get_data(
             base_url,
@@ -715,6 +737,12 @@ class Processor:
                     raw_standard_data = raw_standard_data.asfreq(
                         frequency, fill_value=np.nan
                     )
+                    if infer_frequency:
+                        warnings.warn(
+                            f"infer_frequency is true, but frequency has been provided as {frequency}. Will not "
+                            f"attempt to find frequency from data.",
+                            stacklevel=1,
+                        )
                 else:
                     if self.infer_frequency:
                         # We have been asked to infer the frequency
@@ -735,8 +763,8 @@ class Processor:
                         # Assuming irregular data
                         self.report_processing_issue(
                             code="IRR",
-                            comment="No frequency provided and infer_frequency is set to False. "
-                            "Assuming irregular data.",
+                            comment=f"No frequency provided and infer_frequency"
+                            f" is set to False. Assuming irregular data for {standard_measurement_name}.",
                             message_type="info",
                         )
 
@@ -871,8 +899,8 @@ class Processor:
             )
         else:
             date_format = "Calendar"
+            data_source_options = []
             for blob in blob_list:
-                data_source_options = []
                 if blob.data_source.ts_type == "StdQualSeries":
                     data_source_options += [blob.data_source.name]
                     if blob.data_source.name == standard_data_source_name:
@@ -1489,9 +1517,7 @@ class Processor:
                 else np.nan
             )
 
-        clipped = filters.clip(
-            self._standard_data["Value"].squeeze(), low_clip, high_clip
-        )
+        clipped = filters.clip(self._standard_data["Value"], low_clip, high_clip)
 
         self._standard_data = self._apply_changes(
             self._standard_data, clipped, "CLP", mark_remove=True

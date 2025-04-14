@@ -1,19 +1,22 @@
 # Fields to fill out
-analyst_name: "test_name"
-site: "Arawhata Drain at Dairy Track Bridge"
+analyst_name: script_default
+site: Arawhata Drain at Dairy Track Bridge
+from_date:
+to_date:
 
 # Hilltop Server Configuration
-base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
-check_hts_filename: "HydrobotCheckData.hts"
+base_url: http://hilltopdev.horizons.govt.nz/
+standard_hts_filename: RawLoggerNet.hts
+check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
-data_family: "Water Temperature"
-standard_measurement_name: "Water Temperature [Dissolved Oxygen sensor]"
-check_measurement_name: "Water Temperature Check [Water Temperature]"
+data_family: Water Temperature
+standard_measurement_name: Water Temperature [Dissolved Oxygen sensor]
+check_measurement_name: Water Temperature Check [Water Temperature]
+frequency:
 
 # Export configuration
-export_file_name: "processed_wt.xml"
+export_file_name: processed_wt.xml
 
 # Processing Configuration
 defaults:
@@ -25,23 +28,19 @@ defaults:
   span: 10
 
 # Annalist Configuration
-logfile: "hydrobot_logs.csv"
+logfile: hydrobot_logs.csv
 format:
-  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
-  stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
+  file: '%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s,
+    %(from_date)s, %(to_date)s, %(message)s'
+  stream: '%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s'
 
 inspection_expiry:
-    500:
-        months: 2
-    0:
-        months: 4
+  500:
+    months: 2
+  0:
+    months: 4
 
-archive_base_url: "http://hilltopdev.horizons.govt.nz/"
-archive_standard_hts_filename: "Archive.hts"
-archive_check_hts_filename: "Archive.hts"
-archive_standard_measurement_name: "Water Temperature [Water Temperature]"
-
-# Optional settings
-frequency:
-from_date:
-to_date:
+archive_base_url: http://hilltopdev.horizons.govt.nz/
+archive_standard_hts_filename: Archive.hts
+archive_check_hts_filename: Archive.hts
+archive_standard_measurement_name: Water Temperature [Water Temperature]

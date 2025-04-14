@@ -1,7 +1,6 @@
 """Dissolved Oxygen Processor Class."""
 
 import re
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -9,7 +8,7 @@ from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 import hydrobot.config.horizons_source as source
-from hydrobot.data_acquisition import config_yaml_import, enforce_site_in_hts
+from hydrobot.data_acquisition import enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.filters import trim_series
 from hydrobot.processor import (
@@ -198,6 +197,7 @@ class DOProcessor(Processor):
             from_date=self.from_date,
             to_date=self.to_date,
             frequency=self.atmospheric_pressure_frequency,
+            infer_frequency=False,
         )
         self.wt_standard_data, _, _, _ = self.import_standard(
             standard_hts_filename=self.water_temperature_hts,
@@ -209,6 +209,7 @@ class DOProcessor(Processor):
             from_date=self.from_date,
             to_date=self.to_date,
             frequency=self.water_temperature_frequency,
+            infer_frequency=False,
         )
         if self.ap_standard_data.empty or self.wt_standard_data.empty:
             raise ValueError(
@@ -363,32 +364,9 @@ class DOProcessor(Processor):
         if self.quality_data["Value"].iloc[-1] == 100:
             self.quality_data.loc[self.to_date, "Value"] = 0
 
-    @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False):
-        """
-        Initialises a Processor class given a config file.
-
-        Parameters
-        ----------
-        config_path : string
-            Path to config.yaml.
-        fetch_quality : bool, optional
-            Whether to fetch any existing quality data, default false
-
-        Returns
-        -------
-        Processor, Annalist
-        """
-        processing_parameters = config_yaml_import(config_path)
-
-        ###################################################################################
-        # Creating a Hydrobot Processor object which contains the data to be processed
-        ###################################################################################
-        if "to_date" not in processing_parameters:
-            processing_parameters["to_date"] = datetime.now().strftime(
-                "%d-%m-%Y %H:%M:%S"
-            )
-        keys_to_be_set_to_none_if_missing = [
+    @staticmethod
+    def _keys_to_be_set_to_none_if_missing():
+        keys = [
             "frequency",
             "water_temperature_site",
             "atmospheric_pressure_site",
@@ -400,12 +378,7 @@ class DOProcessor(Processor):
             "check_hts_filename",
             "check_measurement_name",
         ]
-        for k in keys_to_be_set_to_none_if_missing:
-            if k not in processing_parameters:
-                processing_parameters[k] = None
-        return cls.from_processing_parameters_dict(
-            processing_parameters, fetch_quality=fetch_quality
-        )
+        return keys
 
     def remove_qc100_data(self):
         """For when WT is QC100and making standard data qc100."""

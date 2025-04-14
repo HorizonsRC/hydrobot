@@ -26,24 +26,24 @@ def initialise_hydrobot_from_yaml(yaml_path: str):
     """
     with open(yaml_path) as yaml_file:
         processing_parameters = yaml.safe_load(yaml_file)
-    if "DATA_FAMILY" not in processing_parameters:
+    if "data_family" not in processing_parameters:
         raise KeyError(
-            f"Attempted to create Hydrobot processor from {yaml_path}, but required key 'DATA_FAMILY' was "
+            f"Attempted to create Hydrobot processor from {yaml_path}, but required key 'data_family' was "
             f"missing. Available keys are: {processing_parameters.keys()}"
         )
-    family = processing_parameters["DATA_FAMILY"]
+    family = processing_parameters["data_family"]
     if family not in DATA_FAMILY_DICT:
         raise KeyError(
-            f"Attempted to create Hydrobot processor from {yaml_path}, but 'DATA_FAMILY' was set to {family} "
+            f"Attempted to create Hydrobot processor from {yaml_path}, but 'data_family' was set to {family} "
             f"which is not recognised. Available families are: {DATA_FAMILY_DICT.keys()}"
         )
 
     match family:
         case "Dissolved Oxygen":
             processor_family = do_processor.DOProcessor
-        case "TwoLevel":
+        case "Rainfall":
             processor_family = rf_processor.RFProcessor
         case _:
             processor_family = base_processor.Processor
 
-    return processor_family.from_processing_parameters_dict(processing_parameters)
+    return processor_family.from_config_yaml(yaml_path)

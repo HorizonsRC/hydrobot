@@ -1,20 +1,23 @@
 # Fields to fill out
-analyst_name: "default"
-site: "Whanganui at Te Rewa"
+analyst_name: script_default
+site: Whanganui at Te Rewa
 constant_check_shift: 0
+from_date:
+to_date:
 
 # Hilltop Server Configuration
-base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
-check_hts_filename: "HydrobotCheckData.hts"
+base_url: http://hilltopdev.horizons.govt.nz/
+standard_hts_filename: RawLoggerNet.hts
+check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
-data_family: "Atmospheric Pressure"
-standard_measurement_name: "Atmospheric Pressure"
-check_measurement_name: "Check Pressure [Atmospheric Pressure]"
+data_family: Atmospheric Pressure
+standard_measurement_name: Atmospheric Pressure
+check_measurement_name: Check Pressure [Atmospheric Pressure]
+frequency:
 
 # Export configuration
-export_file_name: "processed_ap.xml"
+export_file_name: processed_ap.xml
 
 # Processing Configuration
 defaults:
@@ -26,24 +29,20 @@ defaults:
   span: 10
 
 # Annalist Configuration
-logfile: "hydrobot_logs.csv"
+logfile: hydrobot_logs.csv
 format:
-  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
-  stream: ""
+  file: '%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s,
+    %(from_date)s, %(to_date)s, %(message)s'
+  stream: ''
 
 inspection_expiry:
-    500:
-        months: 2
-    0:
-        months: 4
+  500:
+    months: 2
+  0:
+    months: 4
 
-provisional_wq_measurement_name: "Field Baro Pressure (HRC)"
+provisional_wq_measurement_name: Field Baro Pressure (HRC)
 
-archive_base_url: "http://hilltopdev.horizons.govt.nz/"
-archive_standard_hts_filename: "Archive.hts"
-archive_check_hts_filename: "Archive.hts"
-
-# Optional settings
-frequency:
-from_date:
-to_date:
+archive_base_url: http://hilltopdev.horizons.govt.nz/
+archive_standard_hts_filename: Archive.hts
+archive_check_hts_filename: Archive.hts

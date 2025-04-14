@@ -4,12 +4,12 @@ import pandas as pd
 
 import hydrobot.config.horizons_source as source
 from hydrobot.htmlmerger import HtmlMerger
-from hydrobot.processor import Processor
+from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = Processor.from_config_yaml("sm_config.yaml")
+data, ann = initialise_hydrobot_from_yaml("sm_config.yaml")
 
 #######################################################################################
 # Common auto-processing steps

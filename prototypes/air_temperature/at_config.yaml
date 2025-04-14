@@ -1,22 +1,22 @@
 # Fields to fill out
-analyst_name: "script_default"
-site: "Ahuahu at Te Tuhi Junction"
-from_date: "2022-12-18 12:00"
-to_date: "2023-12-22 12:00"
+analyst_name: script_default
+site: Ahuahu at Te Tuhi Junction
+from_date:
+to_date:
 
 # Hilltop Server Configuration
-base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
-# check_hts_filename: "HydrobotCheckData.hts"
+base_url: http://hilltopdev.horizons.govt.nz/
+standard_hts_filename: RawLoggerNet.hts
+check_hts_filename:
 
 # Data Source Configuration
-data_family: "Unchecked"
-standard_measurement_name: "Air Temperature (1.5m)"
-# check_measurement_name: "Air Temperature"
-# frequency: "15min"
+data_family: Unchecked
+standard_measurement_name: Air Temperature (1.5m)
+check_measurement_name:
+frequency:
 
 # Export configuration
-export_file_name: "processed_sm.xml"
+export_file_name: processed_sm.xml
 
 
 # Processing Configuration
@@ -29,13 +29,18 @@ defaults:
   span: 10
 
 # Annalist Configuration
-logfile: "hydrobot_logs.csv"
+logfile: hydrobot_logs.csv
 format:
-  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
-  stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
+  file: '%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s,
+    %(from_date)s, %(to_date)s, %(message)s'
+  stream: '%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s'
 
 inspection_expiry:
-    500:
-        months: 2
-    0:
-        months: 4
+  500:
+    months: 2
+  0:
+    months: 4
+
+archive_base_url: http://hilltopdev.horizons.govt.nz/
+archive_standard_hts_filename: Archive.hts
+archive_check_hts_filename: Archive.hts
