@@ -462,7 +462,9 @@ def max_qc_limiter(qc_frame: pd.DataFrame, max_qc) -> pd.DataFrame:
     """
     clipped_data = qc_frame["Value"].clip(np.nan, max_qc)
 
-    diff_idxs = qc_frame[qc_frame["Value"] != clipped_data].index
+    diff_idxs = qc_frame[
+        (qc_frame["Value"] != clipped_data) & ~clipped_data.isna()
+    ].index
     if not diff_idxs.empty:
         qc_frame.loc[diff_idxs, "Code"] = qc_frame.loc[diff_idxs, "Code"] + ", LIM"
         qc_frame.loc[diff_idxs, "Details"] = (
