@@ -423,6 +423,12 @@ class RFProcessor(Processor):
         quality_series = rf.points_to_qc(
             [deviation_points, time_points, manual_additional_points], site_survey_frame
         )
+        self.report_processing_issue(
+            message_type="debug",
+            comment=f"Deviation points: {str(deviation_points)}, Time points: {str(time_points)}, "
+            f"Manual points: {str(manual_additional_points)}, ",
+            series_type="quality",
+        )
         quality_series = quality_series.reindex(self.check_data.index, method="ffill")
         # filter to apply codes only to dates in start-end-range
         if self.from_date not in quality_series.index:
