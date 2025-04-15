@@ -1908,38 +1908,39 @@ class Processor:
         else:
             std_data = self._standard_data
 
-        if ftype == "csv":
-            all_data = [
-                self._standard_data["Value"],
-                self._quality_data["Value"],
-                self._check_data["Value"],
-            ]
-            columns = ["Standard", "Quality", "Check"]
+        match ftype:
+            case "xml":
+                if self.check_data.empty or self.check_data.Value.isna().all():
+                    check = False
+                blob_list = self.to_xml_data_structure(
+                    standard=standard, quality=quality, check=check
+                )
+                data_structure.write_hilltop_xml(blob_list, file_location)
+            case "csv":
+                all_data = [
+                    self._standard_data["Value"],
+                    self._quality_data["Value"],
+                    self._check_data["Value"],
+                ]
+                columns = ["Standard", "Quality", "Check"]
 
-            for data, col in zip(all_data, columns, strict=True):
-                data.name = col
+                for data, col in zip(all_data, columns, strict=True):
+                    data.name = col
 
-            export_list = [
-                i for (i, v) in zip(all_data, export_selections, strict=True) if v
-            ]
-            data_sources.series_export_to_csv(file_location, series=export_list)
-        elif ftype == "hilltop_csv":
-            data_sources.hilltop_export(
-                file_location,
-                self._site,
-                std_data,
-                self._check_data["Value"],
-                self._quality_data["Value"],
-            )
-        elif ftype == "xml":
-            if self.check_data.empty:
-                check = False
-            blob_list = self.to_xml_data_structure(
-                standard=standard, quality=quality, check=check
-            )
-            data_structure.write_hilltop_xml(blob_list, file_location)
-        else:
-            raise ValueError("Invalid ftype (filetype)")
+                export_list = [
+                    i for (i, v) in zip(all_data, export_selections, strict=True) if v
+                ]
+                data_sources.series_export_to_csv(file_location, series=export_list)
+            case "hilltop_csv":
+                data_sources.hilltop_export(
+                    file_location,
+                    self._site,
+                    std_data,
+                    self._check_data["Value"],
+                    self._quality_data["Value"],
+                )
+            case _:
+                raise ValueError("Invalid ftype (filetype)")
 
     def diagnosis(self):
         """

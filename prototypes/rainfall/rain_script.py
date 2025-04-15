@@ -24,6 +24,7 @@ data, ann = initialise_hydrobot_from_yaml("rain_config.yaml")
 # Importing external check data
 #######################################################################################
 data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+
 # Any manual removals
 for false_check in utils.series_rounder(
     pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
@@ -78,7 +79,15 @@ else:
     manual_additional_points = pd.Series({})
 
 if data.check_data.Value.isna().all():
-    data.ramped_standard = rf.rainfall_six_minute_repacker(data.standard_data["Value"])
+    data_with_from_and_to_date_added = data.standard_data["Value"].copy()
+    if data.from_date not in data_with_from_and_to_date_added:
+        data_with_from_and_to_date_added[pd.Timestamp(data.from_date)] = 0
+    if data.to_date not in data_with_from_and_to_date_added:
+        data_with_from_and_to_date_added[pd.Timestamp(data.to_date)] = 0
+    data_with_from_and_to_date_added = data_with_from_and_to_date_added.sort_index()
+    data.ramped_standard = rf.rainfall_six_minute_repacker(
+        data_with_from_and_to_date_added
+    )
     data.quality_data = pd.DataFrame(
         index=[data.ramped_standard.index[0], data.ramped_standard.index[-1]],
         data={

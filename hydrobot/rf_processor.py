@@ -618,10 +618,11 @@ class RFProcessor(Processor):
                 )
             ]
             # ramped
-            ramped_standard = filters.trim_series(
-                self.ramped_standard, self.check_data["Value"]
-            )
-            ramped_standard = ramped_standard.copy() * 1000
+            ramped_standard = self.ramped_standard.copy() * 1000
+            if check:
+                ramped_standard = filters.trim_series(
+                    ramped_standard, self.check_data["Value"]
+                )
 
             data_blob_list += [
                 data_structure.standard_to_xml_structure(

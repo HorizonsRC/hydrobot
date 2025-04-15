@@ -8,6 +8,8 @@ import pandas as pd
 import sqlalchemy as db
 from sqlalchemy.engine import URL
 
+import hydrobot.utils as utils
+
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
 
@@ -551,7 +553,7 @@ def add_zeroes_at_checks(standard_data: pd.DataFrame, check_data: pd.DataFrame):
     empty_check_values = empty_check_values.loc[
         ~empty_check_values.index.isin(standard_data.index)
     ]
-    standard_data = pd.concat([standard_data, empty_check_values]).sort_index()
+    standard_data = utils.safe_concat([standard_data, empty_check_values]).sort_index()
     return standard_data
 
 
