@@ -233,8 +233,8 @@ class Processor:
         self._standard_hts_filename = standard_hts_filename
         self._standard_measurement_name = standard_measurement_name
         self._frequency = frequency
-        self._from_date = from_date
-        self._to_date = to_date
+        self._from_date = pd.Timestamp(from_date)
+        self._to_date = pd.Timestamp(to_date)
         self._check_hts_filename = check_hts_filename
         self._check_measurement_name = check_measurement_name
         self._defaults = defaults

@@ -472,6 +472,17 @@ class RFProcessor(Processor):
         lim_frame = evaluator.max_qc_limiter(self.quality_data, max_qc)
         self._apply_quality(lim_frame)
 
+        # checking for nan quality data - probably because start date is incorrect
+        for nan_date in self.quality_data.index[self.quality_data.Value.isna()]:
+            self.report_processing_issue(
+                start_time=nan_date,
+                code="MSP",
+                comment="Quality data is nan, will result in qc0 data. This might be because the start date is "
+                "incorrect",
+                series_type="quality",
+                message_type="warning",
+            )
+
     @property  # type: ignore
     def cumulative_standard_data(self) -> pd.DataFrame:  # type: ignore
         """pd.Series: The standard series data."""
