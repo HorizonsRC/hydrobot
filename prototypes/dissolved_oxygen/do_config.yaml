@@ -1,8 +1,8 @@
 # Fields to fill out
 analyst_name: script_default
 site: Manawatu at Teachers College
-from_date: 2024-12-11 12:30
-to_date: 2025-04-14 13:33
+from_date:
+to_date:
 
 # Hilltop Server Configuration
 base_url: http://hilltopdev.horizons.govt.nz/
