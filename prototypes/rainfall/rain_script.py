@@ -39,7 +39,7 @@ rainfall_inspections = source.rainfall_inspections(
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-data.clip()
+
 
 #######################################################################################
 # Rainfall specific operation
@@ -49,6 +49,8 @@ rainfall_inspections["primary_manual_tips"] = (
     rainfall_inspections["primary_manual_tips"].fillna(0).astype(int)
 )
 data.filter_manual_tips(rainfall_inspections)
+
+data.clip()
 
 #######################################################################################
 # INSERT MANUAL PROCESSING STEPS HERE
