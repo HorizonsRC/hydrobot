@@ -260,7 +260,7 @@ def create_mass_hydrobot_batches(home_dir: str, base_dir: str, dict_list: [dict]
 
     make_dsn(hydrobot_outputs, os.path.join(home_dir, "hydrobot_dsn.dsn"))
     make_blank_files(hydrobot_outputs)
-    make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.dsn"))
+    make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
 
 
 def make_dsn(file_list, file_path, sub_dsn_number=0):
