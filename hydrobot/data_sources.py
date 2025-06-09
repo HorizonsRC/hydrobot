@@ -4,17 +4,17 @@ import numpy as np
 import pandas as pd
 
 DATA_FAMILY_DICT = {
-    "Dissolved Oxygen": {
+    "Dissolved_Oxygen": {
         "QC_evaluator_type": "DO",
         "QC_evaluator_values": [6, 3, 0.1, 0.05],
         "Processor_type": "DO",
     },
-    "Water Temperature": {
+    "Water_Temperature": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [1.2, 0.8],
         "Processor_type": "Base",
     },
-    "Atmospheric Pressure": {
+    "Atmospheric_Pressure": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [5, 2.5],
         "Processor_type": "Base",

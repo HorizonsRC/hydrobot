@@ -4,10 +4,11 @@ site:
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
+standard_hts_filename: "HydrobotRaw.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
+data_family: Dissolved_Oxygen
 standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 

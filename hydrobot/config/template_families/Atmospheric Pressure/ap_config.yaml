@@ -1,9 +1,10 @@
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
+standard_hts_filename: "HydrobotRaw.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
+data_family: Atmospheric_Pressure
 site:
 standard_measurement_name: "Atmospheric Pressure"
 check_measurement_name: "Check Pressure [Atmospheric Pressure]"

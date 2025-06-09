@@ -6,9 +6,10 @@ to_date:
 
 # Hilltop Server Configuration
 base_url: "http://hilltopdev.horizons.govt.nz/"
-standard_hts_filename: "RawLoggerNet.hts"
+standard_hts_filename: "HydrobotRaw.hts"
 
 # Data Source Configuration
+data_family: Unchecked
 standard_measurement_name: "Air Temperature (1.5m)"
 frequency:
 

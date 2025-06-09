@@ -1,9 +1,11 @@
 """Tasks to be completed for mass processing."""
 
+import csv
 import importlib.resources as pkg_resources
 import os
 import re
 import shutil
+from datetime import datetime
 
 import ruamel.yaml
 
@@ -185,7 +187,7 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
                 base_url=data["base_url"],
                 hts=data["archive_standard_hts_filename"],
                 site=site,
-                measurement=data["standard_measurement_name"],
+                measurement=data["archive_standard_measurement_name"],
             )
             data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
         else:
@@ -223,8 +225,14 @@ def create_single_hydrobot_batch(
     output_filename : str
         path to where the output of the hydrobot run is expected.
     """
+    site_directory = str(os.path.join(base_dir, site))
+    if not os.path.isdir(site_directory):
+        raise NotADirectoryError(
+            f"No directory for site '{site}', check spelling or create directory at at"
+            f" {site_directory}"
+        )
     if batch_no is None:
-        batch_no = find_next_batch_number(directory=str(os.path.join(base_dir, site)))
+        batch_no = find_next_batch_number(directory=site_directory)
     target_dir = str(os.path.join(base_dir, site, str(batch_no)))
     os.makedirs(target_dir, exist_ok=False)
     copy_data_family_template(data_family=data_family, destination_path=target_dir)
@@ -306,3 +314,35 @@ def make_blank_files(file_list):
     for f in file_list:
         with open(f, "x") as _:
             pass
+
+
+def csv_to_batch_dicts(file_path):
+    """
+    Obtain a list of dicts from csv.
+
+    Parameters
+    ----------
+    file_path : str
+        path to the csv
+
+    Returns
+    -------
+    [dict]
+    """
+    title_row = []
+    list_of_dicts = []
+    with open(file_path, newline="") as file:
+        reader = csv.reader(file, delimiter=",", quotechar="|")
+        for row in reader:
+            if not title_row:
+                title_row = row
+            else:
+                row[2] = datetime.strptime(row[2], "%d/%m/%Y %H:%M").strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+                row[3] = datetime.strptime(row[3], "%d/%m/%Y %H:%M").strftime(
+                    "%Y-%m-%d %H:%M"
+                )
+                zipper = zip(title_row, row, strict=True)
+                list_of_dicts.append({k: v for (k, v) in zipper if v})
+    return list_of_dicts
