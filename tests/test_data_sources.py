@@ -9,7 +9,7 @@ ann.configure()
 
 def test_get_measurement():
     """Testing the get_measurement method."""
-    wt_meas = data_sources.get_qc_evaluator("Water Temperature")
+    wt_meas = data_sources.get_qc_evaluator("Water_Temperature")
     assert wt_meas.qc_500_limit > 0, "Water temp qc_500 limit not set up correctly"
     assert wt_meas.find_qc(1.3, 0) == 400, "bad data not given bad qc"
     assert wt_meas.find_qc(1, 0) == 500, "fair data not given fair qc"
@@ -58,7 +58,7 @@ def test_get_measurement():
         stage_meas.find_qc(0, 2) == 600
     ), "good data not given good qc, low static perc"
 
-    do_meas = data_sources.get_qc_evaluator("Dissolved Oxygen")
+    do_meas = data_sources.get_qc_evaluator("Dissolved_Oxygen")
     assert do_meas.find_qc(100, 107.9) == 600, "data at 100, should be qc600"
     assert do_meas.find_qc(100, 108.1) == 500, "data at 100, should be qc500 not 600"
     assert do_meas.find_qc(100, 115.9) == 500, "data at 100, should be qc500 not 400"

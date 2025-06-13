@@ -675,7 +675,7 @@ def test_failed_requests(tmp_path):
         """
         with pytest.raises(
             ValueError,
-            match=r"Unrecognised start time",
+            match=r"Unknown datetime string format,",
         ) as excinfo:
             _ = Processor(
                 processing_parameters["base_url"],
@@ -691,7 +691,7 @@ def test_failed_requests(tmp_path):
                 processing_parameters["check_measurement_name"],
                 processing_parameters["defaults"],
             )
-        assert "Unrecognised start time" in str(excinfo.value)
+        assert "Unknown datetime string format" in str(excinfo.value)
 
         # with pytest.raises(
         #     ValueError  #, match=r"Unrecognised start time",
