@@ -234,3 +234,7 @@ History
 * Batch processing can now be done by copying from a template
 * Introduced "tasks" for copying the templates and scripts into correct files
 * Various bug fixes
+
+0.9.1 (2025-06-16)
+----------------------------------
+* Bug fix for package templates which prevented task copies.
