@@ -69,7 +69,7 @@ all = [
 packages = ["hydrobot"]
 
 [tool.setuptools.package-data]
-hydrobot = ["hydrobot/config/*"]
+hydrobot = ["hydrobot/config/**", "hydrobot/measurement_specific_functions/**"]
 
 [tool.pytest.ini_options]
 addopts = "--cov --cov-fail-under 100 --strict-markers"

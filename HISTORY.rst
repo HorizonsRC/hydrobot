@@ -225,3 +225,12 @@ History
 * DO at depth now supported
 * Trailing qc 100 quality codes are now removed in DO
 * Depth profiles can be drawn from separate sites
+
+0.9.0 (2025-06-16)
+----------------------------------
+
+* Introduced data family
+* Generic initializer introduced - will find the correct processor type from yaml
+* Batch processing can now be done by copying from a template
+* Introduced "tasks" for copying the templates and scripts into correct files
+* Various bug fixes
