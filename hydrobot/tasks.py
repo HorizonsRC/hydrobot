@@ -64,10 +64,12 @@ def copy_data_family_template(data_family: str, destination_path: str):
     None
     """
     for resource in _get_template(data_family).iterdir():
-        shutil.copy(resource, destination_path)
+        if os.path.isfile(resource):
+            shutil.copy(resource, destination_path)
 
     for resource in _get_generic_template().iterdir():
-        shutil.copy(resource, destination_path)
+        if os.path.isfile(resource):
+            shutil.copy(resource, destination_path)
 
 
 def _remove_non_numeric_from_string(string: str):
