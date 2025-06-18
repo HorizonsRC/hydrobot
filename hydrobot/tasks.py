@@ -106,7 +106,14 @@ def find_next_batch_number(directory: str, minimum: int = 400):
     int
         latest batch number, or 0 if there is no numeric subdirectories
     """
-    sub_dirs = [_remove_non_numeric_from_string(i) for i in os.listdir(directory)]
+    sub_dirs = [
+        i
+        for i in os.listdir(directory)
+        if (
+            i == _remove_non_numeric_from_string(i)
+            and os.path.isdir(os.path.join(directory, i))
+        )
+    ]
     sub_dirs = [int(i) for i in sub_dirs if i]  # removes empty strings
     sub_dirs.append(minimum - 1)
     return max(sub_dirs) + 1
