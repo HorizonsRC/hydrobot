@@ -238,3 +238,8 @@ History
 0.9.1 (2025-06-16)
 ----------------------------------
 * Bug fix for package templates which prevented task copies.
+
+0.9.2 (2025-06-17)
+----------------------------------
+* Rereleasing failed build
+* Fixing issue where batch numbering will pick up dates etc, and where non-directory names are read
