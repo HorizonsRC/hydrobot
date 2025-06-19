@@ -243,3 +243,9 @@ History
 ----------------------------------
 * Rereleasing failed build
 * Fixing issue where batch numbering will pick up dates etc, and where non-directory names are read
+
+0.9.3 (2025-06-19)
+----------------------------------
+* Rereleasing failed build
+* Updating panda to 2.3.0
+* Fixing behaviour that relied on a pandas bug
