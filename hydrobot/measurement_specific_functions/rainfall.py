@@ -715,7 +715,7 @@ def rainfall_six_minute_repacker(series: pd.Series):
     ceil_series = series[~diff_filter] * time_delta_index_case1[~diff_filter]
     ceil_series.index = ceil_index[~diff_filter]
 
-    case1 = pd.concat([ceil_series, floor_series]).round()
+    case1 = pd.concat([ceil_series, floor_series]).astype(float).round()
     case1 = case1.groupby(case1.index).sum()
 
     # Case 2, diff < 6 & last scada within timespan
@@ -739,7 +739,7 @@ def rainfall_six_minute_repacker(series: pd.Series):
     )
     ceil_series.index = ceil_index[diff_filter & ~dup_filter]
 
-    case3 = pd.concat([ceil_series, floor_series]).round()
+    case3 = pd.concat([ceil_series, floor_series]).astype(float).round()
     case3 = case3.groupby(case3.index).sum()
 
     # Putting it together
