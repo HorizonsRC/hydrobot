@@ -304,8 +304,8 @@ def test_rainfall_six_minute_repacker():
     repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:54": 67.0,
-            "2021-01-01 02:00": 33.0,
+            "2021-01-01 01:54": 66.667,
+            "2021-01-01 02:00": 33.333,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
@@ -365,9 +365,9 @@ def test_rainfall_six_minute_repacker():
     repacked = rf.rainfall_six_minute_repacker(series)
     expected = pd.Series(
         {
-            "2021-01-01 01:48": 67.0,
-            "2021-01-01 01:54": 66.0,
-            "2021-01-01 02:00": 67.0,
+            "2021-01-01 01:48": 66.667,
+            "2021-01-01 01:54": 66.666,
+            "2021-01-01 02:00": 66.667,
         }
     )
     expected.index = pd.DatetimeIndex(expected.index)
