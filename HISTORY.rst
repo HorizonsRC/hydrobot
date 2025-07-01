@@ -249,3 +249,7 @@ History
 * Rereleasing failed build
 * Updating panda to 2.3.0
 * Fixing behaviour that relied on a pandas bug
+
+0.9.4 (2025-07-01)
+----------------------------------
+* Correcting rounding for μL integer rainfall, related to fixed pandas 2.3.0 bug
