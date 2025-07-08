@@ -89,8 +89,10 @@ def get_time_range(
 
     Returns
     -------
-    pandas.DataFrame
-        A DataFrame containing the acquired time series data.
+    Element
+        XML element from the server call
+    [DataSourceBlob]
+        A list of DataSourceBlobs corresponding to all measurements contained in the acquired time series data.
     """
     url = build_url(
         base_url,
@@ -130,10 +132,10 @@ def get_server_dataframe(
         The site name or location.
     measurement : str
         The type of measurement to retrieve.
-    from_date : str
+    from_date : str | pd.Timestamp
         The start date and time for data retrieval
         in the format 'YYYY-MM-DD HH:mm'.
-    to_date : str
+    to_date : str | pd.Timestamp
         The end date and time for data retrieval
         in the format 'YYYY-MM-DD HH:mm'.
     tstype : str
@@ -218,10 +220,10 @@ def get_depth_profiles(
         The site name or location.
     measurement : str
         The type of measurement to retrieve.
-    from_date : str
+    from_date : str | pd.Timestamp
         The start date and time for data retrieval
         in the format 'YYYY-MM-DD HH:mm'.
-    to_date : str
+    to_date : str | pd.Timestamp
         The end date and time for data retrieval
         in the format 'YYYY-MM-DD HH:mm'.
     tstype : str

@@ -9,7 +9,6 @@ from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
-import hydrobot.processor as processor
 from hydrobot import filters, plotter
 from hydrobot.processor import Processor, data_structure, evaluator, utils
 
@@ -34,6 +33,7 @@ class RFProcessor(Processor):
         interval_dict: dict | None = None,
         constant_check_shift: float = 0,
         fetch_quality: bool = False,
+        backup_measurement_name: str | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -52,6 +52,13 @@ class RFProcessor(Processor):
             fetch_quality=fetch_quality,
             **kwargs,
         )
+        self.backup_measurement_name = backup_measurement_name
+
+        (
+            self.backup_item_name,
+            self.backup_data_source_name,
+        ) = utils.measurement_datasource_splitter(backup_measurement_name)
+
         self.standard_item_info = {
             "item_name": self.standard_item_name,
             "item_format": "I",
@@ -146,12 +153,7 @@ class RFProcessor(Processor):
         False
         """
         if standard:
-            (
-                self._standard_data,
-                self.raw_standard_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_standard(
+            self._standard_data = self.import_standard(
                 standard_hts_filename=self.standard_hts_filename,
                 site=self.site,
                 standard_measurement_name=self._standard_measurement_name,
@@ -162,12 +164,7 @@ class RFProcessor(Processor):
                 to_date=to_date,
             )
         if quality:
-            (
-                self._quality_data,
-                self.raw_quality_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_quality(
+            self._quality_data = self.import_quality(
                 standard_hts_filename=self.standard_hts_filename,
                 site=self._site,
                 standard_measurement_name=self._standard_measurement_name,
@@ -177,12 +174,7 @@ class RFProcessor(Processor):
                 to_date=to_date,
             )
         if check:
-            (
-                self._check_data,
-                self.raw_check_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_check(
+            self._check_data = self.import_check(
                 check_hts_filename=self.check_hts_filename,
                 site=self._site,
                 check_measurement_name=self._check_measurement_name,
@@ -240,8 +232,7 @@ class RFProcessor(Processor):
         -------
         check_data: pd.DataFrame
         raw_check_data: pd.DataFrame
-        raw_check_xml: xml.etree.ElementTree
-        raw_check_blob: DataSourceBlob
+
 
         Raises
         ------
@@ -263,12 +254,7 @@ class RFProcessor(Processor):
         The data is parsed and formatted according to the item_info in the data source.
 
         """
-        (
-            check_data,
-            raw_check_data,
-            raw_check_xml,
-            raw_check_blob,
-        ) = super().import_check(
+        check_data = super().import_check(
             check_hts_filename,
             site,
             check_measurement_name,
@@ -281,7 +267,7 @@ class RFProcessor(Processor):
             base_url,
         )
         check_data = utils.series_rounder(check_data)
-        return check_data, raw_check_data, raw_check_xml, raw_check_blob
+        return check_data
 
     @ClassLogger
     def quality_encoder(
@@ -759,26 +745,23 @@ class RFProcessor(Processor):
         None
             Sets self.ltco to the long term common offset
         """
-        historic_standard, _, _, _ = self.import_standard(
+        historic_standard = self.import_standard(
             standard_hts_filename=self.archive_standard_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             base_url=self.archive_base_url,
-            standard_data=processor.EMPTY_STANDARD_DATA.copy(),
         )
-        historic_check, _, _, _ = self.import_check(
+        historic_check = self.import_check(
             check_hts_filename=self.archive_check_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             base_url=self.archive_base_url,
-            check_data=processor.EMPTY_CHECK_DATA.copy(),
         )
-        historic_quality, _, _, _ = self.import_quality(
+        historic_quality = self.import_quality(
             standard_hts_filename=self.archive_standard_hts_filename,
             from_date="1800-01-01 00:00",
             to_date=datetime.now().strftime("%Y-%m-%d %H:%M"),
             base_url=self.archive_base_url,
-            quality_data=processor.EMPTY_QUALITY_DATA.copy(),
         )
         self.ltco = rf.calculate_common_offset(
             historic_standard["Value"],

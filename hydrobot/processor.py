@@ -1,6 +1,5 @@
 """Processor class."""
 
-import re
 import warnings
 from datetime import datetime
 
@@ -91,18 +90,6 @@ class Processor:
         The series containing check data.
     _quality_data : pd.Series
         The quality series data.
-    raw_standard_blob : Blob
-        The raw standard data blob.
-    raw_standard_xml : str
-        The raw standard data XML.
-    raw_quality_blob : Blob
-        The raw quality data blob.
-    raw_quality_xml : str
-        The raw quality data XML.
-    raw_check_blob : Blob
-        The raw check data blob.
-    raw_check_xml : str
-        The raw check data XML.
     standard_item_name : str
         The name of the standard item.
     standard_data_source_name : str
@@ -253,35 +240,20 @@ class Processor:
         self._check_data = EMPTY_CHECK_DATA.copy()
         self._quality_data = EMPTY_QUALITY_DATA.copy()
 
-        self.raw_standard_blob = None
-        self.raw_standard_xml = None
-        self.raw_quality_blob = None
-        self.raw_quality_xml = None
-        self.raw_check_blob = None
-        self.raw_check_xml = None
-
         # standard hilltop
         standard_hilltop = Hilltop(base_url, standard_hts_filename)
         data_acquisition.enforce_site_in_hts(standard_hilltop, self.site)
         self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
 
-        def measurement_datasource_splitter(measurement_name):
-            matches = re.search(r"([^\[\n]+)(\[(.+)\])?", measurement_name)
-            item_name = matches.groups()[0].strip(" ")
-            data_source_name = matches.groups()[2]
-            if data_source_name is None:
-                data_source_name = item_name
-            return item_name, data_source_name
-
         (
             self.standard_item_name,
             self.standard_data_source_name,
-        ) = measurement_datasource_splitter(standard_measurement_name)
+        ) = utils.measurement_datasource_splitter(standard_measurement_name)
 
         (
             self.archive_standard_item_name,
             self.archive_standard_data_source_name,
-        ) = measurement_datasource_splitter(archive_standard_measurement_name)
+        ) = utils.measurement_datasource_splitter(archive_standard_measurement_name)
 
         # check hilltop
         if check_hts_filename is not None:
@@ -292,7 +264,7 @@ class Processor:
         (
             self.check_item_name,
             self.check_data_source_name,
-        ) = measurement_datasource_splitter(check_measurement_name)
+        ) = utils.measurement_datasource_splitter(check_measurement_name)
 
         self.standard_item_info = {
             "item_name": self.standard_item_name,
@@ -390,7 +362,7 @@ class Processor:
         return cls(**processing_parameters, fetch_quality=fetch_quality), ann
 
     @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False, set_from_date=False):
+    def from_config_yaml(cls, config_path, fetch_quality=False):
         """
         Initialises a Processor class given a config file.
 
@@ -400,10 +372,6 @@ class Processor:
             Path to config.yaml.
         fetch_quality : bool, optional
             Whether to fetch any existing quality data, default false
-        set_from_date : bool, optional
-            If true, from_date in the config yaml is overwritten by the last date on the archive
-            Requires "archive_base_url" and "archive_standard_hts_filename" in the yaml, in addition to "site" and
-            "standard_measurement_name"
 
         Returns
         -------
@@ -586,8 +554,7 @@ class Processor:
             The item information for the standard data. If None, defaults to the
             standard item info on the processor object.
         standard_data : pd.DataFrame or None, optional
-            The standard data. If None, defaults to the standard data on the processor
-            object.
+            The standard data. If None, makes an empty standard_data object
         from_date : str or None, optional
             The start date for data retrieval. If None, defaults to the earliest available
             data.
@@ -606,7 +573,8 @@ class Processor:
 
         Returns
         -------
-        None
+        pd.DataFrame
+            The standard data
 
         Raises
         ------
@@ -649,7 +617,7 @@ class Processor:
         if frequency is None:
             frequency = self._frequency
         if standard_data is None:
-            standard_data = self._standard_data
+            standard_data = EMPTY_STANDARD_DATA.copy()
         if base_url is None:
             base_url = self._base_url
         if infer_frequency is None:
@@ -672,7 +640,6 @@ class Processor:
         raw_standard_data = EMPTY_STANDARD_DATA.copy()
 
         raw_standard_blob = None
-        raw_standard_xml = None
         if blob_list is None or len(blob_list) == 0:
             self.report_processing_issue(
                 start_time=from_date,
@@ -685,32 +652,36 @@ class Processor:
         else:
             for blob in blob_list:
                 data_source_list += [blob.data_source.name]
-                if (blob.data_source.name == standard_data_source_name) and (
-                    blob.data_source.ts_type == "StdSeries"
+                if (
+                    (blob.data_source.name == standard_data_source_name)
+                    and (blob.data_source.ts_type == "StdSeries")
+                    and (blob.data.timeseries is not None)
                 ):
-                    raw_standard_data = blob.data.timeseries
+                    if blob_found:
+                        # Already found something, duplicated StdSeries
+                        raise ValueError(
+                            f"Multiple StdSeries found. Already found: {raw_standard_data}, "
+                            f"also found: {blob.data.timeseries}."
+                        )
 
+                    blob_found = True
+                    raw_standard_data = blob.data.timeseries
                     date_format = blob.data.date_format
-                    if raw_standard_data is not None:
-                        # Found it. Now we extract it.
-                        blob_found = True
-                        raw_standard_blob = blob
-                        raw_standard_xml = xml_tree
-                        standard_item_info["item_name"] = blob.data_source.item_info[
-                            0
-                        ].item_name
-                        standard_item_info["item_format"] = blob.data_source.item_info[
-                            0
-                        ].item_format
-                        standard_item_info["divisor"] = blob.data_source.item_info[
-                            0
-                        ].divisor
-                        standard_item_info["units"] = blob.data_source.item_info[
-                            0
-                        ].units
-                        standard_item_info[
-                            "number_format"
-                        ] = blob.data_source.item_info[0].number_format
+
+                    raw_standard_blob = blob
+                    standard_item_info["item_name"] = blob.data_source.item_info[
+                        0
+                    ].item_name
+                    standard_item_info["item_format"] = blob.data_source.item_info[
+                        0
+                    ].item_format
+                    standard_item_info["divisor"] = blob.data_source.item_info[
+                        0
+                    ].divisor
+                    standard_item_info["units"] = blob.data_source.item_info[0].units
+                    standard_item_info["number_format"] = blob.data_source.item_info[
+                        0
+                    ].number_format
             if not blob_found:
                 raise ValueError(
                     f"Standard Data Not Found under name "
@@ -768,7 +739,7 @@ class Processor:
                             message_type="info",
                         )
 
-            if self.raw_standard_blob is not None:
+            if raw_standard_blob is not None:
                 fmt = standard_item_info["item_format"]
                 div = standard_item_info["divisor"]
             else:
@@ -802,12 +773,7 @@ class Processor:
             standard_data["Raw"] = raw_standard_data.iloc[:, 0]
             standard_data["Value"] = standard_data["Raw"]
 
-        return (
-            standard_data,
-            raw_standard_data,
-            raw_standard_xml,
-            raw_standard_blob,
-        )
+        return standard_data
 
     @ClassLogger
     def import_quality(
@@ -826,16 +792,30 @@ class Processor:
 
         Parameters
         ----------
+        standard_hts_filename : str or None, optional
+            Where to get quality data from
+        site : str or None, optional
+            Which site to get data from
+        standard_measurement_name : str or None, optional
+            Name for measurement to get
+        standard_data_source_name : str or None, optional
+            Name for data source to get
+        quality_data : pd.DataFrame or None, optional
+            data which just gets overwritten I think? should maybe be removed
         from_date : str or None, optional
             The start date for data retrieval. If None, defaults to the earliest available
             data.
         to_date : str or None, optional
             The end date for data retrieval. If None, defaults to latest available
             data.
+        base_url : str, optional
+            Base of the url to use for the hilltop server request. Defaults to the Processor value.
+
+
 
         Returns
         -------
-        None
+        pd.DataFrame
 
         Raises
         ------
@@ -869,7 +849,7 @@ class Processor:
         if to_date is None:
             to_date = self.to_date
         if quality_data is None:
-            quality_data = self._quality_data
+            quality_data = EMPTY_QUALITY_DATA.copy()
         if base_url is None:
             base_url = self._base_url
 
@@ -885,8 +865,6 @@ class Processor:
 
         blob_found = False
         raw_quality_data = EMPTY_QUALITY_DATA.copy()
-        raw_quality_blob = None
-        raw_quality_xml = None
 
         if blob_list is None or len(blob_list) == 0:
             self.report_processing_issue(
@@ -904,16 +882,17 @@ class Processor:
                 if blob.data_source.ts_type == "StdQualSeries":
                     data_source_options += [blob.data_source.name]
                     if blob.data_source.name == standard_data_source_name:
+                        if blob_found:
+                            # Already found something, duplicated StdQualSeries
+                            raise ValueError(
+                                f"Multiple StdQualSeries found. Just found: {blob}, "
+                                f"all candidates are: {blob_list}."
+                            )
                         # Found it. Now we extract it.
                         blob_found = True
-
                         raw_quality_data = blob.data.timeseries
                         date_format = blob.data.date_format
-                        if raw_quality_data is not None:
-                            # Found it. Now we extract it.
-                            blob_found = True
-                            raw_quality_blob = blob
-                            raw_quality_xml = xml_tree
+
             if not blob_found:
                 self.report_processing_issue(
                     start_time=from_date,
@@ -945,12 +924,7 @@ class Processor:
 
             quality_data["Raw"] = raw_quality_data.iloc[:, 0]
             quality_data["Value"] = quality_data["Raw"]
-        return (
-            quality_data,
-            raw_quality_data,
-            raw_quality_xml,
-            raw_quality_blob,
-        )
+        return quality_data
 
     @ClassLogger
     def import_check(
@@ -997,9 +971,6 @@ class Processor:
         Returns
         -------
         check_data: pd.DataFrame
-        raw_check_data: pd.DataFrame
-        raw_check_xml: xml.etree.ElementTree
-        raw_check_blob: DataSourceBlob
 
         Raises
         ------
@@ -1032,7 +1003,7 @@ class Processor:
         if check_item_name is None:
             check_item_name = self.check_item_name
         if check_data is None:
-            check_data = self._check_data
+            check_data = EMPTY_CHECK_DATA.copy()
         if from_date is None:
             from_date = self._from_date
         if to_date is None:
@@ -1051,7 +1022,6 @@ class Processor:
         )
         raw_check_data = EMPTY_CHECK_DATA.copy()
         raw_check_blob = None
-        raw_check_xml = None
         blob_found = False
         date_format = "Calendar"
         if blob_list is None or len(blob_list) == 0:
@@ -1071,17 +1041,21 @@ class Processor:
                     blob.data_source.name
                     in [check_data_source_name, self.standard_data_source_name]
                 ) and (blob.data_source.ts_type == "CheckSeries"):
+                    if blob_found:
+                        # Already found something, duplicated CheckSeries
+                        raise ValueError(
+                            f"Multiple CheckSeries found. Just found: {blob}, "
+                            f"all candidates are: {blob_list}."
+                        )
                     # Found it. Now we extract it.
                     blob_found = True
 
                     date_format = blob.data.date_format
 
                     # This could be a pd.Series
-                    import_data = blob.data.timeseries
-                    if import_data is not None:
+                    if blob.data.timeseries is not None:
                         raw_check_blob = blob
-                        raw_check_xml = xml_tree
-                        raw_check_data = import_data
+                        raw_check_data = blob.data.timeseries
                         check_item_info["item_name"] = blob.data_source.item_info[
                             0
                         ].item_name
@@ -1147,12 +1121,12 @@ class Processor:
                 check_data["Comment"] = raw_check_data["Comment"]
                 check_data["Source"] = "HTP"
                 check_data["QC"] = True
-        return check_data, raw_check_data, raw_check_xml, raw_check_blob
+        return check_data
 
     def import_data(
         self,
-        from_date: str | None = None,
-        to_date: str | None = None,
+        from_date: pd.Timestamp | str | None = None,
+        to_date: pd.Timestamp | str | None = None,
         standard: bool = True,
         check: bool = True,
         quality: bool = True,
@@ -1191,12 +1165,7 @@ class Processor:
         False
         """
         if standard:
-            (
-                self._standard_data,
-                self.raw_standard_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_standard(
+            self._standard_data = self.import_standard(
                 standard_hts_filename=self.standard_hts_filename,
                 site=self.site,
                 standard_measurement_name=self._standard_measurement_name,
@@ -1208,12 +1177,7 @@ class Processor:
                 frequency=self._frequency,
             )
         if quality:
-            (
-                self._quality_data,
-                self.raw_quality_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_quality(
+            self._quality_data = self.import_quality(
                 standard_hts_filename=self.standard_hts_filename,
                 site=self._site,
                 standard_measurement_name=self._standard_measurement_name,
@@ -1223,12 +1187,7 @@ class Processor:
                 to_date=to_date,
             )
         if check:
-            (
-                self._check_data,
-                self.raw_check_data,
-                self.raw_standard_xml,
-                self.raw_standard_blob,
-            ) = self.import_check(
+            self._check_data = self.import_check(
                 check_hts_filename=self.check_hts_filename,
                 site=self._site,
                 check_measurement_name=self._check_measurement_name,

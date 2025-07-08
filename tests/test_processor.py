@@ -448,8 +448,6 @@ def test_processor_init(
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
-    assert pr.raw_standard_blob is not None
-    assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
     assert float(pr.standard_data.loc["2023-01-01 00:45:00", "Value"]) == pytest.approx(
         17.8
     )
@@ -1476,8 +1474,6 @@ def test_from_yaml_config(
     assert isinstance(pr.quality_data, pd.DataFrame)
     assert isinstance(pr.check_data, pd.DataFrame)
 
-    assert pr.raw_standard_blob is not None
-    assert pr.standard_measurement_name == pr.raw_standard_blob.data_source.name
     assert float(pr.standard_data.loc["2023-01-01 00:45:00", "Value"]) == pytest.approx(
         17.8
     )

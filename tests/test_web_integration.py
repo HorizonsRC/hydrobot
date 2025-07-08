@@ -523,12 +523,6 @@ def test_empty_response(tmp_path):
         assert data.standard_data.empty
         assert data.check_data.empty
         assert data.quality_data.empty
-        assert data.raw_standard_blob is None
-        assert data.raw_standard_xml is None
-        assert data.raw_quality_blob is None
-        assert data.raw_quality_xml is None
-        assert data.raw_check_blob is None
-        assert data.raw_check_xml is None
 
 
 @pytest.mark.slow()

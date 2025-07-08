@@ -190,7 +190,7 @@ class DOProcessor(Processor):
         self.wt_standard_data = EMPTY_STANDARD_DATA.copy()
         self.wt_quality_data = EMPTY_QUALITY_DATA.copy()
 
-        self.ap_standard_data, _, _, _ = self.import_standard(
+        self.ap_standard_data = self.import_standard(
             standard_hts_filename=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
             standard_measurement_name=self.atmospheric_pressure_measurement_name,
@@ -202,7 +202,7 @@ class DOProcessor(Processor):
             frequency=self.atmospheric_pressure_frequency,
             infer_frequency=False,
         )
-        self.wt_standard_data, _, _, _ = self.import_standard(
+        self.wt_standard_data = self.import_standard(
             standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
             standard_measurement_name=self.water_temperature_measurement_name,
@@ -244,7 +244,7 @@ class DOProcessor(Processor):
             self.check_data["Value"], min([ap_last_time, wt_last_time])
         )
 
-        self.wt_quality_data, _, _, _ = self.import_quality(
+        self.wt_quality_data = self.import_quality(
             standard_hts_filename=self.water_temperature_hts,
             site=self.water_temperature_site,
             standard_measurement_name=self.water_temperature_measurement_name,
@@ -253,7 +253,7 @@ class DOProcessor(Processor):
             from_date=self.from_date,
             to_date=self.to_date,
         )
-        self.ap_quality_data, _, _, _ = self.import_quality(
+        self.ap_quality_data = self.import_quality(
             standard_hts_filename=self.atmospheric_pressure_hts,
             site=self.atmospheric_pressure_site,
             standard_measurement_name=self.atmospheric_pressure_measurement_name,

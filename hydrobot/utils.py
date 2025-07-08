@@ -1,5 +1,6 @@
 """General utilities."""
 
+import re
 import urllib.parse
 import warnings
 from datetime import datetime
@@ -685,3 +686,13 @@ def safe_concat(input_frames):
         return pd.concat(non_empty_input)
     else:
         return pd.DataFrame(columns=input_frames[0].columns)
+
+
+def measurement_datasource_splitter(measurement_name):
+    """Splits Hilltop measurement [datasource] into measurement and datasource."""
+    matches = re.search(r"([^\[\n]+)(\[(.+)\])?", measurement_name)
+    item_name = matches.groups()[0].strip(" ")
+    data_source_name = matches.groups()[2]
+    if data_source_name is None:
+        data_source_name = item_name
+    return item_name, data_source_name
