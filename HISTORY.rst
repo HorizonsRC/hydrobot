@@ -253,3 +253,10 @@ History
 0.9.4 (2025-07-01)
 ----------------------------------
 * Correcting rounding for μL integer rainfall, related to fixed pandas 2.3.0 bug
+
+0.9.5 (2025-07-09)
+----------------------------------
+* Making the import_std/chk/qual functions less state based and more functional
+* They now return a single value (a dataframe)
+* Removed redundant deprecated processor values like raw_standard
+* Added rainfall backup ranges to template

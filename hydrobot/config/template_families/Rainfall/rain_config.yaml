@@ -13,6 +13,7 @@ check_hts_filename: HydrobotCheckData.hts
 data_family: Rainfall
 standard_measurement_name: Rainfall [SCADA Rainfall]
 check_measurement_name: Check Gauge Total [SCADA Rainfall]
+backup_measurement_name: Rainfall (backup) [SCADA Rainfall (backup)]
 standard_backup: Rainfall [SCADA Rainfall]
 check_backup: Check Gauge Total [Rainfall]
 infer_frequency: false
