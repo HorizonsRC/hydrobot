@@ -14,6 +14,7 @@ from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 #######################################################################################
 synthetic_checks = []
 checks_to_manually_ignore = []
+backup_replacement_times = []
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -23,15 +24,15 @@ data, ann = initialise_hydrobot_from_yaml("rain_config.yaml")
 #######################################################################################
 # Importing external check data
 #######################################################################################
-data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+# data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+data.check_data.Value *= 1000
+data.check_data["Recorder Total"] = data.check_data.Value
 
 # Any manual removals
 for false_check in utils.series_rounder(
     pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
 ).index:
     data.check_data = data.check_data.drop(pd.Timestamp(false_check))
-# Put in zeroes at checks where there is no scada event
-data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
 rainfall_inspections = source.rainfall_inspections(
     data.from_date, data.to_date, data.site
 )
@@ -39,7 +40,6 @@ rainfall_inspections = source.rainfall_inspections(
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################
-
 
 #######################################################################################
 # Rainfall specific operation
@@ -58,6 +58,32 @@ data.clip()
 #######################################################################################
 # Example annalist log
 # ann.logger.info("Deleting SOE check point on 2023-10-19T11:55:00.")
+
+# Changing to back up for this period
+for time_period in backup_replacement_times:
+    data.standard_data = utils.safe_concat(
+        [
+            data.standard_data[
+                ~(
+                    (data.standard_data.index >= time_period[0])
+                    & (data.standard_data.index <= time_period[1])
+                )
+            ],
+            data.import_standard(
+                standard_hts_filename=data.standard_hts_filename,
+                site=data.site,
+                standard_measurement_name=data.backup_measurement_name,
+                standard_data_source_name=data.backup_data_source_name,
+                standard_item_info=data.standard_item_info,
+                from_date=time_period[0],
+                to_date=time_period[1],
+            ),
+        ]
+    )
+data.standard_data.sort_index()
+
+# Put in zeroes at checks where there is no scada event
+data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
 
 #######################################################################################
 # Assign quality codes
