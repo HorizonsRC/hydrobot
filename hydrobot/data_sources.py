@@ -34,6 +34,26 @@ DATA_FAMILY_DICT = {
         "QC_evaluator_values": [20, 10],
         "Processor_type": "Base",
     },
+    "pH": {
+        "QC_evaluator_type": "BaseWith200",
+        "QC_evaluator_values": [0.5, 0.2, 0.8],
+        "Processor_type": "Base",
+    },
+    "Conductivity": {
+        "QC_evaluator_type": "BaseWith200",
+        "QC_evaluator_values": [10, 3, 15],
+        "Processor_type": "Base",
+    },
+    "BG_Algae": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
+        "Processor_type": "Base",
+    },
+    "ORP": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
+        "Processor_type": "Base",
+    },
     "Unchecked": {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
@@ -42,10 +62,69 @@ DATA_FAMILY_DICT = {
 }
 
 
+def depth_standard_measurement_name_by_data_family(data_family, depth):
+    """
+    Returns standard measurement name for the data family at depth.
+
+    Many data sources have separate measurement name formats for lake sampling,
+    so this maps the data_family/depth to the appropriate standard measurement name
+
+    Parameters
+    ----------
+    data_family : str
+        data family to find standard measurement name for
+    depth : int
+        depth of the measurement, in mm
+
+    Returns
+    -------
+    str
+        The standard measurement name
+    """
+    match data_family:
+        case "pH":
+            return f"pH (-{str(depth)} mm)"
+        case "ORP":
+            return f"ORP (-{str(depth)} mm)"
+        case _:
+            raise ValueError(f"Unimplemented depth data family {data_family}. ")
+
+
+def depth_check_measurement_name_by_data_family(data_family, depth):
+    """
+    Returns check measurement name for the data family at depth.
+
+    Many data sources have separate measurement name formats for lake sampling,
+    so this maps the data_family/depth to the appropriate check measurement name
+
+    Parameters
+    ----------
+    data_family : str
+        data family to find check measurement name for
+    depth : int
+        depth of the measurement, in mm
+
+    Returns
+    -------
+    str
+        The check measurement name
+    """
+    match data_family:
+        case "pH":
+            return f"pH Check (-{str(depth)} mm)"
+        case "ORP":
+            return f"ORP Check  (-{str(depth)} mm)"
+        case _:
+            raise ValueError(
+                f"Unimplemented depth data family {data_family}. Either remove depth as parameter or "
+                f"implement "
+            )
+
+
 class QualityCodeEvaluator:
     """Basic QualityCodeEvaluator only compares magnitude of differences."""
 
-    def __init__(self, qc_500_limit, qc_600_limit, name="", constant_check_shift=0):
+    def __init__(self, qc_500_limit, qc_600_limit, constant_check_shift=0):
         """Initialize QualityCodeEvaluator.
 
         Parameters
@@ -54,19 +133,18 @@ class QualityCodeEvaluator:
             Threshold between QC 400 and QC 500
         qc_600_limit : numerical
             Threshold between QC 500 and QC 600
-        name : str
-            Name of the data source
         constant_check_shift : numerical
             Shifts the check data by a fixed amount
         """
         self.qc_500_limit = qc_500_limit
         self.qc_600_limit = qc_600_limit
-        self.name = name
         self.constant_check_shift = constant_check_shift
 
     def __repr__(self):
         """QualityCodeEvaluator representation."""
-        return repr(f"QualityCodeEvaluator '{self.name}'")
+        return repr(
+            f"QualityCodeEvaluator or it's child: '{self.__name__}' with attributes: {self.__dict__}"
+        )
 
     def find_qc(self, base_datum, check_datum):
         """
@@ -110,7 +188,6 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         qc_500_percent,
         qc_600_percent,
         limit_percent_threshold,
-        name="",
         constant_check_shift=0,
     ):
         """
@@ -129,13 +206,11 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         limit_percent_threshold
             Value at which the evaluator transitions between linear and percentage
             QC comparison
-        name : str
-            Name of the data source
         constant_check_shift : numerical
             Shifts the check data by a fixed amount
         """
         QualityCodeEvaluator.__init__(
-            self, qc_500_limit, qc_600_limit, name, constant_check_shift
+            self, qc_500_limit, qc_600_limit, constant_check_shift
         )
         self.qc_500_percent = qc_500_percent
         self.qc_600_percent = qc_600_percent
@@ -180,9 +255,68 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
                 qc = 400
         return qc
 
-    def __repr__(self):
-        """QualityCodeEvaluator representation."""
-        return repr(f"TwoLevelQualityCodeEvaluator '{self.name}'")
+
+class With200QualityCodeEvaluator(QualityCodeEvaluator):
+    """For standard quality code evaluators that also have QC200 data.
+
+    Examples: pH and Conductivity.
+    """
+
+    def __init__(
+        self,
+        qc_500_limit,
+        qc_600_limit,
+        qc_400_limit,
+        constant_check_shift=0,
+    ):
+        """
+        Initialize TwoLevelQualityCodeEvaluator.
+
+        Parameters
+        ----------
+        qc_500_limit : numerical
+            Threshold between QC 400 and QC 500
+        qc_600_limit : numerical
+            Threshold between QC 500 and QC 600
+        qc_400_limit : numerical
+            Threshold between QC 200 and QC 400
+        constant_check_shift : numerical
+            Shifts the check data by a fixed amount
+        """
+        QualityCodeEvaluator.__init__(
+            self, qc_500_limit, qc_600_limit, constant_check_shift
+        )
+        self.qc_400_limit = qc_400_limit
+
+    def find_qc(self, base_datum, check_datum):
+        """
+        Find the base quality codes.
+
+        Parameters
+        ----------
+        base_datum : numerical
+            Closest continuum datum point to the check
+        check_datum : numerical
+            The check data to verify the continuous data, shifted by any constant_check_shift
+
+        Returns
+        -------
+        int
+            The Quality code
+
+        """
+        check_datum = check_datum + self.constant_check_shift
+        diff = np.abs(base_datum - check_datum)
+        if diff < self.qc_600_limit:
+            qc = 600
+        elif diff < self.qc_500_limit:
+            qc = 500
+        elif diff < self.qc_400_limit:
+            qc = 400
+        else:
+            qc = 200
+
+        return qc
 
 
 class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
@@ -216,10 +350,6 @@ class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
         """
         return 200
 
-    def __repr__(self):
-        """QualityCodeEvaluator representation."""
-        return repr(f"UncheckedQualityCodeEvaluator '{self.name}'")
-
 
 class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
     """QualityCodeEvaluator for DO NEMS.
@@ -233,7 +363,6 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         qc_600_limit,
         qc_500_percent,
         qc_600_percent,
-        name="",
         constant_check_shift=0,
     ):
         """
@@ -249,11 +378,9 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
             Variable contribution to QC 500 limit
         qc_600_percent : numerical
             Variable contribution to QC 600 limit
-        name : str
-            Name of the data source
         """
         QualityCodeEvaluator.__init__(
-            self, qc_500_limit, qc_600_limit, name, constant_check_shift
+            self, qc_500_limit, qc_600_limit, constant_check_shift
         )
         self.qc_500_percent = qc_500_percent
         self.qc_600_percent = qc_600_percent
@@ -286,10 +413,6 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         else:
             qc = 400
         return qc
-
-    def __repr__(self):
-        """QualityCodeEvaluator representation."""
-        return repr(f"DissolvedOxygenQualityCodeEvaluator '{self.name}'")
 
 
 def series_export_to_csv(
@@ -383,6 +506,8 @@ def get_qc_evaluator(family: str):
     match qc_string:
         case "Base":
             qc_evaluator = QualityCodeEvaluator
+        case "BaseWith200":
+            qc_evaluator = With200QualityCodeEvaluator
         case "TwoLevel":
             qc_evaluator = TwoLevelQualityCodeEvaluator
         case "DO":

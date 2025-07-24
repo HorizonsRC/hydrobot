@@ -1,0 +1,5 @@
+site,standard_measurement_name,from_date,to_date,data_family,depths
+Lake Horowhenua at Buoy,pH (-500 mm) [pH (-500 mm)],,,pH
+Lake Horowhenua at Buoy,Conductivity (-500 mm) [Conductivity (-500 mm)],,,Conductivity
+Lake Horowhenua at Buoy,ORP (-500 mm) [ORP (-500 mm)],,,Unchecked
+Lake Horowhenua at Buoy,Blue Green Algae (-500 mm) [Blue Green Algae (-500 mm)],,,Unchecked
