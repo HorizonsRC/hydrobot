@@ -47,7 +47,7 @@ depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth, "Water Temperature (Depth Profile)"
+        data.depth / 1000.0, "Water Temperature (Depth Profile)"
     )
     depth_check = source.water_temp_check_formatter(depth_check, "DPF")
 else:

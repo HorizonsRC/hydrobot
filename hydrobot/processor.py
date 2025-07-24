@@ -5,6 +5,7 @@ from datetime import datetime
 
 import numpy as np
 import pandas as pd
+import ruamel.yaml
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
@@ -429,6 +430,24 @@ class Processor:
                 processing_parameters,
             ),
         )
+
+        # Amend measurement names if depth
+        if "depth" in processing_parameters:
+            # standard measurement name
+            processing_parameters[
+                "standard_measurement_name"
+            ] = data_sources.depth_standard_measurement_name_by_data_family(
+                processing_parameters["data_family"], processing_parameters["depth"]
+            )
+            # check measurement name
+            processing_parameters[
+                "check_measurement_name"
+            ] = data_sources.depth_check_measurement_name_by_data_family(
+                processing_parameters["data_family"], processing_parameters["depth"]
+            )
+        yaml = ruamel.yaml.YAML()
+        with open(config_path, "w") as fp:
+            yaml.dump(processing_parameters, fp)
 
         # Ensure these keys are not missing - raises error if it is
         utils.enforce_config_values_not_missing(
@@ -2190,7 +2209,7 @@ class Processor:
         Parameters
         ----------
         depth : numeric
-            what depth to interpolate to
+            what depth to interpolate to, in meters
         measurement : str
             measurement + data source name
             e.g. "Water Temperature (Depth Profile)"

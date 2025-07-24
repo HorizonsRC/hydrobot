@@ -31,8 +31,7 @@ def _get_template(data_family):
     )
     if not directory.is_dir():
         raise ValueError(f"Data family not found. No resource at {directory}")
-    else:
-        return directory
+    return directory
 
 
 def _get_generic_template():
@@ -346,12 +345,48 @@ def csv_to_batch_dicts(file_path):
             if not title_row:
                 title_row = row
             else:
-                row[2] = datetime.strptime(row[2], "%d/%m/%Y %H:%M").strftime(
-                    "%Y-%m-%d %H:%M"
-                )
-                row[3] = datetime.strptime(row[3], "%d/%m/%Y %H:%M").strftime(
-                    "%Y-%m-%d %H:%M"
-                )
+                if row[1] != "":
+                    row[1] = datetime.strptime(row[1], "%d/%m/%Y %H:%M").strftime(
+                        "%Y-%m-%d %H:%M"
+                    )
+                if row[2] != "":
+                    row[2] = datetime.strptime(row[2], "%d/%m/%Y %H:%M").strftime(
+                        "%Y-%m-%d %H:%M"
+                    )
                 zipper = zip(title_row, row, strict=True)
                 list_of_dicts.append({k: v for (k, v) in zipper if v})
     return list_of_dicts
+
+
+def create_depth_hydrobot_batches(home_dir, base_dir, dict_list):
+    """
+    Creates hydrobot batches with depth profiles via create_single_hydrobot_batch.
+
+    Parameters
+    ----------
+    home_dir : str
+        Path to where run file and dsn file will be created.
+    base_dir : str
+        Where batches should be located.
+    dict_list : dict
+        Parameters to be used for each batch. Must contain "site", "data_family", and "depth" as keys. Depths are in
+        mm and separated by semicolons.
+
+    Returns
+    -------
+    None
+        creates many files
+    """
+    hydrobot_scripts = []
+    hydrobot_outputs = []
+    for run in dict_list:
+        for depth in run["depths"]:
+            target_dir, output_filename = create_single_hydrobot_batch(
+                os.path.join(base_dir, str(depth) + "mm"), **run
+            )
+            hydrobot_scripts.append(find_single_file_by_ext(target_dir, "py"))
+            hydrobot_outputs.append(str(os.path.join(target_dir, output_filename)))
+
+    make_dsn(hydrobot_outputs, os.path.join(home_dir, "hydrobot_dsn.dsn"))
+    make_blank_files(hydrobot_outputs)
+    make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))

@@ -50,7 +50,7 @@ depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth, "Dissolved Oxygen (Depth Profile)"
+        data.depth / 1000.0, "Dissolved Oxygen (Depth Profile)"
     )
     depth_check = source.water_temp_check_formatter(depth_check, "DPF")
 elif data.check_hts_filename is not None:
