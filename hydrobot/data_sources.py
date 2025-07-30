@@ -143,7 +143,7 @@ class QualityCodeEvaluator:
     def __repr__(self):
         """QualityCodeEvaluator representation."""
         return repr(
-            f"QualityCodeEvaluator or it's child: '{self.__name__}' with attributes: {self.__dict__}"
+            f"QualityCodeEvaluator or it's child: '{self.__class__.__name__}' with attributes: {self.__dict__}"
         )
 
     def find_qc(self, base_datum, check_datum):
