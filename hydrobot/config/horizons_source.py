@@ -83,6 +83,21 @@ def rainfall_inspections(from_date, to_date, site):
             "site": site,
         },
     )
+
+    # This rainfall site has multiple effective names
+    if site == "Manawatu at Moutoa":
+        rainfall_checks = (
+            utils.safe_concat(
+                [
+                    rainfall_checks,
+                    rainfall_inspections(
+                        from_date, to_date, "Manawatu at Moutoa Gate Pier"
+                    ),
+                ]
+            )
+            .sort_values("arrival_time")
+            .drop_duplicates()
+        )
     return rainfall_checks
 
 
@@ -249,6 +264,20 @@ def rainfall_check_data(from_date, to_date, site):
     ]
 
     check_data = check_data[~check_data.duplicated()]
+
+    if site == "Manawatu at Moutoa":
+        check_data = (
+            utils.safe_concat(
+                [
+                    check_data,
+                    rainfall_check_data(
+                        from_date, to_date, "Manawatu at Moutoa Gate Pier"
+                    ),
+                ]
+            )
+            .sort_index()
+            .drop_duplicates()
+        )
 
     return utils.series_rounder(check_data)
 
