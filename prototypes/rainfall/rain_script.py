@@ -24,9 +24,10 @@ data, ann = initialise_hydrobot_from_yaml("rain_config.yaml")
 #######################################################################################
 # Importing external check data
 #######################################################################################
-# data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
-data.check_data.Value *= 1000
-data.check_data["Recorder Total"] = data.check_data.Value
+data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
+
+# data.check_data.Value *= 1000
+# data.check_data["Recorder Total"] = data.check_data.Value
 
 # Any manual removals
 for false_check in utils.series_rounder(
