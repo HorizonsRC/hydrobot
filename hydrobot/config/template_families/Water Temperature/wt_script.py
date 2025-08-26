@@ -49,7 +49,7 @@ if data.depth:
     depth_check = data.interpolate_depth_profiles(
         data.depth / 1000.0, "Water Temperature (Depth Profile)"
     )
-    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+    depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:
     soe_check = series_rounder(
         source.soe_check_data(

@@ -3,7 +3,6 @@
 import re
 import urllib.parse
 import warnings
-from datetime import datetime
 
 import numpy as np
 import pandas as pd
@@ -521,66 +520,6 @@ def find_last_indices(base_series, check_series):
         nearest_indices.append(nearest_index)
 
     return nearest_indices
-
-
-def set_config_from_date(config_file, base_url, hts_filename, site, measurement):
-    """
-    Set config.yaml parameter from_date based on last data from archive file.
-
-    Parameters
-    ----------
-    config_file : str
-        Path to config.yaml to modify
-    base_url : str
-        Base url for archive file
-    hts_filename
-        Archive hts file name
-    site :str
-        The site to test
-    measurement : str
-        The measurement to test
-
-    Returns
-    -------
-    None
-        side effect: modifies the config.yaml
-    """
-    yaml = ruamel.yaml.YAML()
-    with open(config_file) as fp:
-        data = yaml.load(fp)
-        if "from_date" not in data or data["from_date"] is None:
-            last_time = find_last_time(
-                base_url=base_url,
-                hts=hts_filename,
-                site=site,
-                measurement=measurement,
-            )
-            data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
-    with open(config_file, "w") as fp:
-        yaml.dump(data, fp)
-
-
-def set_config_to_date_to_current_time(config_file):
-    """
-    Set to_date to current time if no time is present.
-
-    Parameters
-    ----------
-    config_file : str
-        Path to config.yaml to modify
-
-    Returns
-    -------
-    None
-        side effect: modifies the config.yaml
-    """
-    yaml = ruamel.yaml.YAML()
-    with open(config_file) as fp:
-        data = yaml.load(fp)
-        if "to_date" not in data or data["to_date"] is None:
-            data["to_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-    with open(config_file, "w") as fp:
-        yaml.dump(data, fp)
 
 
 def enforce_config_values_not_missing(config_file, parameters_to_check):

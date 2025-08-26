@@ -52,7 +52,7 @@ if data.depth:
     depth_check = data.interpolate_depth_profiles(
         data.depth / 1000.0, "Dissolved Oxygen (Depth Profile)"
     )
-    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+    depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 elif data.check_hts_filename is not None:
     soe_check = series_rounder(
         source.soe_check_data(

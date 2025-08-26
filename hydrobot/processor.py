@@ -168,7 +168,7 @@ class Processor:
             standard_measurement_name used in the archive file used to find last processed time and for final
             exported data
         depth : numeric, optional
-            Depth of measurement used for
+            Depth of measurement - used for lake buoys. Number in positive mm.
         kwargs : dict
             Additional keyword arguments.
         """
@@ -380,6 +380,9 @@ class Processor:
         """
         cls.complete_yaml_parameters(config_path)
         processing_parameters = data_acquisition.config_yaml_import(config_path)
+        processing_parameters = data_acquisition.convert_inspection_expiry(
+            processing_parameters
+        )
 
         return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 
@@ -403,7 +406,11 @@ class Processor:
         processing_parameters = data_acquisition.config_yaml_import(config_path)
 
         # Set to_date if missing
-        utils.set_config_to_date_to_current_time(config_path)
+        if (
+            "to_date" not in processing_parameters
+            or processing_parameters["to_date"] is None
+        ):
+            processing_parameters["to_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         def key_and_substitute(key, sub, values):
             """Returns values[key] if that is valid, otherwise returns values[sub]."""
@@ -413,23 +420,26 @@ class Processor:
                 return values[sub]
 
         # Set from_date if missing
-        utils.set_config_from_date(
-            config_file=config_path,
-            base_url=key_and_substitute(
-                "archive_base_url", "base_url", processing_parameters
-            ),
-            hts_filename=key_and_substitute(
-                "archive_standard_hts_filename",
-                "standard_hts_filename",
-                processing_parameters,
-            ),
-            site=processing_parameters["site"],
-            measurement=key_and_substitute(
-                "archive_standard_measurement_name",
-                "standard_measurement_name",
-                processing_parameters,
-            ),
-        )
+        if (
+            "from_date" not in processing_parameters
+            or processing_parameters["from_date"] is None
+        ):
+            processing_parameters["from_date"] = utils.find_last_time(
+                base_url=key_and_substitute(
+                    "archive_base_url", "base_url", processing_parameters
+                ),
+                hts=key_and_substitute(
+                    "archive_standard_hts_filename",
+                    "standard_hts_filename",
+                    processing_parameters,
+                ),
+                site=processing_parameters["site"],
+                measurement=key_and_substitute(
+                    "archive_standard_measurement_name",
+                    "standard_measurement_name",
+                    processing_parameters,
+                ),
+            ).strftime("%Y-%m-%d %H:%M")
 
         # Amend measurement names if depth
         if "depth" in processing_parameters:

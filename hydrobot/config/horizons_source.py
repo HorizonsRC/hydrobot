@@ -445,9 +445,9 @@ def find_three_letter_code(site):
         raise KeyError(f"Unable to find code for {site} in the database.")
 
 
-def water_temp_check_formatter(series: pd.Series, source: str):
+def convert_check_series_to_check_frame(series: pd.Series, source: str):
     """
-    Take a series and format it for water temp check data.
+    Take a series and format it for check data.
 
     Parameters
     ----------

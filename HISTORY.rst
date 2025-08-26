@@ -260,3 +260,8 @@ History
 * They now return a single value (a dataframe)
 * Removed redundant deprecated processor values like raw_standard
 * Added rainfall backup ranges to template
+
+0.9.6 (?)
+----------------------------------
+* Added mass-depth runs
+* Added pH/ORP/BGAlgae/Conductivity capability

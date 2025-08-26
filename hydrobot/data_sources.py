@@ -86,6 +86,8 @@ def depth_standard_measurement_name_by_data_family(data_family, depth):
             return f"pH (-{str(depth)} mm)"
         case "ORP":
             return f"ORP (-{str(depth)} mm)"
+        case "Conductivity":
+            return f"SP Conductivity (-{str(depth)} mm)"
         case _:
             raise ValueError(f"Unimplemented depth data family {data_family}. ")
 
@@ -114,6 +116,8 @@ def depth_check_measurement_name_by_data_family(data_family, depth):
             return f"pH Check (-{str(depth)} mm)"
         case "ORP":
             return f"ORP Check  (-{str(depth)} mm)"
+        case "Conductivity":
+            return f"SP Cond Check (-{str(depth)} mm)"
         case _:
             raise ValueError(
                 f"Unimplemented depth data family {data_family}. Either remove depth as parameter or "

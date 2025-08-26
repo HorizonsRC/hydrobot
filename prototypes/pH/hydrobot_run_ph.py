@@ -1,4 +1,4 @@
-"""Script to run through a processing task for Water Temperature."""
+"""Script to run through a processing task for pH."""
 
 import numpy as np
 import pandas as pd
@@ -34,10 +34,8 @@ comments_ncr = source.non_conformances(data.site)
 
 depth_check = pd.DataFrame()
 if data.depth:
-    depth_check = data.interpolate_depth_profiles(
-        data.depth / 1000.0, "Water Temperature (Depth Profile)"
-    )
-    depth_check = source.water_temp_check_formatter(depth_check, "DPF")
+    depth_check = data.interpolate_depth_profiles(data.depth / 1000.0, "pH (Profile)")
+    depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:
     raise ValueError("depth required for this measurement")
 
@@ -119,7 +117,6 @@ merger = HtmlMerger(
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
-        "soe_table.html",
         "ncr_table.html",
         "calibration_table.html",
         "potential_processing_issues.html",

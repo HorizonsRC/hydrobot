@@ -288,6 +288,22 @@ def config_yaml_import(file_name: str):
     with open(file_name) as yaml_file:
         processing_parameters = yaml.safe_load(yaml_file)
 
+    return processing_parameters
+
+
+def convert_inspection_expiry(processing_parameters):
+    """
+    Interpret inspection_expiry dict as pd.DateOffset.
+
+    Parameters
+    ----------
+    processing_parameters : dict
+
+    Returns
+    -------
+    dict
+        processing_parameters with inspection_expiry converted to pd.DateOffset
+    """
     if "inspection_expiry" in processing_parameters:
         a = processing_parameters["inspection_expiry"]
         d = {}
