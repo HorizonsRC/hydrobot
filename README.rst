@@ -168,6 +168,99 @@ For processing many sites at once
 #. Run the batch_runner.bat
 
 
+
+HURL Schemas - YAML-Style Pydantic Models
+-----------------------------------------
+
+Hydrobot includes a new `hurl.schemas` module that provides Pydantic models with YAML-style string representations. These models use a `ModelReprMixin` that formats the output in a readable, hierarchical YAML format.
+
+Features
+^^^^^^^^
+
+* **YAML-style output**: All models produce clean, indented YAML representations
+* **Excludes unset values**: Only shows fields that have been set (not None/unset)
+* **Customizable always-include fields**: Specify fields to always show even if None
+* **Recursive formatting**: Handles nested models and lists properly
+* **Model name headers**: Each representation starts with the model class name
+
+Usage Example
+^^^^^^^^^^^^^
+
+.. code-block:: python
+
+    from hurl.schemas import DataItem, GetDataRequest, GetDataResponse
+
+    # Create a data request
+    request = GetDataRequest(
+        site="TestSite",
+        measurement="WaterLevel", 
+        from_date="2023-01-01",
+        to_date="2023-01-31"
+    )
+    
+    print(request)
+    # Output:
+    # GetDataRequest:
+    #   site: TestSite
+    #   measurement: WaterLevel
+    #   from_date: '2023-01-01'
+    #   to_date: '2023-01-31'
+    #   limit: null
+
+    # Create data items and response
+    data_items = [
+        DataItem(id=1, value=3.14, tags=["foo", "bar"]),
+        DataItem(id=2, value=2.71)
+    ]
+    
+    response = GetDataResponse(
+        status="success",
+        data=data_items,
+        total_count=100
+    )
+    
+    print(response)
+    # Output:
+    # GetDataResponse:
+    #   status: success
+    #   data:
+    #   - id: 1
+    #     value: 3.14
+    #     tags:
+    #     - foo
+    #     - bar
+    #   - id: 2
+    #     value: 2.71
+    #   total_count: 100
+    #   error_message: null
+
+Creating Custom Models
+^^^^^^^^^^^^^^^^^^^^^^
+
+To create your own model with YAML-style representation:
+
+.. code-block:: python
+
+    from typing import Optional, ClassVar
+    from pydantic import BaseModel, Field
+    from hurl.schemas.base import ModelReprMixin
+
+    class MyModel(ModelReprMixin, BaseModel):
+        # Fields to always include even if None
+        always_include_fields: ClassVar[set] = {"important_field"}
+        
+        name: str = Field(..., description="Model name")
+        value: Optional[float] = Field(default=None, description="Optional value")
+        important_field: Optional[str] = Field(default=None, description="Always shown")
+
+Available Models
+^^^^^^^^^^^^^^^^
+
+* ``DataItem``: Represents individual data points with id, value, and optional tags
+* ``GetDataRequest``: Request model for data retrieval with site, measurement, and date filters
+* ``GetDataResponse``: Response model containing status, data items, and metadata
+
+
 Credits
 -------
 
