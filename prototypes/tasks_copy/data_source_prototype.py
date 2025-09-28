@@ -9,5 +9,8 @@ rainfall_config = tasks.csv_to_batch_dicts(
 )
 
 tasks.create_depth_hydrobot_batches(
-    destination_path + r"\test_home", destination_path, rainfall_config
+    destination_path + r"\test_home",
+    destination_path,
+    rainfall_config,
+    create_directory=True,
 )

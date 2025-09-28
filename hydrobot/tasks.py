@@ -9,6 +9,7 @@ from datetime import datetime
 
 import ruamel.yaml
 
+import hydrobot.data_sources as data_sources
 import hydrobot.utils as utils
 
 
@@ -190,6 +191,12 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
         data["site"] = site
         for key, value in kwargs.items():
             data[key] = value
+        if "depth" in data and data["depth"] is not None:
+            name = data_sources.depth_standard_measurement_name_by_data_family(
+                data["data_family"], data["depth"]
+            )
+            data["standard_measurement_name"] = name
+            data["archive_standard_measurement_name"] = name
         if from_date is None:
             last_time = utils.find_last_time(
                 base_url=data["base_url"],
@@ -206,7 +213,14 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
 
 
 def create_single_hydrobot_batch(
-    base_dir, site, data_family, from_date=None, batch_no=None, **kwargs
+    base_dir,
+    site,
+    data_family,
+    from_date=None,
+    batch_no=None,
+    create_directory=False,
+    depth=None,
+    **kwargs,
 ):
     """
     Creates a single hydrobot run.
@@ -223,8 +237,12 @@ def create_single_hydrobot_batch(
         from date, will use latest available data if absent, will fail if no latest data available.
     batch_no: str, optional
         batch number, will find batch number from base_dir if absent.
+    create_directory: bool, optional
+        whether to create directories if missing. Default false, so will raise error if directory missing
+    depth: str or None, optional
+        Added to end of path if it exists. None for non-depth sites.
     kwargs : dict, optional
-        any paramters to add to config_yaml for batch.
+        any parameters to add to config_yaml for batch.
 
     Returns
     -------
@@ -233,15 +251,21 @@ def create_single_hydrobot_batch(
     output_filename : str
         path to where the output of the hydrobot run is expected.
     """
-    site_directory = str(os.path.join(base_dir, site))
-    if not os.path.isdir(site_directory):
-        raise NotADirectoryError(
-            f"No directory for site '{site}', check spelling or create directory at at"
-            f" {site_directory}"
-        )
     if batch_no is None:
-        batch_no = find_next_batch_number(directory=site_directory)
-    target_dir = str(os.path.join(base_dir, site, str(batch_no)))
+        try:
+            batch_no = find_next_batch_number(
+                directory=str(os.path.join(base_dir, data_family, site))
+            )
+        except FileNotFoundError as e:
+            if create_directory:
+                batch_no = 400
+            else:
+                raise e
+    target_dir = [base_dir, data_family, site, str(batch_no)]
+    if depth is not None:
+        target_dir.append(str(depth) + "mm")
+        kwargs["depth"] = int(depth)
+    target_dir = str(os.path.join(*target_dir))
     os.makedirs(target_dir, exist_ok=False)
     copy_data_family_template(data_family=data_family, destination_path=target_dir)
     output_filename = modify_data_template(target_dir, site, from_date, **kwargs)
@@ -249,7 +273,9 @@ def create_single_hydrobot_batch(
     return target_dir, output_filename
 
 
-def create_mass_hydrobot_batches(home_dir: str, base_dir: str, dict_list: [dict]):
+def create_mass_hydrobot_batches(
+    home_dir: str, base_dir: str, dict_list: [dict], create_directory=False
+):
     """
     Creates many hydrobot batches via create_single_hydrobot_batch.
 
@@ -261,6 +287,8 @@ def create_mass_hydrobot_batches(home_dir: str, base_dir: str, dict_list: [dict]
         Where batches should be located.
     dict_list : dict
         Parameters to be used for each batch. Must contain "site" and "data_family" as keys.
+    create_directory: bool, optional
+        whether to create directories if missing. Default false, so will raise error if directory missing
 
     Returns
     -------
@@ -269,8 +297,17 @@ def create_mass_hydrobot_batches(home_dir: str, base_dir: str, dict_list: [dict]
     """
     hydrobot_scripts = []
     hydrobot_outputs = []
+    if not os.path.isdir(home_dir):
+        if create_directory:
+            os.makedirs(home_dir)
+        else:
+            raise NotADirectoryError(
+                f"No home directory, check path or create directory at at {home_dir}"
+            )
     for run in dict_list:
-        target_dir, output_filename = create_single_hydrobot_batch(base_dir, **run)
+        target_dir, output_filename = create_single_hydrobot_batch(
+            base_dir, **run, create_directory=create_directory
+        )
         hydrobot_scripts.append(find_single_file_by_ext(target_dir, "py"))
         hydrobot_outputs.append(str(os.path.join(target_dir, output_filename)))
 
@@ -358,7 +395,9 @@ def csv_to_batch_dicts(file_path):
     return list_of_dicts
 
 
-def create_depth_hydrobot_batches(home_dir, base_dir, dict_list):
+def create_depth_hydrobot_batches(
+    home_dir, base_dir, dict_list, create_directory=False
+):
     """
     Creates hydrobot batches with depth profiles via create_single_hydrobot_batch.
 
@@ -371,6 +410,8 @@ def create_depth_hydrobot_batches(home_dir, base_dir, dict_list):
     dict_list : dict
         Parameters to be used for each batch. Must contain "site", "data_family", and "depth" as keys. Depths are in
         mm and separated by semicolons.
+    create_directory: bool, optional
+        whether to create directories if missing. Default false, so will raise error if directory missing
 
     Returns
     -------
@@ -379,10 +420,34 @@ def create_depth_hydrobot_batches(home_dir, base_dir, dict_list):
     """
     hydrobot_scripts = []
     hydrobot_outputs = []
+    if not os.path.isdir(home_dir):
+        if create_directory:
+            os.makedirs(home_dir)
+        else:
+            raise NotADirectoryError(
+                f"No home directory, check path or create directory at at {home_dir}"
+            )
     for run in dict_list:
-        for depth in run["depths"]:
+        if "depths" not in run:
+            raise KeyError("Missing key 'depths'")
+        site_directory = str(os.path.join(base_dir, run["data_family"], run["site"]))
+        if not os.path.isdir(site_directory):
+            if create_directory:
+                os.makedirs(site_directory)
+            else:
+                raise NotADirectoryError(
+                    f"No directory for site '{run['site']}', check spelling or create directory at at"
+                    f" {site_directory}"
+                )
+        batch_no = str(find_next_batch_number(directory=site_directory))
+        depths = run.pop("depths").split(";")
+        for depth in depths:
             target_dir, output_filename = create_single_hydrobot_batch(
-                os.path.join(base_dir, str(depth) + "mm"), **run
+                base_dir,
+                **run,
+                depth=depth,
+                create_directory=create_directory,
+                batch_no=batch_no,
             )
             hydrobot_scripts.append(find_single_file_by_ext(target_dir, "py"))
             hydrobot_outputs.append(str(os.path.join(target_dir, output_filename)))

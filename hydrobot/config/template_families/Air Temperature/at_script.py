@@ -7,6 +7,7 @@ streamlit run .\sm_script.py
 
 """
 
+from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.processor import Processor
 
 #######################################################################################
@@ -91,7 +92,7 @@ with open("check_table.html", "w", encoding="utf-8") as file:
 with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 
-"""
+
 merger = HtmlMerger(
     [
         "pyplot.html",
@@ -100,6 +101,8 @@ merger = HtmlMerger(
         "standard_table.html",
     ],
     encoding="utf-8",
+    header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h3>From {data.from_date} to"
+    f" {data.to_date}</h3>",
 )
 
-merger.merge()"""
+merger.merge()
