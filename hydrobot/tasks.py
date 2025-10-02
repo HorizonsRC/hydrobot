@@ -13,6 +13,17 @@ import hydrobot.data_sources as data_sources
 import hydrobot.utils as utils
 
 
+def _get_minimum_batch_number():
+    """
+    Returns minimum allowed batch number.
+
+    Returns
+    -------
+    int
+    """
+    return 401
+
+
 def _get_template(data_family):
     """
     Gets the data_family template path.
@@ -90,7 +101,7 @@ def _remove_non_numeric_from_string(string: str):
     return re.sub(r"\D", "", string)
 
 
-def find_next_batch_number(directory: str, minimum: int = 400):
+def find_next_batch_number(directory: str, minimum: int = _get_minimum_batch_number()):
     """
     Finds the highest value among subdirectories and adds 1.
 
@@ -197,6 +208,10 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
             )
             data["standard_measurement_name"] = name
             data["archive_standard_measurement_name"] = name
+        if "archive_standard_measurement_name" not in data:
+            data["archive_standard_measurement_name"] = data[
+                "standard_measurement_name"
+            ]
         if from_date is None:
             last_time = utils.find_last_time(
                 base_url=data["base_url"],
@@ -258,7 +273,7 @@ def create_single_hydrobot_batch(
             )
         except FileNotFoundError as e:
             if create_directory:
-                batch_no = 400
+                batch_no = _get_minimum_batch_number()
             else:
                 raise e
     target_dir = [base_dir, data_family, site, str(batch_no)]
