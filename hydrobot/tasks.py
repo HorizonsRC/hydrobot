@@ -197,6 +197,10 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
             )
             data["standard_measurement_name"] = name
             data["archive_standard_measurement_name"] = name
+        if "archive_standard_measurement_name" not in data:
+            data["archive_standard_measurement_name"] = data[
+                "standard_measurement_name"
+            ]
         if from_date is None:
             last_time = utils.find_last_time(
                 base_url=data["base_url"],
