@@ -269,14 +269,14 @@ def create_single_hydrobot_batch(
     if batch_no is None:
         try:
             batch_no = find_next_batch_number(
-                directory=str(os.path.join(base_dir, data_family, site))
+                directory=str(os.path.join(base_dir, site))
             )
         except FileNotFoundError as e:
             if create_directory:
                 batch_no = _get_minimum_batch_number()
             else:
                 raise e
-    target_dir = [base_dir, data_family, site, str(batch_no)]
+    target_dir = [base_dir, site, str(batch_no)]
     if depth is not None:
         target_dir.append(str(depth) + "mm")
         kwargs["depth"] = int(depth)
@@ -445,7 +445,7 @@ def create_depth_hydrobot_batches(
     for run in dict_list:
         if "depths" not in run:
             raise KeyError("Missing key 'depths'")
-        site_directory = str(os.path.join(base_dir, run["data_family"], run["site"]))
+        site_directory = str(os.path.join(base_dir, run["site"]))
         if not os.path.isdir(site_directory):
             if create_directory:
                 os.makedirs(site_directory)
