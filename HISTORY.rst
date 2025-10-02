@@ -261,7 +261,8 @@ History
 * Removed redundant deprecated processor values like raw_standard
 * Added rainfall backup ranges to template
 
-0.9.6 (?)
+0.9.6 (2025-10-02)
 ----------------------------------
 * Added mass-depth runs
 * Added pH/ORP/BGAlgae/Conductivity capability
+* Making "tasks", to set up files for running from lists of sites/families
