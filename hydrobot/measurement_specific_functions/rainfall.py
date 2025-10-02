@@ -64,7 +64,7 @@ def rainfall_site_survey(site: str):
     # get inspections at site
     site_surveys = site_survey_frame[
         (site_survey_frame["Site Name"] == site_index)
-        | (site_survey_frame["New/un-official Site Name"] == site)
+        | (site_survey_frame["New/un-official Site Name"].str.strip() == site)
     ]
 
     # Most recent filter
