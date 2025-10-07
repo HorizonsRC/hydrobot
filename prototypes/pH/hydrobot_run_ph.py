@@ -122,7 +122,7 @@ merger = HtmlMerger(
         "potential_processing_issues.html",
     ],
     encoding="utf-8",
-    header=f"<h1>{data.site}</h1>\n<h2>From {data.from_date} to {data.to_date}</h2>",
+    header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
 merger.merge()
