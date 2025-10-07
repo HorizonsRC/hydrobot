@@ -336,6 +336,10 @@ class RFProcessor(Processor):
             manual_additional_points = pd.Series({})
         else:
             manual_additional_points = utils.series_rounder(manual_additional_points)
+            manual_additional_points = manual_additional_points.shift(periods=-1)
+            manual_additional_points = manual_additional_points.fillna(-1000).astype(
+                np.int64
+            )
 
         if synthetic_checks:
             self.replace_checks_with_ltco(synthetic_checks)
