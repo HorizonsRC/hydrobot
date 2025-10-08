@@ -459,6 +459,23 @@ def manual_tip_filter(
             # Off by 1 is probably just a typo, delete it all
             std_series[inspection_data.index] = 0
             return std_series, None
+        elif len(events) < manual_tips:
+            # This is propably real, but should warn user
+            if not weather:
+                weather = "NULL"
+            comment = (
+                f"Recored {len(events)} tips < than {manual_tips} manual tips reported. NOT DELETED. Weather"
+                f" {weather}"
+            )
+            issue = {
+                "start_time": arrival_time,
+                "end_time": departure_time,
+                "code": "RMT",
+                "comment": comment,
+                "series_type": "standard,check",
+                "message_type": "warning",
+            }
+            return std_series, issue
         else:
             if not weather:
                 weather = "NULL"
