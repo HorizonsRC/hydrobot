@@ -16,7 +16,7 @@ data_sections_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = initialise_hydrobot_from_yaml("do_config.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_do.yaml")
 
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[

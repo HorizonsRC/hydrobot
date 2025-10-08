@@ -1,14 +1,15 @@
-"""Script to run through a processing task for Air Temperature."""
+"""Script to run through a processing task for Soil Moisture."""
 
 import pandas as pd
 
+import hydrobot.config.horizons_source as source
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 
 #######################################################################################
-# Reading configuration from config.yaml and making processor object
+# Reading configuration from config.yaml
 #######################################################################################
-data, ann = initialise_hydrobot_from_yaml("at_config.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_sm.yaml")
 
 #######################################################################################
 # Common auto-processing steps
@@ -53,12 +54,17 @@ with open("quality_table.html", "w", encoding="utf-8") as file:
     data.quality_data.to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
     data.processing_issues.to_html(file)
+with open("calibration_table.html", "w", encoding="utf-8") as file:
+    source.calibrations(
+        data.site, measurement_name=data.standard_measurement_name
+    ).to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
+        "calibration_table.html",
         "potential_processing_issues.html",
     ],
     encoding="utf-8",

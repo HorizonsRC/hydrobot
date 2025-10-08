@@ -19,7 +19,7 @@ backup_replacement_times = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = initialise_hydrobot_from_yaml("rain_config.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_rain.yaml")
 
 #######################################################################################
 # Importing external check data
