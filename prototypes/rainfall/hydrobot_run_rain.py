@@ -127,6 +127,7 @@ else:
     data.quality_encoder(
         manual_additional_points=manual_additional_points,
         synthetic_checks=synthetic_checks,
+        backup_replacement_times=backup_replacement_times,
     )
     data.standard_data["Value"] = trim_series(
         data.standard_data["Value"],

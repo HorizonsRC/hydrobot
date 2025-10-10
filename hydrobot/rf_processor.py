@@ -277,6 +277,7 @@ class RFProcessor(Processor):
         supplemental_data: pd.Series | None = None,
         manual_additional_points: pd.Series | None = None,
         synthetic_checks: list | None = None,
+        backup_replacement_times: list | None = None,
     ):
         """
         Encode quality information in the quality series for a rainfall dataset.
@@ -304,6 +305,9 @@ class RFProcessor(Processor):
         synthetic_checks : list | None
             list of datetimes (will have pd.Timestamp applied, so can have str)
              to have synthetic checks to replace recorded checks
+        backup_replacement_times : list | None
+            List of pairs of dates representing periods where backup data is
+            used, and the quality code needs to be capped at 400 between
 
         Returns
         -------
@@ -334,6 +338,8 @@ class RFProcessor(Processor):
             max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
         if manual_additional_points is None:
             manual_additional_points = pd.Series({})
+        if backup_replacement_times is None:
+            backup_replacement_times = []
 
         if synthetic_checks:
             self.replace_checks_with_ltco(synthetic_checks)
@@ -419,6 +425,23 @@ class RFProcessor(Processor):
             quality_series[self.from_date] = np.nan
             quality_series = quality_series.sort_index().ffill()
             quality_series = quality_series[quality_series.index >= self.from_date]
+
+        for backup_period in backup_replacement_times:
+            start = pd.to_datetime(backup_period[0])
+            end = pd.to_datetime(backup_period[1])
+            previous_end_qc = quality_series[
+                quality_series[quality_series.index <= end].index.max()
+            ]
+
+            if start not in quality_series or quality_series[start] > 400:
+                quality_series[start] = 400
+            if previous_end_qc > 400:
+                quality_series[end] = 400
+            quality_series[
+                (quality_series.index > start)
+                & (quality_series.index < end)
+                & (quality_series > 400)
+            ] = 400
 
         self.ramped_standard = ramped_standard
         qc_frame = quality_series.to_frame(name="Value")
