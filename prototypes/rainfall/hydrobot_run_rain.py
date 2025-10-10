@@ -99,13 +99,9 @@ flask_points = pd.Series(
     index=rainfall_inspections[~rainfall_inspections["flask"].isna()]["arrival_time"],
 )
 
-manual_additional_points = [dipstick_points, flask_points]
-manual_additional_points = [i for i in manual_additional_points if not i.empty]
-if manual_additional_points:
-    manual_additional_points = utils.safe_concat(manual_additional_points)
-    manual_additional_points = manual_additional_points.sort_index()
-else:
-    manual_additional_points = pd.Series({})
+manual_additional_points = rf.manual_points_combiner(
+    [dipstick_points, flask_points], checks_to_manually_ignore
+)
 
 if data.check_data.Value.isna().all():
     data_with_from_and_to_date_added = data.standard_data["Value"].copy()

@@ -768,3 +768,40 @@ def rainfall_six_minute_repacker(series: pd.Series):
     rainfall_series = rainfall_series.asfreq(freq="6min", fill_value=0.0)
 
     return rainfall_series
+
+
+def manual_points_combiner(list_of_manual_points, checks_to_ignore=None):
+    """
+    Combines sources of manual addition points for rainfall.
+
+    Parameters
+    ----------
+    list_of_manual_points : [pd.Series]
+        List of date/point series that have points to contribute
+    checks_to_ignore : [str], optional
+        Any checks that should not be considered
+
+    Returns
+    -------
+    pd.Series
+        All the manual points in a single series
+    """
+    if checks_to_ignore is None:
+        checks_to_ignore = []
+    manual_additional_points = [i for i in list_of_manual_points if not i.empty]
+    if manual_additional_points:
+        manual_additional_points = utils.safe_concat(manual_additional_points)
+        manual_additional_points = manual_additional_points.sort_index()
+        manual_additional_points = utils.series_rounder(manual_additional_points)
+        for false_check in checks_to_ignore:
+            if false_check in manual_additional_points.index:
+                manual_additional_points = manual_additional_points.drop(
+                    pd.Timestamp(false_check)
+                )
+        manual_additional_points = manual_additional_points.shift(periods=-1)
+        manual_additional_points = manual_additional_points.fillna(-1000).astype(
+            np.int64
+        )
+    else:
+        manual_additional_points = pd.Series({})
+    return manual_additional_points
