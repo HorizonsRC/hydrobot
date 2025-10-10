@@ -25,7 +25,7 @@ data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_rain.yaml")
 # Importing external check data
 #######################################################################################
 data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.site)
-# If check data already in the file:
+
 # data.check_data.Value *= 1000
 # data.check_data["Recorder Total"] = data.check_data.Value
 
@@ -99,13 +99,9 @@ flask_points = pd.Series(
     index=rainfall_inspections[~rainfall_inspections["flask"].isna()]["arrival_time"],
 )
 
-manual_additional_points = [dipstick_points, flask_points]
-manual_additional_points = [i for i in manual_additional_points if not i.empty]
-if manual_additional_points:
-    manual_additional_points = utils.safe_concat(manual_additional_points)
-    manual_additional_points = manual_additional_points.sort_index()
-else:
-    manual_additional_points = pd.Series({})
+manual_additional_points = rf.manual_points_combiner(
+    [dipstick_points, flask_points], checks_to_manually_ignore
+)
 
 if data.check_data.Value.isna().all():
     data_with_from_and_to_date_added = data.standard_data["Value"].copy()
@@ -131,6 +127,7 @@ else:
     data.quality_encoder(
         manual_additional_points=manual_additional_points,
         synthetic_checks=synthetic_checks,
+        backup_replacement_times=backup_replacement_times,
     )
     data.standard_data["Value"] = trim_series(
         data.standard_data["Value"],

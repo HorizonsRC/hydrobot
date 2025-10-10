@@ -266,3 +266,13 @@ History
 * Added mass-depth runs
 * Added pH/ORP/BGAlgae/Conductivity capability
 * Making "tasks", to set up files for running from lists of sites/families
+
+0.9.7 (2025-10-10)
+----------------------------------
+* Fixed mass batch paths
+* Bug fix for new site "site surveys" with whitespace at start/end of site name
+* Rainfall backup replacement now correctly caps qc to 400
+* Fixed manual points shift
+* Standardised naming formats
+* Added measurement names to merged
+* manual tip filter fix
