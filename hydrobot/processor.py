@@ -403,7 +403,10 @@ class Processor:
     @classmethod
     def complete_yaml_parameters(cls, config_path):
         """Ensure a yaml holds all relevant parameters, filling in missing from/to dates."""
-        processing_parameters = data_acquisition.config_yaml_import(config_path)
+        yaml = ruamel.yaml.YAML()
+        with open(config_path) as fp:
+            config_string = fp.read()
+        processing_parameters = yaml.load(config_string)
 
         # Set to_date if missing
         if (
@@ -455,7 +458,6 @@ class Processor:
             ] = data_sources.depth_check_measurement_name_by_data_family(
                 processing_parameters["data_family"], processing_parameters["depth"]
             )
-        yaml = ruamel.yaml.YAML()
         with open(config_path, "w") as fp:
             yaml.dump(processing_parameters, fp)
 
