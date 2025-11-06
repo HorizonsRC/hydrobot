@@ -497,3 +497,39 @@ def site_info_lookup(site: str):
     xml_string = result.loc[0, "SiteInfo"]
 
     return xmltodict.parse(xml_string)["SiteInfo"]
+
+
+def rainfall_site_survey(site: str):
+    """
+    Gets most recent rainfall site survey for NEMs matrix.
+
+    Parameters
+    ----------
+    site : str
+        Name of site
+
+    Returns
+    -------
+    pd.DataFrame
+        The Dataframe with one entry, the most recent survey for the given site.
+    """
+    query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("rainfall_site_inspection.sql")
+        .read_text()
+    )
+
+    site_surveys = pd.read_sql(
+        query,
+        hilltop_db_engine(),
+        params={
+            "site": site,
+        },
+    )
+
+    # Most recent filter
+    """recent_survey = site_surveys[
+        site_surveys["Arrival Time"] == site_surveys["Arrival Time"].max()
+    ]"""
+
+    return site_surveys

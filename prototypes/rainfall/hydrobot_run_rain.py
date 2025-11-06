@@ -89,15 +89,26 @@ data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data
 #######################################################################################
 # Assign quality codes
 #######################################################################################
+no_dup_inspections = rainfall_inspections.loc[
+    ~rainfall_inspections.arrival_time.duplicated(keep="first"), :
+]
 dipstick_points = pd.Series(
     data=12,
-    index=rainfall_inspections[rainfall_inspections["flask"].isna()]["arrival_time"],
+    index=no_dup_inspections[no_dup_inspections["flask"].isna()]["arrival_time"],
 )
 
 flask_points = pd.Series(
     data=0,
-    index=rainfall_inspections[~rainfall_inspections["flask"].isna()]["arrival_time"],
+    index=no_dup_inspections[~no_dup_inspections["flask"].isna()]["arrival_time"],
 )
+
+for false_check in utils.series_rounder(
+    pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
+).index:
+    if false_check in dipstick_points:
+        dipstick_points = dipstick_points.drop(pd.Timestamp(false_check))
+    if false_check in flask_points:
+        flask_points = flask_points.drop(pd.Timestamp(false_check))
 
 manual_additional_points = rf.manual_points_combiner(
     [dipstick_points, flask_points], checks_to_manually_ignore

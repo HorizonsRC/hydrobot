@@ -1,78 +1,15 @@
 """Rainfall utils."""
 
-import platform
 import warnings
 
 import numpy as np
 import pandas as pd
-import sqlalchemy as db
-from sqlalchemy.engine import URL
 
+import hydrobot.config.horizons_source as source
 import hydrobot.utils as utils
 
 # "optional" dependency needed: openpyxl
 # pip install openpyxl
-
-
-def rainfall_site_survey(site: str):
-    """
-    Gets most recent rainfall site survey for NEMs matrix.
-
-    Parameters
-    ----------
-    site : str
-        Name of site
-
-    Returns
-    -------
-    pd.DataFrame
-        The Dataframe with one entry, the most recent survey for the given site.
-    """
-    # Horizons sheet location
-    if platform.system() == "Windows":
-        survey_excel_sheet = r"\\ares\HydrologySoftware\Survey 123\RainfallSiteSurvey20220510_Pull\Rainfall_Site_Survey_20220510.xlsx"
-        hostname = "SQL3.horizons.govt.nz"
-    elif platform.system() == "Linux":
-        # Support for Nic's personal WSL setup! Not generic linux support! Sorry!
-        survey_excel_sheet = r"/mnt/ares_hydro_software/Survey 123/RainfallSiteSurvey20220510_Pull/RainfallSiteSurvey20220510.xlsx"
-        hostname = "PNT-DB30.horizons.govt.nz"
-    else:
-        raise OSError("What is this, a mac? We don't do that here.")
-
-    site_survey_frame = pd.ExcelFile(survey_excel_sheet).parse()
-
-    # get site index from site name
-    connection_url = URL.create(
-        "mssql+pyodbc",
-        host=hostname,
-        database="survey123",
-        query={"driver": "ODBC Driver 17 for SQL Server"},
-    )
-    # engine = db.create_engine(
-    #     "mssql+pyodbc://SQL3.horizons.govt.nz/survey123?DRIVER=ODBC+Driver+17+for+SQL+Server"
-    # )
-    engine = db.create_engine(connection_url)
-    query = """
-            SELECT TOP (100000) [SiteID]
-                ,[SiteName]
-            FROM [survey123].[dbo].[Sites]
-            WHERE SiteName = ?
-            """
-    site_lookup = pd.read_sql(query, engine, params=(site,))
-    site_index = site_lookup.SiteID.iloc[0]
-
-    # get inspections at site
-    site_surveys = site_survey_frame[
-        (site_survey_frame["Site Name"] == site_index)
-        | (site_survey_frame["New/un-official Site Name"].str.strip() == site)
-    ]
-
-    # Most recent filter
-    """recent_survey = site_surveys[
-        site_surveys["Arrival Time"] == site_surveys["Arrival Time"].max()
-    ]"""
-
-    return site_surveys.sort_values(by=["Arrival Time"])
 
 
 def rainfall_nems_site_matrix(site):
@@ -99,7 +36,7 @@ def rainfall_nems_site_matrix(site):
         output_dict: dict
             Keys are rows of NEMS matrix, values are the points contributed
     """
-    all_site_surveys = rainfall_site_survey(site)
+    all_site_surveys = source.rainfall_site_survey(site)
     with pd.option_context("future.no_silent_downcasting", True):
         all_site_surveys = all_site_surveys.ffill().bfill()
 
@@ -134,73 +71,62 @@ def rainfall_nems_site_matrix(site):
         # Topography
         output_dict["Topography"] = (
             int(matrix_dict["Topography"])
-            if not np.isnan(matrix_dict["Topography"])
+            if not pd.isna(matrix_dict["Topography"])
             else 3
         )
         # Average annual windspeed
-        output_dict["Average annual windspeed"] = (
-            int(matrix_dict["Average annual windspeed"])
-            if not np.isnan(matrix_dict["Average annual windspeed"])
+        output_dict["Wind Exposure"] = (
+            int(matrix_dict["Wind Exposure"])
+            if not pd.isna(matrix_dict["Wind Exposure"])
             else 1  # 1 as region is almost all in the 3-6m/s category
         )
         # Obstructed Horizon
         output_dict["Obstructed Horizon"] = (
             int(matrix_dict["Obstructed Horizon"])
-            if not np.isnan(matrix_dict["Obstructed Horizon"])
+            if not pd.isna(matrix_dict["Obstructed Horizon"])
             else 3
         )
         # Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)
-        dist = matrix_dict[
-            "Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)"
-        ]
+        dist = matrix_dict["Distance Between Gauges"]
         if 600 <= dist <= 2000:
             output_dict["Distance Between Gauges"] = 0
         else:
             output_dict["Distance Between Gauges"] = 3  # including nan
         # Orifice Height - Primary Reference Gauge
-        splash = (
-            matrix_dict["Is there a Splash Guard for the Primary Reference Gauge?"] < 2
-        )
-        height = matrix_dict[
-            "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-        ]
+        splash = int(matrix_dict["SplashGuard"]) < 2
+        height = int(matrix_dict["Orifice Height - Primary Reference Gauge"])
         if splash or (285 <= height <= 325):
             output_dict["Orifice Height - Primary Reference Gauge"] = 0
         else:
             output_dict["Orifice Height - Primary Reference Gauge"] = 3
         # Orifice Diameter - Primary Reference Gauge
-        dist = matrix_dict[
-            "Orifice diameter of the Primary Reference Gauge (Check Gauge)(mm)"
-        ]
+        dist = int(matrix_dict["Orifice Diameter - Primary Reference Gauge"])
         if 125 <= dist <= 205:
-            output_dict["Orifice Diameter"] = 0
+            output_dict["Orifice Diameter - Primary Reference Gauge"] = 0
         else:
-            output_dict["Orifice Diameter"] = 3  # including nan
+            output_dict[
+                "Orifice Diameter - Primary Reference Gauge"
+            ] = 3  # including nan
         # Orifice height - Intensity Gauge
-        height = matrix_dict[
-            "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-        ]
+        height = int(matrix_dict["Orifice Height - Intensity Gauge"])
         if splash or (285 <= height <= 600):
-            output_dict["Orifice height - Intensity Gauge"] = 0
+            output_dict["Orifice Height - Intensity Gauge"] = 0
         elif height <= 1000:
             height_diff = np.abs(
-                height
-                - matrix_dict[
-                    "Orifice height of the Primary Reference Gauge (Check Gauge) (mm)"
-                ]
+                height - matrix_dict["Orifice Height - Primary Reference Gauge"]
             )
             if height_diff <= 50:
-                output_dict["Orifice height - Intensity Gauge"] = 1
+                output_dict["Orifice Height - Intensity Gauge"] = 1
             else:
-                output_dict["Orifice height - Intensity Gauge"] = 3
+                output_dict["Orifice Height - Intensity Gauge"] = 3
         else:
             output_dict["Orifice height - Intensity Gauge"] = 3
-        # Orifice Diameter - Intensity  Gauge
-        dist = matrix_dict["Orifice Diameter of the Intensity Gauge (mm)"]
+        # Orifice Diameter - Intensity Gauge
+        dist = int(matrix_dict["Orifice Diameter - Intensity Gauge"])
         if 125 <= dist <= 205:
-            output_dict["Orifice Diameter Intensity"] = 0
+            output_dict["Orifice Diameter - Intensity Gauge"] = 0
         else:
-            output_dict["Orifice Diameter Intensity"] = 3  # including nan
+            output_dict["Orifice Diameter - Intensity Gauge"] = 3  # including nan
 
         matrix_sum = 0
         three_point_sum = 0
