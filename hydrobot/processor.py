@@ -8,7 +8,6 @@ import pandas as pd
 import ruamel.yaml
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
-from hilltoppy import Hilltop
 
 import hydrobot
 from hydrobot import (
@@ -240,9 +239,8 @@ class Processor:
         self._standard_data = EMPTY_STANDARD_DATA.copy()
         self._check_data = EMPTY_CHECK_DATA.copy()
         self._quality_data = EMPTY_QUALITY_DATA.copy()
-
-        # standard hilltop
-        standard_hilltop = Hilltop(base_url, standard_hts_filename)
+        # standard hilltop (now whurl-backed wrapper)
+        standard_hilltop = data_acquisition.Hilltop(base_url, standard_hts_filename)
         data_acquisition.enforce_site_in_hts(standard_hilltop, self.site)
         self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
 
@@ -258,10 +256,9 @@ class Processor:
 
         # check hilltop
         if check_hts_filename is not None:
-            check_hilltop = Hilltop(base_url, check_hts_filename)
+            check_hilltop = data_acquisition.Hilltop(base_url, check_hts_filename)
             data_acquisition.enforce_site_in_hts(check_hilltop, self.site)
             self.enforce_measurement_at_site(check_measurement_name, check_hilltop)
-
         (
             self.check_item_name,
             self.check_data_source_name,

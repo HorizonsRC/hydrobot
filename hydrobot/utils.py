@@ -1,14 +1,17 @@
 """General utilities."""
 
 import re
-import urllib.parse
 import warnings
 
 import numpy as np
 import pandas as pd
 import ruamel.yaml
-from hilltoppy.utils import get_hilltop_xml
 from pandas.tseries.frequencies import to_offset
+
+# from hilltoppy.utils import get_hilltop_xml
+from whurl.requests import TimeRangeRequest
+
+from hydrobot.data_acquisition import get_time_range
 
 MOWSECS_OFFSET = 946771200
 
@@ -594,6 +597,8 @@ def find_last_time(
     """
     Find the last data point in the hts file for a given site/measurement pair.
 
+    TODO: This should be deprecated in favour of the version in data_acquisition.py
+
     Parameters
     ----------
     base_url : str
@@ -605,11 +610,10 @@ def find_last_time(
     -------
     pd.Timestamp
     """
-    timerange_url = (
-        f"{base_url}{urllib.parse.quote(hts)}?Service=Hilltop&Request=TimeRange&Site="
-        f"{urllib.parse.quote(site)}&Measurement={urllib.parse.quote(measurement)}"
-    )
-    hilltop_xml = get_hilltop_xml(timerange_url)
+    timerange_url = TimeRangeRequest()
+
+    hilltop_xml, hilltop_object = get_time_range(base_url, hts, site, measurement)
+
     if hilltop_xml.find("To") is None:
         raise ValueError(
             f"No data found for this site. If no previous processing is done, a from_date is required. "

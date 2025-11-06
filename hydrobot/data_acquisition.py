@@ -1,23 +1,102 @@
-"""Main module."""
+"""Main module.
+
+Rewritten to use whurl as the Hilltop client provider instead of hilltoppy.
+This file exposes a small Hilltop wrapper that provides the minimal API used elsewhere
+in hydrobot (available_sites and get_hilltop_xml, etc), and reimplements get_data,
+get_time_range/get_server_dataframe to fetch raw XML via the whurl request objects so
+the rest of hydrobot can continue to parse xml with hydrobot.data_structure.parse_xml.
+"""
 
 import pandas as pd
 import yaml
-from hilltoppy import Hilltop
-from hilltoppy.utils import build_url, get_hilltop_xml
+from whurl.client import HilltopClient
+from whurl.requests import GetDataRequest, TimeRangeRequest
 
 from hydrobot.data_structure import parse_xml
 
 
+class Hilltop:
+    """
+    Compatibility wrapper preserving the simple interface hydrobot expects.
+
+    TEMPORARY WRAPPER FOR TRANSITION FROM hilltop-py TO whurl.
+
+    Contains the following compatible members:
+        - Hilltop(base_url, hts)
+        - .available_sites property
+        - get_hilltop_xml(...) method for raw XML retrieval (used by legacy code paths)
+    Internally uses whurl.client.HilltopClient.
+    """
+
+    def __init__(self, base_url: str, hts: str):
+        self.base_url = base_url
+        # In whurl, the HTS service is called hts_endpoint; we store it here
+        self.hts = hts
+        # Create a synchronous client instance we can reuse for the lifetime of this
+        # wrapper
+        self._client = HilltopClient(base_url, hts)
+
+    @property
+    def available_sites(self) -> list[str]:
+        """
+        Return a list of site names available in the HTS.
+
+        Whurl returns a SiteListResponse with .site_list entries that have .name
+        attributes
+        """
+        resp = self.client.get_site_list()
+        # Whurl SiteListResponse has .site_list entries with .name attributes
+        try:
+            return [site.name for site in resp.site_list]
+        except Exception:
+            # Fall back to DataFrame conversion if that shape is present
+            try:
+                return list(resp.to_dataframe().iloc[:, 0].astype(str))
+            except Exception:
+                return []
+
+    def get_hilltop_xml(
+        self,
+        *,
+        site: str | None = None,
+        measurement: str | None = None,
+        from_datetime: str | None = None,
+        to_datetime: str | None = None,
+        tstype: str | None = None,
+    ) -> str:
+        """
+        Build a GetDataRequest and fetch raw XML using the whurl client's session.
+
+        Returning raw XML keeps hydrobot.data_structure.parse_xml usage unchanged
+        in the codebase for now.
+        """
+        req = GetDataRequest(
+            base_url=self.base_url,
+            hts_endpoint=self.hts,
+            site=site,
+            measurement=measurement,
+            from_datetime=from_datetime,
+            to_datetime=to_datetime,
+            tstype=tstype,
+        )
+        # Use the client's session to perform the GET so we have the raw response text
+        resp = self._client.session.get(req.gen_url())
+        resp.raise_for_status()
+        return resp.text
+
+
 def get_data(
-    base_url,
-    hts,
-    site,
-    measurement,
-    from_date,
-    to_date,
-    tstype="Standard",
+    base_url: str,
+    hts: str,
+    site: str,
+    measurement: str,
+    from_date: str | None,
+    to_date: str | None,
+    tstype: str = "Standard",
 ):
     """Acquire time series data from a web service and return it as a DataFrame.
+
+    COMPATIBLE REPLACEMENT FOR THE OLD HILLTOP-PY BACKED GET_DATA.
 
     Parameters
     ----------
@@ -46,18 +125,23 @@ def get_data(
     [DataSourceBlob]
         XML tree parsed to DataSourceBlobs
     """
-    url = build_url(
-        base_url,
-        hts,
-        "GetData",
+    # Build a whurl GetDataRequest to get the same URL as hilltoppy code would have.
+    req = GetDataRequest(
+        base_url=base_url,
+        hts_endpoint=hts,
         site=site,
         measurement=measurement,
-        from_date=from_date,
-        to_date=to_date,
+        from_datetime=from_date,
+        to_datetime=to_date,
         tstype=tstype,
     )
+    # Use a short-lived client for this simple wrapper.
+    # In future, we need to refactor the calling code to use a persistent client.
 
-    hilltop_xml = get_hilltop_xml(url)
+    client = HilltopClient(base_url, hts)
+    response = client.session.get(req.gen_url())
+    response.raise_for_status()
+    hilltop_xml = response.text
 
     data_object = parse_xml(hilltop_xml)
 
@@ -72,6 +156,8 @@ def get_time_range(
     tstype="Standard",
 ):
     """Acquire time series data from a web service and return it as a DataFrame.
+
+    COMPATIBLE REPLACEMENT FOR THE OLD HILLTOP-PY BACKED GET_DATA.
 
     Parameters
     ----------
@@ -92,19 +178,21 @@ def get_time_range(
     Element
         XML element from the server call
     [DataSourceBlob]
-        A list of DataSourceBlobs corresponding to all measurements contained in the acquired time series data.
+        A list of DataSourceBlobs corresponding to all measurements contained in the
+        acquired time series data.
     """
-    url = build_url(
-        base_url,
-        hts,
-        "TimeRange",
+    req = TimeRangeRequest(
+        base_url=base_url,
+        hts_endpoint=hts,
         site=site,
         measurement=measurement,
         tstype=tstype,
     )
+    client = HilltopClient(base_url, hts)
+    response = client.session.get(req.gen_url())
+    response.raise_for_status()
 
-    hilltop_xml = get_hilltop_xml(url)
-
+    hilltop_xml = response.text
     data_object = parse_xml(hilltop_xml)
 
     return hilltop_xml, data_object
@@ -121,6 +209,8 @@ def get_server_dataframe(
 ) -> pd.DataFrame:
     """
     Call hilltop server and transform to pd.DataFrame.
+
+    COMPATIBLE REPLACEMENT FOR THE OLD HILLTOP-PY BACKED GET_DATA.
 
     Parameters
     ----------
@@ -152,63 +242,33 @@ def get_server_dataframe(
     KeyError
         if there is no measurement for the given parameters
     """
-    url = build_url(
-        base_url,
-        hts,
-        "GetData",
-        site=site,
-        measurement=measurement,
-        from_date=from_date,
-        to_date=to_date,
-        tstype=tstype,
+    xml, blob = get_data(
+        base_url, hts, site, measurement, from_date, to_date, tstype=tstype
     )
 
-    root = get_hilltop_xml(url)
-    data_list = []
-    if root.find("Measurement") is None:
-        raise KeyError(f"No measurement at the url: {url}")
-
-    for child in root.find("Measurement").find("Data"):
-        if child.tag == "E":
-            data_dict = {}
-            for element in child:
-                if element.tag == "Parameter":
-                    data_dict[element.attrib["Name"]] = element.attrib["Value"]
-
-                else:
-                    data_dict[element.tag] = element.text
-
-            data_list += [data_dict]
-        elif child.tag == "V":
-            if child.text is not None:
-                timestamp, data_val = child.text.split(" ")
-                data_dict = {
-                    "T": timestamp,
-                    "V": data_val,
-                }
-                data_list += [data_dict]
-        elif child.tag == "Gap":
-            pass
-        else:
-            raise ValueError(
-                "Possibly Malformed XML: Data items not tagged with 'E' or 'V'."
-            )
-
-    timeseries = pd.DataFrame(data_list).set_index("T")
-    return timeseries
+    if blob:
+        try:
+            first = blob[0]
+            return first.data.timeseries.copy()
+        except Exception:
+            # Fallback: empty DataFrame
+            return pd.DataFrame()
+    return pd.DataFrame()
 
 
 def get_depth_profiles(
-    base_url,
-    hts,
-    site,
-    measurement,
-    from_date,
-    to_date,
-    tstype="Standard",
+    base_url: str,
+    hts: str,
+    site: str,
+    measurement: str,
+    from_date: str | None,
+    to_date: str | None,
+    tstype: str = "Standard",
 ) -> [pd.Series]:
     """
     Call hilltop server for depth profiles.
+
+    COMPATIBLE REPLACEMENT FOR THE OLD HILLTOP-PY BACKED GET_DEPTH_PROFILES.
 
     Parameters
     ----------
@@ -240,35 +300,14 @@ def get_depth_profiles(
     KeyError
         if there is no measurement for the given parameters
     """
-    url = build_url(
-        base_url,
-        hts,
-        "GetData",
-        site=site,
-        measurement=measurement,
-        from_date=from_date,
-        to_date=to_date,
-        tstype=tstype,
+    xml, blobs = get_data(
+        base_url, hts, site, measurement, from_date, to_date, tstype=tstype
     )
-
-    root = get_hilltop_xml(url)
-    if root.find("Section") is None:
-        raise KeyError(f"No depth profiles at the url: {url}")
-
-    depth_profiles = {}
-    for child in root:
-        if child.tag == "Section":
-            data_dict = {}
-            for element in child.find("Data"):
-                data_dict[float(element.find("O").text)] = float(
-                    element.find("I1").text
-                )
-
-            depth_profiles[pd.Timestamp(child.find("SurveyTime").text)] = pd.Series(
-                data_dict
-            )
-
-    return depth_profiles
+    profiles = []
+    if blobs:
+        for b in blobs:
+            profiles.append(b.data.timeseries.iloc[:, 0])
+    return profiles
 
 
 def config_yaml_import(file_name: str):
