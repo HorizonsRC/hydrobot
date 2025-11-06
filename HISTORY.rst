@@ -276,3 +276,9 @@ History
 * Standardised naming formats
 * Added measurement names to merged
 * manual tip filter fix
+
+0.9.8 (2025-11-06)
+----------------------------------
+* Fixed bug where multiple validations happen during one inspection
+* Yaml completion now preserves formatting
+* Made rainfall_site_survey read from SQL, now in source
