@@ -12,9 +12,10 @@ from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 #######################################################################################
 # Manual interventions
 #######################################################################################
-synthetic_checks = []
-checks_to_manually_ignore = []
-backup_replacement_times = []
+synthetic_checks = []  # ""
+checks_to_manually_ignore = []  # ""
+backup_replacement_times = []  # ("","")
+alternative_site_periods = []  # {"site":"", "scale_factor":float, "period":("","")}
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -83,6 +84,27 @@ for time_period in backup_replacement_times:
     )
 data.standard_data.sort_index()
 
+for replacement in alternative_site_periods:
+    synth_time_period = replacement["period"]
+    data.standard_data = utils.safe_concat(
+        [
+            data.standard_data[
+                ~(
+                    (data.standard_data.index >= synth_time_period[0])
+                    & (data.standard_data.index <= synth_time_period[1])
+                )
+            ],
+            data.import_standard(
+                standard_hts_filename=data.standard_hts_filename,
+                site=replacement["site"],
+                standard_item_info=data.standard_item_info,
+                from_date=synth_time_period[0],
+                to_date=synth_time_period[1],
+            )
+            * replacement["scale_factor"],
+        ]
+    )
+
 # Put in zeroes at checks where there is no scada event
 data.standard_data = rf.add_zeroes_at_checks(data.standard_data, data.check_data)
 
@@ -139,6 +161,7 @@ else:
         manual_additional_points=manual_additional_points,
         synthetic_checks=synthetic_checks,
         backup_replacement_times=backup_replacement_times,
+        synthetic_periods=[i["period"] for i in alternative_site_periods],
     )
     data.standard_data["Value"] = trim_series(
         data.standard_data["Value"],

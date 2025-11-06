@@ -278,6 +278,7 @@ class RFProcessor(Processor):
         manual_additional_points: pd.Series | None = None,
         synthetic_checks: list | None = None,
         backup_replacement_times: list | None = None,
+        synthetic_periods: list | None = None,
     ):
         """
         Encode quality information in the quality series for a rainfall dataset.
@@ -308,6 +309,10 @@ class RFProcessor(Processor):
         backup_replacement_times : list | None
             List of pairs of dates representing periods where backup data is
             used, and the quality code needs to be capped at 400 between
+        synthetic_periods : list | None
+            List of pairs of dates representing periods where synthetic data
+            from other sites is used, and the quality code needs to be capped
+            at 300 between
 
         Returns
         -------
@@ -340,6 +345,8 @@ class RFProcessor(Processor):
             manual_additional_points = pd.Series({})
         if backup_replacement_times is None:
             backup_replacement_times = []
+        if synthetic_periods is None:
+            synthetic_periods = []
 
         if synthetic_checks:
             self.replace_checks_with_ltco(synthetic_checks)
@@ -429,19 +436,16 @@ class RFProcessor(Processor):
         for backup_period in backup_replacement_times:
             start = pd.to_datetime(backup_period[0])
             end = pd.to_datetime(backup_period[1])
-            previous_end_qc = quality_series[
-                quality_series[quality_series.index <= end].index.max()
-            ]
+            quality_series = utils.cap_qc_for_period(
+                start=start, end=end, quality_series=quality_series, capped_qc=400
+            )
 
-            if start not in quality_series or quality_series[start] > 400:
-                quality_series[start] = 400
-            if previous_end_qc > 400:
-                quality_series[end] = 400
-            quality_series[
-                (quality_series.index > start)
-                & (quality_series.index < end)
-                & (quality_series > 400)
-            ] = 400
+        for synth_period in synthetic_periods:
+            start = pd.to_datetime(synth_period[0])
+            end = pd.to_datetime(synth_period[1])
+            quality_series = utils.cap_qc_for_period(
+                start=start, end=end, quality_series=quality_series, capped_qc=300
+            )
 
         self.ramped_standard = ramped_standard
         qc_frame = quality_series.to_frame(name="Value")

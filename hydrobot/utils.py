@@ -635,3 +635,49 @@ def measurement_datasource_splitter(measurement_name):
     if data_source_name is None:
         data_source_name = item_name
     return item_name, data_source_name
+
+
+def cap_qc_for_period(
+    start: str | pd.Timestamp,
+    end: str | pd.Timestamp,
+    quality_series: pd.Series,
+    capped_qc: int,
+):
+    """
+    Sets qc to a capped value if qc is higher during a period.
+
+    Parameters
+    ----------
+    start: str | pd.Timestamp
+        Start of period to cap
+    end: str | pd.Timestamp
+        End of period to cap
+    quality_series: pd.Series
+        Quality data to be capped
+    capped_qc: int
+        Value to cap the qc to
+
+    Returns
+    -------
+    pd.Series
+        quality_series with the quality cap applied
+    """
+    quality_series = quality_series.copy()
+    previous_end_qc = quality_series[
+        quality_series[quality_series.index <= end].index.max()
+    ]
+    previous_start_qc = quality_series[
+        quality_series[quality_series.index <= start].index.max()
+    ]
+
+    if previous_start_qc > capped_qc:
+        quality_series[start] = capped_qc
+    if previous_end_qc > capped_qc:
+        quality_series[end] = capped_qc
+    quality_series[
+        (quality_series.index > start)
+        & (quality_series.index < end)
+        & (quality_series > capped_qc)
+    ] = capped_qc
+
+    return quality_series
