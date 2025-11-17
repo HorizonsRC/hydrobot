@@ -28,7 +28,7 @@ defaults:
   span: 10
 
 # Annalist Configuration
-logfile: hydrobot_logs.csv
+logfile: annals_hydrobot.csv
 format:
   file: '%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s,
     %(from_date)s, %(to_date)s, %(message)s'
