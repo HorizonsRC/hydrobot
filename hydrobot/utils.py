@@ -673,7 +673,7 @@ def cap_qc_for_period(
     if previous_start_qc > capped_qc:
         quality_series[start] = capped_qc
     if previous_end_qc > capped_qc:
-        quality_series[end] = capped_qc
+        quality_series[end] = previous_end_qc
     quality_series[
         (quality_series.index > start)
         & (quality_series.index < end)
