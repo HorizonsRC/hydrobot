@@ -92,7 +92,7 @@ for site_index in site_config.index:
 
 
 def remove_prefix_dots(string):
-    """Removes any "."s at the start of a string."""
+    """Remove any "."s at the start of a string."""
     if len(string) == 0:
         return string
     elif string[0] == ".":
@@ -102,7 +102,7 @@ def remove_prefix_dots(string):
 
 
 def make_dsn(file_list, file_path, sub_dsn_number=0):
-    """Makes the hilltop dsn."""
+    """Make the hilltop dsn."""
     if sub_dsn_number == 0:
         dsn_name = file_path
     else:
@@ -131,7 +131,7 @@ def make_dsn(file_list, file_path, sub_dsn_number=0):
 
 
 def make_batch(file_list, file_path):
-    """Makes run script."""
+    """Make run script."""
     with open(file_path, "w") as runner:
         for file_name in file_list:
             runner.write(f'pushd "{os.path.abspath(os.path.split(file_name)[0])}"\n')

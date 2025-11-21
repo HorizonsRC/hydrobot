@@ -1,8 +1,8 @@
 # Fields to fill out
 analyst_name: script_default
-site: Kumeti at Rua Roa
-from_date: 2024-07-29 15:00
-to_date: 2025-11-07 12:01
+site:
+from_date:
+to_date:
 
 # Hilltop Server Configuration
 base_url: http://hilltopdev.horizons.govt.nz/
@@ -10,19 +10,19 @@ standard_hts_filename: RawLoggerNet.hts
 check_hts_filename:
 
 # Data Source Configuration
-data_family: Unchecked
-standard_measurement_name: Soil Moisture [Soil Moisture]
+data_family: soil_temperature
+standard_measurement_name: Soil Temperature [Soil Temperature]
 check_measurement_name:
 frequency:
 
 # Export configuration
-export_file_name: processed_sm.xml
+export_file_name: processed_st.xml
 
 # Processing Configuration
 defaults:
-  delta: 5
+  delta: 1
   gap_limit: 12
-  high_clip: 100
+  high_clip: 1
   low_clip: 0
   max_qc: 200
   span: 10

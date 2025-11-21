@@ -4,67 +4,72 @@ import numpy as np
 import pandas as pd
 
 DATA_FAMILY_DICT = {
-    "Dissolved_Oxygen": {
+    "dissolved_oxygen": {
         "QC_evaluator_type": "DO",
         "QC_evaluator_values": [6, 3, 0.1, 0.05],
-        "Processor_type": "DO",
+        "depth_units": "mm",
     },
-    "Water_Temperature": {
+    "water_temperature": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [1.2, 0.8],
-        "Processor_type": "Base",
+        "depth_unit": "mm",
     },
-    "Atmospheric_Pressure": {
+    "atmospheric_pressure": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [5, 2.5],
-        "Processor_type": "Base",
     },
-    "Rainfall": {
+    "rainfall": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [20, 10],
-        "Processor_type": "RF",
     },
-    "Stage": {
+    "stage": {
         "QC_evaluator_type": "TwoLevel",
         "QC_evaluator_values": [10, 3, 0.5, 0.2, 2000],
-        "Processor_type": "Base",
     },
-    "Groundwater": {
+    "groundwater": {
         "QC_evaluator_type": "Base",
         "QC_evaluator_values": [20, 10],
-        "Processor_type": "Base",
     },
-    "pH": {
+    "ph": {
         "QC_evaluator_type": "BaseWith200",
         "QC_evaluator_values": [0.5, 0.2, 0.8],
-        "Processor_type": "Base",
+        "depth_unit": "mm",
     },
-    "Conductivity": {
+    "conductivity": {
         "QC_evaluator_type": "BaseWith200",
         "QC_evaluator_values": [10, 3, 15],
-        "Processor_type": "Base",
+        "depth_unit": "mm",
     },
-    "BG_Algae": {
+    "bg_algae": {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
-        "Processor_type": "Base",
+        "depth_unit": "mm",
     },
-    "ORP": {
+    "soil_moisture": {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
-        "Processor_type": "Base",
+        "depth_unit": "cm",
     },
-    "Unchecked": {
+    "soil_temperature": {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
-        "Processor_type": "Base",
+        "depth_unit": "cm",
+    },
+    "orp": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
+        "depth_unit": "mm",
+    },
+    "unchecked": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
     },
 }
 
 
 def depth_standard_measurement_name_by_data_family(data_family, depth):
     """
-    Returns standard measurement name for the data family at depth.
+    Return standard measurement name for the data family at depth.
 
     Many data sources have separate measurement name formats for lake sampling,
     so this maps the data_family/depth to the appropriate standard measurement name
@@ -82,11 +87,15 @@ def depth_standard_measurement_name_by_data_family(data_family, depth):
         The standard measurement name
     """
     match data_family:
-        case "pH":
+        case "soil_moisture":
+            return f"{str(depth)}cm VWC"
+        case "soil_temperature":
+            return f"{str(depth)}cm TS"
+        case "ph":
             return f"pH (-{str(depth)} mm)"
-        case "ORP":
+        case "orp":
             return f"ORP (-{str(depth)} mm)"
-        case "Conductivity":
+        case "conductivity":
             return f"SP Conductivity (-{str(depth)} mm)"
         case _:
             raise ValueError(f"Unimplemented depth data family {data_family}. ")
@@ -94,7 +103,7 @@ def depth_standard_measurement_name_by_data_family(data_family, depth):
 
 def depth_check_measurement_name_by_data_family(data_family, depth):
     """
-    Returns check measurement name for the data family at depth.
+    Return check measurement name for the data family at depth.
 
     Many data sources have separate measurement name formats for lake sampling,
     so this maps the data_family/depth to the appropriate check measurement name
@@ -112,16 +121,16 @@ def depth_check_measurement_name_by_data_family(data_family, depth):
         The check measurement name
     """
     match data_family:
-        case "pH":
+        case "ph":
             return f"pH Check (-{str(depth)} mm)"
-        case "ORP":
+        case "orp":
             return f"ORP Check  (-{str(depth)} mm)"
-        case "Conductivity":
+        case "conductivity":
             return f"SP Cond Check (-{str(depth)} mm)"
         case _:
             raise ValueError(
-                f"Unimplemented depth data family {data_family}. Either remove depth as parameter or "
-                f"implement "
+                f"Unimplemented depth data family {data_family}. "
+                f"Either remove depth as parameter or implement "
             )
 
 
@@ -145,9 +154,10 @@ class QualityCodeEvaluator:
         self.constant_check_shift = constant_check_shift
 
     def __repr__(self):
-        """QualityCodeEvaluator representation."""
+        """Quality Code Evaluator representation."""
         return repr(
-            f"QualityCodeEvaluator or it's child: '{self.__class__.__name__}' with attributes: {self.__dict__}"
+            f"QualityCodeEvaluator or it's child: '{self.__class__.__name__}' "
+            f"with attributes: {self.__dict__}"
         )
 
     def find_qc(self, base_datum, check_datum):
@@ -159,7 +169,8 @@ class QualityCodeEvaluator:
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data, shifted by any constant_check_shift
+            The check data to verify the continuous data, shifted by any
+            constant_check_shift
 
         Returns
         -------
@@ -230,7 +241,8 @@ class TwoLevelQualityCodeEvaluator(QualityCodeEvaluator):
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data, shifted by any constant_check_shift
+            The check data to verify the continuous data, shifted by any
+            constant_check_shift
 
         Returns
         -------
@@ -301,7 +313,8 @@ class With200QualityCodeEvaluator(QualityCodeEvaluator):
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data, shifted by any constant_check_shift
+            The check data to verify the continuous data, shifted by any
+            constant_check_shift
 
         Returns
         -------
@@ -344,7 +357,8 @@ class UncheckedQualityCodeEvaluator(QualityCodeEvaluator):
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data, shifted by any constant_check_shift
+            The check data to verify the continuous data, shifted by any
+            constant_check_shift
 
         Returns
         -------
@@ -397,7 +411,8 @@ class DissolvedOxygenQualityCodeEvaluator(QualityCodeEvaluator):
         base_datum : numerical
             Closest continuum datum point to the check
         check_datum : numerical
-            The check data to verify the continuous data, shifted by any constant_check_shift
+            The check data to verify the continuous data, shifted by any
+            constant_check_shift
 
         Returns
         -------

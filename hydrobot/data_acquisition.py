@@ -1,6 +1,8 @@
 """Main module."""
 
 import pandas as pd
+import requests
+import xmltodict
 import yaml
 from hilltoppy import Hilltop
 from hilltoppy.utils import build_url, get_hilltop_xml
@@ -92,20 +94,15 @@ def get_time_range(
     Element
         XML element from the server call
     [DataSourceBlob]
-        A list of DataSourceBlobs corresponding to all measurements contained in the acquired time series data.
+        A list of DataSourceBlobs corresponding to all measurements contained in the
+        acquired time series data.
     """
-    url = build_url(
-        base_url,
-        hts,
-        "TimeRange",
-        site=site,
-        measurement=measurement,
-        tstype=tstype,
-    )
+    url = f"{base_url}?hts={hts}&service=Hilltop&request=TimeRange&site={site}&measurement={measurement}&tstype={tstype}"
 
-    hilltop_xml = get_hilltop_xml(url)
+    hilltop_xml = requests.get(url, timeout=30)
 
-    data_object = parse_xml(hilltop_xml)
+    data_object = xmltodict.parse(hilltop_xml.content)
+    print(data_object)
 
     return hilltop_xml, data_object
 
