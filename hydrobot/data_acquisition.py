@@ -97,12 +97,14 @@ def get_time_range(
         A list of DataSourceBlobs corresponding to all measurements contained in the
         acquired time series data.
     """
-    url = f"{base_url}?hts={hts}&service=Hilltop&request=TimeRange&site={site}&measurement={measurement}&tstype={tstype}"
+    url = (
+        f"{base_url}?hts={hts}&service=Hilltop&request=TimeRange"
+        f"&site={site}&measurement={measurement}&tstype={tstype}"
+    )
 
     hilltop_xml = requests.get(url, timeout=30)
 
     data_object = xmltodict.parse(hilltop_xml.content)
-    print(data_object)
 
     return hilltop_xml, data_object
 

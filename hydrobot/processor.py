@@ -451,15 +451,6 @@ class Processor:
                     "Please check your archive settings are correct.",
                     stacklevel=1,
                 )
-                time_range = data_acquisition.get_time_range(
-                    base_url=processing_parameters["base_url"],
-                    hts=processing_parameters["standard_hts_filename"],
-                    site=processing_parameters["site"],
-                    measurement=processing_parameters["standard_measurement_name"],
-                )
-                processing_parameters["from_date"] = time_range["From"].strftime(
-                    "%Y-%m-%d %H:%M"
-                )
 
         # Amend measurement names if depth
         if "depth" in processing_parameters:
