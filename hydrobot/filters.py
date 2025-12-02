@@ -1,6 +1,5 @@
 """General filtering utilities."""
 
-
 import warnings
 
 import numpy as np
@@ -204,7 +203,8 @@ def remove_range(
                 pass
             else:
                 raise ValueError(
-                    f"Unknown value for argument {insert_gaps}. Choose one of 'all', 'start', 'end', 'none'."
+                    f"Unknown value for argument {insert_gaps}. "
+                    "Choose one of 'all', 'start', 'end', 'none'."
                 )
     else:
         series_to_return = input_series.drop(slice_to_remove.index)

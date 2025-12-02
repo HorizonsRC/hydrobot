@@ -47,7 +47,7 @@ def hilltop_db_engine():
 
 
 def hydro_inspections(from_date, to_date, site):
-    """Returns hydro inspection info for site."""
+    """Return hydro inspection info for site."""
     hydro_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("hydro_inspection.sql")

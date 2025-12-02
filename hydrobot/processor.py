@@ -132,7 +132,7 @@ class Processor:
         **kwargs,
     ):
         """
-        Constructs all the necessary attributes for the Processor object.
+        Construct all the necessary attributes for the Processor object.
 
         Parameters
         ----------
@@ -161,12 +161,13 @@ class Processor:
         interval_dict : dict, optional
             Determines how data with old checks is downgraded
         export_file_name : string, optional
-            Where the data is exported to. Used as default when exporting without specified filename.
+            Where the data is exported to. Used as default when exporting without
+            specified filename.
         provisional_wq_filename : str, optional
             Filename for provisional WQ data to be converted to check
         archive_standard_measurement_name : str, optional
-            standard_measurement_name used in the archive file used to find last processed time and for final
-            exported data
+            standard_measurement_name used in the archive file used to find last
+            processed time and for final exported data
         depth : numeric, optional
             Depth of measurement - used for lake buoys. Number in positive mm.
         kwargs : dict
@@ -416,7 +417,7 @@ class Processor:
             processing_parameters["to_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
         def key_and_substitute(key, sub, values):
-            """Returns values[key] if that is valid, otherwise returns values[sub]."""
+            """Return values[key] if that is valid, otherwise returns values[sub]."""
             if key in values and values[key] is not None:
                 return values[key]
             else:
@@ -427,22 +428,29 @@ class Processor:
             "from_date" not in processing_parameters
             or processing_parameters["from_date"] is None
         ):
-            processing_parameters["from_date"] = utils.find_last_time(
-                base_url=key_and_substitute(
-                    "archive_base_url", "base_url", processing_parameters
-                ),
-                hts=key_and_substitute(
-                    "archive_standard_hts_filename",
-                    "standard_hts_filename",
-                    processing_parameters,
-                ),
-                site=processing_parameters["site"],
-                measurement=key_and_substitute(
-                    "archive_standard_measurement_name",
-                    "standard_measurement_name",
-                    processing_parameters,
-                ),
-            ).strftime("%Y-%m-%d %H:%M")
+            try:
+                processing_parameters["from_date"] = utils.find_last_time(
+                    base_url=key_and_substitute(
+                        "archive_base_url", "base_url", processing_parameters
+                    ),
+                    hts=key_and_substitute(
+                        "archive_standard_hts_filename",
+                        "standard_hts_filename",
+                        processing_parameters,
+                    ),
+                    site=processing_parameters["site"],
+                    measurement=key_and_substitute(
+                        "archive_standard_measurement_name",
+                        "standard_measurement_name",
+                        processing_parameters,
+                    ),
+                ).strftime("%Y-%m-%d %H:%M")
+            except ValueError as e:
+                warnings.warn(
+                    f"Could not infer from_date from archive data: {str(e)}. "
+                    "Please check your archive settings are correct.",
+                    stacklevel=1,
+                )
 
         # Amend measurement names if depth
         if "depth" in processing_parameters:
@@ -452,12 +460,16 @@ class Processor:
             ] = data_sources.depth_standard_measurement_name_by_data_family(
                 processing_parameters["data_family"], processing_parameters["depth"]
             )
-            # check measurement name
-            processing_parameters[
-                "check_measurement_name"
-            ] = data_sources.depth_check_measurement_name_by_data_family(
-                processing_parameters["data_family"], processing_parameters["depth"]
-            )
+            qc_evaluator_type = data_sources.DATA_FAMILY_DICT[
+                processing_parameters["data_family"]
+            ]["QC_evaluator_type"]
+            if qc_evaluator_type != "Unchecked":
+                # check measurement name
+                processing_parameters[
+                    "check_measurement_name"
+                ] = data_sources.depth_check_measurement_name_by_data_family(
+                    processing_parameters["data_family"], processing_parameters["depth"]
+                )
         with open(config_path, "w") as fp:
             yaml.dump(processing_parameters, fp)
 

@@ -282,3 +282,7 @@ History
 * Fixed bug where multiple validations happen during one inspection
 * Yaml completion now preserves formatting
 * Made rainfall_site_survey read from SQL, now in source
+
+0.9.9 (2025-12-2)
+----------------------------------
+* Added support for soil temperature and soil moisture processing.

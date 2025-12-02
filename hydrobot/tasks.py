@@ -3,6 +3,7 @@
 import csv
 import importlib.resources as pkg_resources
 import os
+import platform
 import re
 import shutil
 from datetime import datetime
@@ -15,7 +16,7 @@ import hydrobot.utils as utils
 
 def _get_minimum_batch_number():
     """
-    Returns minimum allowed batch number.
+    Return minimum allowed batch number.
 
     Returns
     -------
@@ -26,7 +27,7 @@ def _get_minimum_batch_number():
 
 def _get_template(data_family):
     """
-    Gets the data_family template path.
+    Get the data_family template path.
 
     Parameters
     ----------
@@ -48,7 +49,7 @@ def _get_template(data_family):
 
 def _get_generic_template():
     """
-    Gets the generic template path.
+    Get the generic template path.
 
     Returns
     -------
@@ -85,7 +86,9 @@ def copy_data_family_template(data_family: str, destination_path: str):
 
 def _remove_non_numeric_from_string(string: str):
     """
-    Takes a string that has a mix of numeric and non-numeric characters and returns only numeric.
+    Take a string that has a mix of numeric and non-numeric characters.
+
+    Returns only numeric.
 
     e.g. "!@#123abc456ABC" gets turned into "123456".
 
@@ -103,7 +106,7 @@ def _remove_non_numeric_from_string(string: str):
 
 def find_next_batch_number(directory: str, minimum: int = _get_minimum_batch_number()):
     """
-    Finds the highest value among subdirectories and adds 1.
+    Find the highest value among subdirectories and adds 1.
 
     Parameters
     ----------
@@ -162,19 +165,21 @@ def find_single_file_by_ext(directory, ext):
     match len(found_file):
         case 0:
             raise FileNotFoundError(
-                f"No .{ext} found from template at '{directory}'. All available files are: {files}"
+                f"No .{ext} found from template at '{directory}'."
+                f"All available files are: {files}"
             )
         case 1:
             return os.path.join(directory, found_file[0])
         case _:
             raise FileExistsError(
-                f"Multiple .{ext} files found from template at '{directory}'. Available .{ext} files are: {found_file}"
+                f"Multiple .{ext} files found from template at '{directory}'."
+                f"Available .{ext} files are: {found_file}"
             )
 
 
 def modify_data_template(target_dir, site, from_date=None, **kwargs):
     """
-    Modifies a copied data template.
+    Modify a copied data template.
 
     Parameters
     ----------
@@ -213,13 +218,16 @@ def modify_data_template(target_dir, site, from_date=None, **kwargs):
                 "standard_measurement_name"
             ]
         if from_date is None:
-            last_time = utils.find_last_time(
-                base_url=data["base_url"],
-                hts=data["archive_standard_hts_filename"],
-                site=site,
-                measurement=data["archive_standard_measurement_name"],
-            )
-            data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
+            try:
+                last_time = utils.find_last_time(
+                    base_url=data["base_url"],
+                    hts=data["archive_standard_hts_filename"],
+                    site=site,
+                    measurement=data["archive_standard_measurement_name"],
+                )
+                data["from_date"] = last_time.strftime("%Y-%m-%d %H:%M")
+            except ValueError:
+                data["from_date"] = None
         else:
             data["from_date"] = from_date
     with open(yaml_file, "w") as fp:
@@ -238,7 +246,7 @@ def create_single_hydrobot_batch(
     **kwargs,
 ):
     """
-    Creates a single hydrobot run.
+    Create a single hydrobot run.
 
     Parameters
     ----------
@@ -249,11 +257,13 @@ def create_single_hydrobot_batch(
     data_family : str
         what kind of measurement is to be processed.
     from_date : str, optional
-        from date, will use latest available data if absent, will fail if no latest data available.
+        from date, will use latest available data if absent, will fail if no latest
+        data available.
     batch_no: str, optional
         batch number, will find batch number from base_dir if absent.
     create_directory: bool, optional
-        whether to create directories if missing. Default false, so will raise error if directory missing
+        whether to create directories if missing. Default false, so will raise error if
+        directory missing
     depth: str or None, optional
         Added to end of path if it exists. None for non-depth sites.
     kwargs : dict, optional
@@ -278,7 +288,8 @@ def create_single_hydrobot_batch(
                 raise e
     target_dir = [base_dir, site, str(batch_no)]
     if depth is not None:
-        target_dir.append(str(depth) + "mm")
+        depth_unit = data_sources.DATA_FAMILY_DICT[data_family]["depth_unit"]
+        target_dir.append(str(depth) + depth_unit)
         kwargs["depth"] = int(depth)
     target_dir = str(os.path.join(*target_dir))
     os.makedirs(target_dir, exist_ok=False)
@@ -292,7 +303,7 @@ def create_mass_hydrobot_batches(
     home_dir: str, base_dir: str, dict_list: [dict], create_directory=False
 ):
     """
-    Creates many hydrobot batches via create_single_hydrobot_batch.
+    Create many hydrobot batches via create_single_hydrobot_batch.
 
     Parameters
     ----------
@@ -301,9 +312,11 @@ def create_mass_hydrobot_batches(
     base_dir : str
         Where batches should be located.
     dict_list : dict
-        Parameters to be used for each batch. Must contain "site" and "data_family" as keys.
+        Parameters to be used for each batch. Must contain "site" and "data_family" as
+        keys.
     create_directory: bool, optional
-        whether to create directories if missing. Default false, so will raise error if directory missing
+        whether to create directories if missing. Default false, so will raise error if
+        directory missing
 
     Returns
     -------
@@ -328,17 +341,23 @@ def create_mass_hydrobot_batches(
 
     make_dsn(hydrobot_outputs, os.path.join(home_dir, "hydrobot_dsn.dsn"))
     make_blank_files(hydrobot_outputs)
-    make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
+    if platform.system() == "Linux":
+        make_bash(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.sh"))
+    elif platform.system() == "Windows":
+        make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
+    else:
+        raise OSError("Unsupported operating system for run script creation.")
 
 
 def make_dsn(file_list, file_path, sub_dsn_number=0):
-    """Makes the hilltop dsn."""
+    """Make the hilltop dsn."""
+    path_sep = "\\"
     if sub_dsn_number == 0:
         dsn_name = file_path
     else:
-        dsn_name = file_path.split("\\")
+        dsn_name = file_path.split(path_sep)
         dsn_name[-1] = f"sub{sub_dsn_number}_{dsn_name[-1]}"
-        dsn_name = "\\".join(dsn_name)
+        dsn_name = path_sep.join(dsn_name)
     if len(file_list) <= 20:  # hilltop dsn max files is 20
         with open(dsn_name, "w") as dsn:
             dsn.write("[Hilltop]\n")
@@ -352,21 +371,30 @@ def make_dsn(file_list, file_path, sub_dsn_number=0):
             dsn.write("Style=Merge\n")
             for index, file_name in enumerate(file_list[:19]):
                 dsn.write(f'File{index + 1}="{os.path.abspath(file_name)}"\n')
-            next_file = file_path.split("\\")
+            next_file = file_path.split(path_sep)
             next_file[-1] = f"sub{sub_dsn_number}_{next_file[-1]}"
-            next_file = "\\".join(next_file)
+            next_file = path_sep.join(next_file)
             next_file = os.path.abspath(next_file)
             dsn.write(f'File20="{next_file}"\n')
         make_dsn(file_list[19:], file_path, sub_dsn_number)
 
 
 def make_batch(file_list, file_path):
-    """Makes run script."""
+    """Make run script for Windows."""
     with open(file_path, "w") as runner:
         for file_name in file_list:
             runner.write(f'pushd "{os.path.abspath(os.path.split(file_name)[0])}"\n')
             runner.write("dir\n")
             runner.write(f'start python ".\\{os.path.split(file_name)[1]}"\n')
+
+
+def make_bash(file_list, file_path):
+    """Make run script for Linux."""
+    with open(file_path, "w") as runner:
+        for file_name in file_list:
+            runner.write(f'cd "{os.path.abspath(os.path.split(file_name)[0])}"\n')
+            runner.write("ls\n")
+            runner.write(f'python "./{os.path.split(file_name)[1]}" &\n')
 
 
 def make_blank_files(file_list):
@@ -414,7 +442,7 @@ def create_depth_hydrobot_batches(
     home_dir, base_dir, dict_list, create_directory=False
 ):
     """
-    Creates hydrobot batches with depth profiles via create_single_hydrobot_batch.
+    Create hydrobot batches with depth profiles via create_single_hydrobot_batch.
 
     Parameters
     ----------
@@ -423,10 +451,11 @@ def create_depth_hydrobot_batches(
     base_dir : str
         Where batches should be located.
     dict_list : dict
-        Parameters to be used for each batch. Must contain "site", "data_family", and "depth" as keys. Depths are in
-        mm and separated by semicolons.
+        Parameters to be used for each batch. Must contain "site", "data_family",
+        and "depth" as keys. Depths are in mm and separated by semicolons.
     create_directory: bool, optional
-        whether to create directories if missing. Default false, so will raise error if directory missing
+        whether to create directories if missing. Default false, so will raise error
+        if directory missing
 
     Returns
     -------
@@ -451,8 +480,8 @@ def create_depth_hydrobot_batches(
                 os.makedirs(site_directory)
             else:
                 raise NotADirectoryError(
-                    f"No directory for site '{run['site']}', check spelling or create directory at at"
-                    f" {site_directory}"
+                    f"No directory for site '{run['site']}', check spelling or"
+                    f"create directory at at {site_directory}"
                 )
         batch_no = str(find_next_batch_number(directory=site_directory))
         depths = run.pop("depths").split(";")
