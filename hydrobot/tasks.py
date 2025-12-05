@@ -498,4 +498,9 @@ def create_depth_hydrobot_batches(
 
     make_dsn(hydrobot_outputs, os.path.join(home_dir, "hydrobot_dsn.dsn"))
     make_blank_files(hydrobot_outputs)
-    make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
+    if platform.system() == "Linux":
+        make_bash(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.sh"))
+    elif platform.system() == "Windows":
+        make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
+    else:
+        raise OSError("Unsupported operating system for run script creation.")

@@ -144,6 +144,155 @@ def remove_spikes(
     return gaps_series
 
 
+def remove_one_spikes(
+    input_data: pd.Series, threshold_factor=3.0, window_size=5
+) -> pd.Series:
+    """
+    Detect and remove single-point spikes in a time series.
+
+    A one-point spike is defined as a data point that deviates significantly from
+    both its preceding and following points and the local trend. For the removal of more
+    complex multi-spikes, use the remove_spikes() function.
+
+    NOTE: This function only works when baseline data is fairly stable. If baseline data
+    is noisy or has high variability, use one_spike_filter_mad() instead.
+
+    Parameters
+    ----------
+    input_data: pandas.Series
+        The input time series data.
+    threshold_factor: float
+        Multiplier for the standard deviation to define the spike threshold.
+        Default is 3.0.
+    window_size: int
+        The size of the rolling window to compute local statistics. Default is 5.
+
+    Returns
+    -------
+    filtered_data: pandas.Series
+        The time series with one-point spikes removed (set to NaN).
+    """
+    data = input_data.to_numpy(dtype=float)
+    n = len(input_data)
+    filtered_data = data.copy()
+
+    # Need at least 3 points to identify a spike
+    if n < 3:
+        return input_data
+
+    # Check each point (except the first and last)
+    for i in range(1, n - 1):
+        prev_val = data[i - 1]
+        curr_val = data[i]
+        next_val = data[i + 1]
+
+        # Calculate expected value (average of neighbors)
+        expected = (prev_val + next_val) / 2
+        deviation = abs(curr_val - expected)
+
+        # Calulate local std for context window
+        start_idx = max(0, i - window_size // 2)
+        end_idx = min(n, i + window_size // 2 + 1)
+        local_window = np.concatenate([data[start_idx:i], data[i + 1 : end_idx]])
+
+        if len(local_window) > 0:
+            local_std = np.std(local_window)
+            local_mean = np.mean(local_window)
+
+            # Spike detection criteria:
+            # 1. Current point deviates from expected by more than threshold
+            # 2. Neighbors are close to each other (not spikes themselves)
+            # 3. Current point deviates significantly from local mean
+
+            neighbour_diff = abs(prev_val - next_val)
+            threshold = threshold_factor * local_std
+
+            is_spike = (
+                deviation > threshold
+                and neighbour_diff < threshold
+                and abs(curr_val - local_mean) > threshold
+            )
+
+            if is_spike:
+                # Replace spike with NaN
+                filtered_data[i] = np.nan
+
+    return pd.Series(filtered_data, index=input_data.index)
+
+
+def remove_one_spikes_mad(input_data: pd.Series, threshold_factor=2.5) -> pd.Series:
+    """
+    Detect and remove single-point spikes using Median Absolute Deviation (MAD).
+
+    A one-point spike is defined as a data point that deviates significantly from
+    both its preceding and following points and the local trend. For the removal of
+    more complex multi-spikes, use the remove_spikes() function.
+
+    NOTE: This function is more robust to noisy or variable baseline data than
+    remove_one_spikes().
+
+    ALSO NOTE: This function is... not very good. I think I need to play with desmos
+    a bit more to get a better thresholding mechanism.
+
+    Parameters
+    ----------
+    input_data: pandas.Series
+        The input time series data.
+    threshold_factor: float
+        Multiplier for the MAD to define the spike threshold.
+        Default is 2.5.
+
+    Returns
+    -------
+    filtered_data: pandas.Series
+        The time series with one-point spikes removed (set to NaN).
+    """
+    data = input_data.to_numpy(dtype=float)
+    n = len(data)
+    filtered_data = data.copy()
+
+    # Need at least 3 points to identify a spike
+    if n < 3:
+        return input_data
+
+    # Check each point (except the first and last)
+    for i in range(1, n - 1):
+        prev_val = data[i - 1]
+        curr_val = data[i]
+        next_val = data[i + 1]
+
+        # Calculate expected value (average of neighbors)
+        expected = np.median([prev_val, next_val])
+        deviation = abs(curr_val - expected)
+
+        # Local MAD calculation
+        local_context = [prev_val, next_val]
+        if i > 1:
+            local_context.append(data[i - 2])
+        if i < n - 2:
+            local_context.append(data[i + 2])
+
+        mad = np.median(np.abs(local_context - np.median(local_context)))
+        threshold = threshold_factor * (
+            1.4826 * mad
+        )  # Scale MAD to approximate std dev
+
+        # More conservative: neighbors must be close to each other
+        neighbour_similarity = abs(prev_val - next_val) / (
+            abs(prev_val) + abs(next_val) + 1e-10
+        )
+
+        similarity_threshold = np.exp(-deviation / (threshold + 1e-10))
+
+        if (
+            deviation > max(threshold, 1e-10)
+            and neighbour_similarity < similarity_threshold
+        ):
+            filtered_data[i] = np.nan
+
+    return pd.Series(filtered_data, index=input_data.index)
+
+
 def remove_range(
     input_series: pd.Series | pd.DataFrame,
     from_date: str | None,

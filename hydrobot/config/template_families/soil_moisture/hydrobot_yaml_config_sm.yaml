@@ -20,10 +20,10 @@ export_file_name: processed_sm.xml
 
 # Processing Configuration
 defaults:
-  delta: 1
+  delta: 5
   gap_limit: 12
-  high_clip: 1
-  low_clip: 0
+  high_clip: 100
+  low_clip: 1e-3
   max_qc: 200
   span: 10
 
