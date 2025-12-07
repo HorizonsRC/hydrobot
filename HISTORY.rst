@@ -286,3 +286,7 @@ History
 0.9.9 (2025-12-2)
 ----------------------------------
 * Added support for soil temperature and soil moisture processing.
+
+0.9.10 (2025-12-8)
+----------------------------------
+* Patch fixing some bugs in batch soil temperature and soil moisture processing.
