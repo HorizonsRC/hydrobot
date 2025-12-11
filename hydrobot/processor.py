@@ -1672,6 +1672,108 @@ class Processor:
         )
 
     @ClassLogger
+    def remove_one_spikes(
+        self,
+        threshold_factor: float = 3.0,
+        window_size: int = 5,
+    ):
+        """
+        Remove one-spikes from the data.
+
+        A one-point spike is defined as a data point that deviates significantly from
+        both its preceding and following points and the local trend. For the removal of more
+        complex multi-spikes, use the remove_spikes() function.
+
+        NOTE: This function only works when baseline data is fairly stable. If baseline data
+        is noisy or has high variability, use one_spike_filter_mad() instead.
+
+        Parameters
+        ----------
+        threshold_factor: float
+            Multiplier for the standard deviation to define the spike threshold.
+            Default is 3.0.
+            Increasing this value makes the spike detection less sensitive.
+        window_size: int
+            The size of the rolling window to compute local statistics. Default is 5.
+            Increasing this value makes the spike detection less sensitive.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method removes spikes from the standard series using the specified
+        parameters. It utilizes the filters.remove_one_spikes function for the actual
+        spike removal process.
+
+        Examples
+        --------
+        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
+        >>> processor.remove_one_spikes(threshold_factor=3.0, window_size=5)
+        >>> processor.standard_data["Value"]
+        <standard series with spikes removed>
+        """
+        rm_spikes = filters.remove_one_spikes(
+            self._standard_data["Value"].squeeze(),
+            threshold_factor=threshold_factor,
+            window_size=window_size,
+        )
+
+        self._standard_data = self._apply_changes(
+            self._standard_data, rm_spikes, "OSK", mark_remove=True
+        )
+
+    @ClassLogger
+    def remove_one_spikes_mad(
+        self,
+        threshold_factor: float = 2.5,
+    ):
+        """
+        Remove one-spikes from the data using Median Absolute Deviation (MAD).
+
+        A one-point spike is defined as a data point that deviates significantly from
+        both its preceding and following points and the local trend. For the removal of
+        more complex multi-spikes, use the remove_spikes() function.
+
+        NOTE: This function is more robust to noisy or variable baseline data than
+        remove_one_spikes().
+
+        Parameters
+        ----------
+        input_data: pandas.Series
+            The input time series data.
+        threshold_factor: float
+            Multiplier for the MAD to define the spike threshold.
+            Default is 2.5.
+
+        Returns
+        -------
+        None
+
+        Notes
+        -----
+        This method removes spikes from the standard series using the specified
+        parameters. It utilizes the filters.remove_one_spikes_mad function for the actual
+        spike removal process.
+
+        Examples
+        --------
+        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
+        >>> processor.remove_one_spikes_mad(threshold_factor=2.5)
+        >>> processor.standard_data["Value"]
+        <standard series with spikes removed>
+        """
+        rm_spikes = filters.remove_one_spikes_mad(
+            self._standard_data["Value"].squeeze(),
+            threshold_factor=threshold_factor,
+        )
+
+        self._standard_data = self._apply_changes(
+            self._standard_data, rm_spikes, "OSK", mark_remove=True
+        )
+
+    @ClassLogger
     def remove_flatlined_values(self, span: int = 3):
         """Remove repeated values in std series a la flatline_value_remover()."""
         rm_fln = filters.flatline_value_remover(self._standard_data["Value"], span=span)
