@@ -291,6 +291,6 @@ History
 ----------------------------------
 * Patch fixing some bugs in batch soil temperature and soil moisture processing.
 
-? (?)
+0.9.11 (2025-12-12)
 ----------------------------------
 * Fixed templates directory names not lining up with data_family names
