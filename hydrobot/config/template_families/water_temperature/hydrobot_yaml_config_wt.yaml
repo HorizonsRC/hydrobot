@@ -8,7 +8,7 @@ standard_hts_filename: "HydrobotRaw.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-data_family: Water_Temperature
+data_family: water_temperature
 standard_measurement_name: "Water Temperature"
 check_measurement_name: "Water Temperature Check [Water Temperature]"
 

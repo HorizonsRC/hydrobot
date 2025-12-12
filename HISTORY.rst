@@ -283,10 +283,14 @@ History
 * Yaml completion now preserves formatting
 * Made rainfall_site_survey read from SQL, now in source
 
-0.9.9 (2025-12-2)
+0.9.9 (2025-12-02)
 ----------------------------------
 * Added support for soil temperature and soil moisture processing.
 
-0.9.10 (2025-12-8)
+0.9.10 (2025-12-08)
 ----------------------------------
 * Patch fixing some bugs in batch soil temperature and soil moisture processing.
+
+0.9.11 (2025-12-12)
+----------------------------------
+* Fixed templates directory names not lining up with data_family names

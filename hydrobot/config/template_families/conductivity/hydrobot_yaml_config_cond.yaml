@@ -5,7 +5,7 @@ to_date:
 base_url: http://hilltopdev.horizons.govt.nz/
 standard_hts_filename: RawLoggerNet.hts
 check_hts_filename: HydrobotCheckData.hts
-data_family: Conductivity
+data_family: conductivity
 standard_measurement_name: Conductivity
 check_measurement_name: Conductivity Check
 frequency:

@@ -4,7 +4,7 @@ standard_hts_filename: "HydrobotRaw.hts"
 check_hts_filename: "HydrobotCheckData.hts"
 
 # Data Source Configuration
-data_family: Atmospheric_Pressure
+data_family: atmospheric_pressure
 site:
 standard_measurement_name: "Atmospheric Pressure"
 check_measurement_name: "Check Pressure [Atmospheric Pressure]"

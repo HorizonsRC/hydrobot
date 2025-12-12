@@ -10,7 +10,7 @@ standard_hts_filename: HydrobotRaw.hts
 check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
-data_family: Rainfall
+data_family: rainfall
 standard_measurement_name: Rainfall [SCADA Rainfall]
 check_measurement_name: Check Gauge Total [SCADA Rainfall]
 backup_measurement_name: Rainfall (backup) [SCADA Rainfall (backup)]
