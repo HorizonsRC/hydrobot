@@ -61,10 +61,19 @@ else:
 
 check_data = [water_temperature_inspections, soe_check, depth_check]
 
-data.check_data = pd.concat([i for i in check_data if not i.empty])
-data.check_data = data.check_data[
-    ~data.check_data.index.duplicated(keep="first")
-].sort_index()
+if [i for i in check_data if not i.empty]:
+    data.check_data = pd.concat([i for i in check_data if not i.empty])
+    data.check_data = data.check_data[
+        ~data.check_data.index.duplicated(keep="first")
+    ].sort_index()
+else:
+    data.report_processing_issue(
+        code="UCK",
+        comment="No check data found - QCing as 200",
+        series_type="Check",
+        message_type="warning",
+    )
+    data.check_data = check_data[0]
 
 # Any manual removals
 for false_check in series_rounder(
