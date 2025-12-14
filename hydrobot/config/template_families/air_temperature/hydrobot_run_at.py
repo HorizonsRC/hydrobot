@@ -92,7 +92,7 @@ merger = HtmlMerger(
         "pyplot.html",
         "check_table.html",
         "quality_table.html",
-        "standard_table.html",
+        # "standard_table.html",
     ],
     encoding="utf-8",
     header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h3>From {data.from_date} to"
