@@ -5,7 +5,7 @@ to_date:
 base_url: http://hilltopdev.horizons.govt.nz/
 standard_hts_filename: RawLoggerNet.hts
 check_hts_filename: HydrobotCheckData.hts
-data_family: pH
+data_family: ph
 standard_measurement_name: pH
 check_measurement_name: pH Check
 frequency:
