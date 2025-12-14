@@ -16,12 +16,6 @@ from hydrobot.processor import Processor
 
 data, ann = Processor.from_config_yaml("hydrobot_yaml_config_at.yaml")
 
-# st.set_page_config(
-#     page_title="Hydrobot" + hydrobot.__version__, layout="wide", page_icon="💦"
-# )
-# st.title(f"{data.site}")
-# st.header(f"{data.standard_measurement_name}")
-
 
 #######################################################################################
 # Common auto-processing steps

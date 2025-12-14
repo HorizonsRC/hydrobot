@@ -290,7 +290,7 @@ def create_single_hydrobot_batch(
     if depth is not None:
         depth_unit = data_sources.DATA_FAMILY_DICT[data_family]["depth_unit"]
         target_dir.append(str(depth) + depth_unit)
-        kwargs["depth"] = int(depth)
+        kwargs["depth"] = f"{depth}"
     target_dir = str(os.path.join(*target_dir))
     os.makedirs(target_dir, exist_ok=False)
     copy_data_family_template(data_family=data_family, destination_path=target_dir)

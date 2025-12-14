@@ -157,6 +157,35 @@ def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
     return do_checks
 
 
+def air_temperature_hydro_inspections(from_date, to_date, site):
+    """Returns all info from inspection query."""
+    at_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("air_temperature_check.sql")
+        .read_text()
+    )
+
+    at_checks = pd.read_sql(
+        at_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+
+    at_checks["Index"] = (
+        at_checks.loc[:, "inspection_time"]
+        .astype("datetime64[ns]")
+        .fillna(at_checks.loc[:, "arrival_time"])
+    )
+    at_checks = at_checks.set_index("Index")
+    at_checks.index = pd.to_datetime(at_checks.index)
+    at_checks.index.name = None
+    return at_checks
+
+
 def atmospheric_pressure_inspections(from_date, to_date, site):
     """Get atmospheric pressure inspection data."""
     ap_query = db.text(

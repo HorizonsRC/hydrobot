@@ -40,6 +40,11 @@ DATA_FAMILY_DICT = {
         "QC_evaluator_values": [10, 3, 15],
         "depth_unit": "mm",
     },
+    "air_temperature": {
+        "QC_evaluator_type": "Unchecked",
+        "QC_evaluator_values": [],
+        "depth_unit": "m",
+    },
     "bg_algae": {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
@@ -59,10 +64,6 @@ DATA_FAMILY_DICT = {
         "QC_evaluator_type": "Unchecked",
         "QC_evaluator_values": [],
         "depth_unit": "mm",
-    },
-    "unchecked": {
-        "QC_evaluator_type": "Unchecked",
-        "QC_evaluator_values": [],
     },
 }
 
@@ -97,6 +98,8 @@ def depth_standard_measurement_name_by_data_family(data_family, depth):
             return f"ORP (-{str(depth)} mm)"
         case "conductivity":
             return f"SP Conductivity (-{str(depth)} mm)"
+        case "air_temperature":
+            return f"Air Temperature ({str(depth)}m)"
         case _:
             raise ValueError(f"Unimplemented depth data family {data_family}. ")
 
