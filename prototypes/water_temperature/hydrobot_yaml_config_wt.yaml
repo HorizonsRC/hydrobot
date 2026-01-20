@@ -1,8 +1,8 @@
 # Fields to fill out
 analyst_name: script_default
 site: Arawhata Drain at Dairy Track Bridge
-from_date:
-to_date:
+from_date: 2025-12-02 11:00
+to_date: 2026-01-20 12:59
 
 # Hilltop Server Configuration
 base_url: http://hilltopdev.horizons.govt.nz/
@@ -10,7 +10,7 @@ standard_hts_filename: RawLoggerNet.hts
 check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
-data_family: Water_Temperature
+data_family: water_temperature
 standard_measurement_name: Water Temperature [Dissolved Oxygen sensor]
 check_measurement_name: Water Temperature Check [Water Temperature]
 frequency:

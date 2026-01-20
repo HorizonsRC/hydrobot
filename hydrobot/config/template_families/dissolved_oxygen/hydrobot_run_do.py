@@ -4,9 +4,9 @@ import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
-from hydrobot.do_processor import DOProcessor
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
+from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 from hydrobot.processor import EMPTY_CHECK_DATA
 from hydrobot.utils import series_rounder
 
@@ -16,7 +16,7 @@ data_sections_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = DOProcessor.from_config_yaml("hydrobot_yaml_config_do.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_do.yaml")
 
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[
@@ -143,32 +143,32 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
 
-with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
-    file.write("<p>Hydrobot Run Issues</p>")
-    data.processing_issues.to_html(file)
 with open("standard_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Standard Data</p>")
+    file.write("<h3>Standard data</h3>")
     data.standard_data.to_html(file)
 with open("check_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Check Data</p>")
+    file.write("<h3>Check data</h3>")
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Quality Data</p>")
+    file.write("<h3>Quality data</h3>")
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Inspections</p>")
+    file.write("<h3>Inspections</h3>")
     comments_inspections.to_html(file)
 with open("soe_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>State of Environment</p>")
+    file.write("<h3>SoE runs</h3>")
     comments_soe.to_html(file)
 with open("ncr_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Non-conformance reports</p>")
+    file.write("<h3>Non-conformances</h3>")
     comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
-    file.write("<p>Calibrations</p>")
+    file.write("<h3>Calibrations</h3>")
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name
     ).to_html(file)
+with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Hydrobot potential issues</h3>")
+    data.processing_issues.to_html(file)
 
 
 merger = HtmlMerger(
