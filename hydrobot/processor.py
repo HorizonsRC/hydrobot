@@ -605,7 +605,7 @@ class Processor:
             The end date for data retrieval. If None, defaults to latest available
             data.
         frequency : str or None, optional
-            The frequency of the data. If None, defaults to the frequency on the
+            The frequency of the data. If None and infer_frequency, defaults to the frequency on the
             processor object. If that's also None, self.infer_frequency is consulted to
             determine whether to infer the frequency from the data.
         base_url : str or None, optional
@@ -657,14 +657,14 @@ class Processor:
             from_date = self.from_date
         if to_date is None:
             to_date = self.to_date
-        if frequency is None:
-            frequency = self._frequency
         if standard_data is None:
             standard_data = EMPTY_STANDARD_DATA.copy()
         if base_url is None:
             base_url = self._base_url
         if infer_frequency is None:
             infer_frequency = self.infer_frequency
+        if frequency is None and infer_frequency:
+            frequency = self._frequency
 
         xml_tree, blob_list = data_acquisition.get_data(
             base_url,
@@ -758,7 +758,7 @@ class Processor:
                             stacklevel=1,
                         )
                 else:
-                    if self.infer_frequency:
+                    if infer_frequency:
                         # We have been asked to infer the frequency
                         frequency = utils.infer_frequency(
                             raw_standard_data.index, method="mode"
