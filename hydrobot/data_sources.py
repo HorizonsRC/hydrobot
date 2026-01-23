@@ -97,6 +97,10 @@ def depth_standard_measurement_name_by_data_family(data_family, depth):
             return f"ORP (-{str(depth)} mm)"
         case "conductivity":
             return f"SP Conductivity (-{str(depth)} mm)"
+        case "water_temperature":
+            return f"Water Temperature (-{str(depth)} mm)"
+        case "dissolved_oxygen":
+            return f"Dissolved Oxygen Saturation (-{str(depth)} mm)"
         case _:
             raise ValueError(f"Unimplemented depth data family {data_family}. ")
 
@@ -127,6 +131,8 @@ def depth_check_measurement_name_by_data_family(data_family, depth):
             return f"ORP Check  (-{str(depth)} mm)"
         case "conductivity":
             return f"SP Cond Check (-{str(depth)} mm)"
+        case "water_temperature":
+            return f"Water Temperature Check (-{str(depth)} mm)"
         case _:
             raise ValueError(
                 f"Unimplemented depth data family {data_family}. "

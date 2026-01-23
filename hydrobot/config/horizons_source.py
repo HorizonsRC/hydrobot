@@ -533,3 +533,27 @@ def rainfall_site_survey(site: str):
     ]"""
 
     return site_surveys
+
+
+def depth_profile_site_name(site: str):
+    """
+    Find the site name which has the depth profile for a given site.
+
+    Mostly just returns the site name unchanged, but in at least 1 case the depth profiles are stored differently
+    from the continuous data, so the site name with the depth profile is used instead
+
+    Parameters
+    ----------
+    site: str
+        The site to find hte depth profile for
+
+    Returns
+    -------
+    str
+        The site name, modified if necessary
+    """
+    match site:
+        case "Lake Wiritoa":
+            return "Lake Wiritoa at Site 1"
+        case _:
+            return site

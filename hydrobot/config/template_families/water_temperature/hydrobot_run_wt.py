@@ -47,7 +47,9 @@ depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth / 1000.0, "Water Temperature (Depth Profile)"
+        data.depth / 1000.0,
+        "Water Temperature (Depth Profile)",
+        site=source.depth_profile_site_name(data.site),
     )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:

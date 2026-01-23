@@ -34,7 +34,11 @@ comments_ncr = source.non_conformances(data.site)
 
 depth_check = pd.DataFrame()
 if data.depth:
-    depth_check = data.interpolate_depth_profiles(data.depth / 1000.0, "pH (Profile)")
+    depth_check = data.interpolate_depth_profiles(
+        data.depth / 1000.0,
+        "pH (Profile)",
+        site=source.depth_profile_site_name(data.site),
+    )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:
     raise ValueError("depth required for this measurement")

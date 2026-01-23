@@ -50,7 +50,9 @@ depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth / 1000.0, "Dissolved Oxygen (Depth Profile)"
+        data.depth / 1000.0,
+        "Dissolved Oxygen (Depth Profile)",
+        site=source.depth_profile_site_name(data.site),
     )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 elif data.check_hts_filename is not None:

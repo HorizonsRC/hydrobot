@@ -306,7 +306,7 @@ class Processor:
         self._quality_code_evaluator.constant_check_shift = constant_check_shift
 
         # Load data for the first time
-        get_check = self.check_hts_filename is not None
+        get_check = (self.check_hts_filename is not None) and self.depth is None
         self.import_data(
             from_date=self.from_date,
             to_date=self.to_date,
