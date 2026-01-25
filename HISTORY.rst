@@ -4,7 +4,10 @@ History
 
 0.9.12 (2026-01-26)
 ----------------------------------
-
+* Added functionality for depth processing WT/DO exceptions
+* Added titles for the output merged file in templates
+* Fixed bug where import functions would ignore infer_frequency tag when frequency is on the processor object
+* Updated AP/WT/DO csv lists
 
 0.9.11 (2025-12-12)
 ----------------------------------
