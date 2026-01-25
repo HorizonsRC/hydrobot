@@ -41,6 +41,7 @@ def mowsecs_to_timestamp(mowsecs):
     """
     try:
         mowsec_time = int(mowsecs)
+
     except ValueError as e:
         raise TypeError("Expected something that is parseable as an integer") from e
 

@@ -10,10 +10,10 @@ authors = [
     { name = "Nic Mostert", email = "nicolas.mostert@horizons.govt.nz" },
     { name = "Sam Irvine", email = "sam.irvine@horizons.govt.nz" }
 ]
-requires-python = "==3.11.*"
+requires-python = ">=3.11"
 dependencies = [
     "hilltop-py>=2.3.1",
-    "data-annalist>=0.4.1",
+    "data-annalist>=0.4.4",
     "matplotlib>=3.8.0",
     "defusedxml>=0.7.1",
     "plotly>=5.20.0",
@@ -60,9 +60,6 @@ dev = [
 docs = [
     "Sphinx>=7.2.6",
     "furo>=2023.9.10",
-]
-all = [
-    "hydrobot[test, dev, docs]"
 ]
 
 [tool.setuptools]
