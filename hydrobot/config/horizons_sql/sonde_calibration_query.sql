@@ -4,6 +4,7 @@ SELECT Assets.AssetID,
 		Assets.Make,
 		Assets.Model,
 		Assets.LastCalibrated,
+        Assets.SerialNumber,
 		Assets.AssetComment,
 		Assets.InServiceLocationID,
 		Assets.DateMoved AS 'DateMovedToSite'
@@ -12,5 +13,5 @@ SELECT Assets.AssetID,
 			ON Assets.AssetID = AssetHistory.AssetID
 		INNER JOIN [dbo].Sites
 			ON Sites.SiteID = Assets.InServiceLocationID
-      WHERE Sites.SiteName = 'Manawatu at Teachers College'
+      WHERE Sites.SiteName = :site
 	  AND Assets.Make LIKE '%Sonde%';

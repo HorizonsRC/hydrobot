@@ -1,4 +1,5 @@
 """Location for Horizons specific configuration code."""
+from sqlalchemy.exc import DBAPIError
 
 import importlib.resources as pkg_resources
 import platform
@@ -30,9 +31,11 @@ def survey123_db_engine():
         "mssql+pyodbc",
         host=sql_server_url(),
         database="survey123",
-        query={"driver": "ODBC Driver 17 for SQL Server"},
+        query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes"},
     )
     return db.create_engine(s123_connection_url)
+
+
 
 
 def hilltop_db_engine():
@@ -41,7 +44,7 @@ def hilltop_db_engine():
         "mssql+pyodbc",
         host=sql_server_url(),
         database="hilltop",
-        query={"driver": "ODBC Driver 17 for SQL Server"},
+        query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes"},
     )
     return db.create_engine(ht_connection_url)
 
