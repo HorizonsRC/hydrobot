@@ -15,7 +15,7 @@ data_sections_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_cond.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_conductivity.yaml")
 
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[
@@ -35,7 +35,9 @@ comments_ncr = source.non_conformances(data.site)
 depth_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth / 1000.0, "Specific Conductivity (Depth Profile)"
+        data.depth / 1000.0,
+        "Specific Conductivity (Depth Profile)",
+        site=source.depth_profile_site_name(data.site),
     )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:
@@ -98,34 +100,42 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
 
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Standard data</h3>")
+    data.standard_data.to_html(file)
 with open("check_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Check data</h3>")
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Quality data</h3>")
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Inspections</h3>")
     comments_inspections.to_html(file)
 with open("ncr_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Non-conformances</h3>")
     comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Calibrations</h3>")
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name
     ).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Hydrobot potential issues</h3>")
     data.processing_issues.to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
+        "potential_processing_issues.html",
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
         "ncr_table.html",
         "calibration_table.html",
-        "potential_processing_issues.html",
     ],
     encoding="utf-8",
-    header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h3>From {data.from_date} to"
-    f" {data.to_date}</h3>",
+    header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h2>From {data.from_date} to {data.to_date}</h2>",
 )
 
 merger.merge()

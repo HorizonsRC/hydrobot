@@ -52,7 +52,7 @@ def test_data_structure_integration(tmp_path):
         "from_date": "2021-06-28 00:00",
         "to_date": "2021-07-01 23:00",
         "frequency": "5min",
-        "standard_measurement_name": "Stage",
+        "standard_measurement_name": "stage",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
             "high_clip": 20000,
@@ -229,7 +229,7 @@ def test_processor_integration(tmp_path):
         "to_date": "2021-02-02 23:00",
         "frequency": "5min",
         "infer_frequency": False,
-        "data_family": "Stage",
+        "data_family": "stage",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
@@ -478,7 +478,7 @@ def test_empty_response(tmp_path):
         "from_date": "1903-01-01 00:00",
         "to_date": "1903-02-02 23:00",
         "frequency": "5min",
-        "data_family": "Stage",
+        "data_family": "stage",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {
@@ -568,7 +568,7 @@ def test_failed_requests(tmp_path):
         "from_date": "2003-01-01 00:00",
         "to_date": "2003-02-02 23:00",
         "frequency": "4min",
-        "data_family": "Stage",
+        "data_family": "stage",
         "standard_measurement_name": "Water level statistics: Point Sample",
         "check_measurement_name": "Water Temperature Check [Water Temperature]",
         "defaults": {

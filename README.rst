@@ -77,7 +77,7 @@ Initial Setup (Repeat for each release)
 
 #. With your venv active, install the latest version of Hydrobot using pip::
 
-    pip install hydrobot
+    pip install hydrobot==0.9.11
 
 #. Record which version of dependencies you have installed. The following pip
    freeze records which dependencies are installed by the hydrobot install

@@ -6,7 +6,7 @@ import hydrobot.tasks as tasks
 
 destination_path = r"output_dump"
 
-rainfall_config = tasks.csv_to_batch_dicts(r"SoilMoistureDepthProcessing.csv")
+rainfall_config = tasks.csv_to_batch_dicts(r"WaterTemperatureProcessing_Depth.csv")
 
 tasks.create_depth_hydrobot_batches(
     destination_path + f"{os.sep}test_home",

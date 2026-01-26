@@ -6,7 +6,7 @@ import pandas as pd
 import hydrobot.config.horizons_source as source
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
-from hydrobot.processor import Processor
+from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 from hydrobot.utils import series_rounder
 
 checks_to_manually_ignore = []
@@ -15,7 +15,7 @@ data_sections_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = Processor.from_config_yaml("hydrobot_yaml_config_wt.yaml")
+data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_wt.yaml")
 
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[
@@ -47,7 +47,9 @@ depth_check = pd.DataFrame()
 soe_check = pd.DataFrame()
 if data.depth:
     depth_check = data.interpolate_depth_profiles(
-        data.depth / 1000.0, "Water Temperature (Depth Profile)"
+        data.depth / 1000.0,
+        "Water Temperature (Depth Profile)",
+        site=source.depth_profile_site_name(data.site),
     )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
 else:
@@ -61,10 +63,19 @@ else:
 
 check_data = [water_temperature_inspections, soe_check, depth_check]
 
-data.check_data = pd.concat([i for i in check_data if not i.empty])
-data.check_data = data.check_data[
-    ~data.check_data.index.duplicated(keep="first")
-].sort_index()
+if [i for i in check_data if not i.empty]:
+    data.check_data = pd.concat([i for i in check_data if not i.empty])
+    data.check_data = data.check_data[
+        ~data.check_data.index.duplicated(keep="first")
+    ].sort_index()
+else:
+    data.report_processing_issue(
+        code="UCK",
+        comment="No check data found - QCing as 200",
+        series_type="Check",
+        message_type="warning",
+    )
+    data.check_data = check_data[0]
 
 # Any manual removals
 for false_check in series_rounder(
@@ -116,33 +127,43 @@ with open("pyplot.json", "w", encoding="utf-8") as file:
 with open("pyplot.html", "w", encoding="utf-8") as file:
     file.write(str(fig.to_html()))
 
+with open("standard_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Standard data</h3>")
+    data.standard_data.to_html(file)
 with open("check_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Check data</h3>")
     data.check_data.to_html(file)
 with open("quality_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Quality data</h3>")
     data.quality_data.to_html(file)
 with open("inspections_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Inspections</h3>")
     comments_inspections.to_html(file)
 with open("soe_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>SoE runs</h3>")
     comments_soe.to_html(file)
 with open("ncr_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Non-conformances</h3>")
     comments_ncr.to_html(file)
 with open("calibration_table.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Calibrations</h3>")
     source.calibrations(
         data.site, measurement_name=data.standard_measurement_name
     ).to_html(file)
 with open("potential_processing_issues.html", "w", encoding="utf-8") as file:
+    file.write("<h3>Hydrobot potential issues</h3>")
     data.processing_issues.to_html(file)
 
 merger = HtmlMerger(
     [
         "pyplot.html",
+        "potential_processing_issues.html",
         "check_table.html",
         "quality_table.html",
         "inspections_table.html",
         "soe_table.html",
         "ncr_table.html",
         "calibration_table.html",
-        "potential_processing_issues.html",
     ],
     encoding="utf-8",
     header=f"<h1>{data.site}</h1>\n<h2>{data.standard_measurement_name}</h2>\n<h2>From {data.from_date} to {data.to_date}</h2>",
