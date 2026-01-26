@@ -222,13 +222,14 @@ class DOProcessor(Processor):
 
         ap_last_time = self.ap_standard_data.index[-1]
         wt_last_time = self.wt_standard_data.index[-1]
-        self.report_processing_issue(
-            start_time=self.to_date,
-            end_time=min([ap_last_time, wt_last_time]),
-            comment="Changing to_date to end of AP/WT processing.",
-            message_type="info",
-        )
-        self._to_date = min([ap_last_time, wt_last_time])
+        if self._to_date > min([ap_last_time, wt_last_time]):
+            self.report_processing_issue(
+                start_time=self.to_date,
+                end_time=min([ap_last_time, wt_last_time]),
+                comment="Changing to_date to end of AP/WT processing.",
+                message_type="info",
+            )
+            self._to_date = min([ap_last_time, wt_last_time, self._to_date])
         self.wt_standard_data = self.wt_standard_data.reindex(
             self.standard_data[self.standard_data.index <= wt_last_time].index,
             method="nearest",

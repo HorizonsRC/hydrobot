@@ -1,5 +1,4 @@
 """Location for Horizons specific configuration code."""
-from sqlalchemy.exc import DBAPIError
 
 import importlib.resources as pkg_resources
 import platform
@@ -31,11 +30,12 @@ def survey123_db_engine():
         "mssql+pyodbc",
         host=sql_server_url(),
         database="survey123",
-        query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes"},
+        query={
+            "driver": "ODBC Driver 18 for SQL Server",
+            "TrustServerCertificate": "yes",
+        },
     )
     return db.create_engine(s123_connection_url)
-
-
 
 
 def hilltop_db_engine():
@@ -44,7 +44,10 @@ def hilltop_db_engine():
         "mssql+pyodbc",
         host=sql_server_url(),
         database="hilltop",
-        query={"driver": "ODBC Driver 18 for SQL Server", "TrustServerCertificate": "yes"},
+        query={
+            "driver": "ODBC Driver 18 for SQL Server",
+            "TrustServerCertificate": "yes",
+        },
     )
     return db.create_engine(ht_connection_url)
 
@@ -132,7 +135,13 @@ def water_temperature_hydro_inspections(from_date, to_date, site):
 
 
 def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
-    """Returns all info from inspection query."""
+    """
+    Returns all info from inspection query.
+
+    Note: adds 30 minutes to end of to_date so that the overlap between WT/AP and DO is picked up
+    example: inspection is done at 9:35. When processing WT, the last data point that can be QCed is 9:30.
+    Then the DO processor selects the "to_date" as 9:30, which misses the inspection at 9:35
+    """
     do_query = db.text(
         pkg_resources.files("hydrobot.config.horizons_sql")
         .joinpath("dissolved_oxygen_check.sql")
@@ -144,7 +153,7 @@ def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
         survey123_db_engine(),
         params={
             "start_time": pd.Timestamp(from_date),
-            "end_time": pd.Timestamp(to_date),
+            "end_time": pd.Timestamp(to_date) + pd.Timedelta(minutes=30),
             "site": site,
         },
     )
