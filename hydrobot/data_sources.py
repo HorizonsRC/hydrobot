@@ -135,6 +135,8 @@ def depth_check_measurement_name_by_data_family(data_family, depth):
             )
         case "water_temperature":
             return f"Water Temperature Check (-{str(depth)} mm) [Water Temperature (-{str(depth)} mm)]"
+        case "dissolved_oxygen":
+            return f"Sample Check [Dissolved Oxygen Saturation (-{str(depth)} mm)]"
         case _:
             raise ValueError(
                 f"Unimplemented depth data family {data_family}. "
