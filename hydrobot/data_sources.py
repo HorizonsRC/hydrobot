@@ -7,7 +7,7 @@ DATA_FAMILY_DICT = {
     "dissolved_oxygen": {
         "QC_evaluator_type": "DO",
         "QC_evaluator_values": [6, 3, 0.1, 0.05],
-        "depth_units": "mm",
+        "depth_unit": "mm",
     },
     "water_temperature": {
         "QC_evaluator_type": "Base",
