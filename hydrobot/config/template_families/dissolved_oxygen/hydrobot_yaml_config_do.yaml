@@ -29,7 +29,7 @@ export_file_name: "processed_do.xml"
 
 # Processing Configuration
 defaults:
-  delta: 20
+  delta: 40
   gap_limit: 12
   high_clip: 300
   low_clip: 0.01
