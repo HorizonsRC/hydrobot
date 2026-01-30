@@ -2,6 +2,12 @@
 History
 =======
 
+? (?)
+----------------------------------
+* Making DO depth work
+* Corrections for DO template defaults
+* Making depth profile process more editable (date ranges)
+
 0.9.12 (2026-01-26)
 ----------------------------------
 * Added functionality for depth processing WT/DO exceptions
