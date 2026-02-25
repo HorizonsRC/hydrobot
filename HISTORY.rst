@@ -7,6 +7,7 @@ History
 * Making DO depth work
 * Corrections for DO template defaults
 * Making depth profile process more editable (date ranges)
+* Increasing rainfall site survey resilience for na entries
 
 0.9.12 (2026-01-26)
 ----------------------------------

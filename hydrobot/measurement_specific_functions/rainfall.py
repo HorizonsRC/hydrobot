@@ -87,33 +87,41 @@ def rainfall_nems_site_matrix(site):
             else 3
         )
         # Distance between Primary Reference Gauge (Check Gauge) and the Intensity Gauge (mm)
-        dist = matrix_dict["Distance Between Gauges"]
-        if 600 <= dist <= 2000:
+        dist_bg = matrix_dict["Distance Between Gauges"]
+        if (not pd.isna(dist_bg)) and (600 <= dist_bg <= 2000):
             output_dict["Distance Between Gauges"] = 0
         else:
             output_dict["Distance Between Gauges"] = 3  # including nan
         # Orifice Height - Primary Reference Gauge
-        splash = int(matrix_dict["SplashGuard"]) < 2
-        height = int(matrix_dict["Orifice Height - Primary Reference Gauge"])
-        if splash or (285 <= height <= 325):
+        splash = (not pd.isna(matrix_dict["SplashGuard"])) and int(
+            matrix_dict["SplashGuard"]
+        ) < 2
+        height_pr = matrix_dict["Orifice Height - Primary Reference Gauge"]
+        height_check = (not pd.isna(height_pr)) and (285 <= int(height_pr) <= 325)
+        if splash or height_check:
             output_dict["Orifice Height - Primary Reference Gauge"] = 0
         else:
             output_dict["Orifice Height - Primary Reference Gauge"] = 3
         # Orifice Diameter - Primary Reference Gauge
-        dist = int(matrix_dict["Orifice Diameter - Primary Reference Gauge"])
-        if 125 <= dist <= 205:
+        dist_pr = matrix_dict["Orifice Diameter - Primary Reference Gauge"]
+        if (not pd.isna(dist_pr)) and (125 <= int(dist_pr) <= 205):
             output_dict["Orifice Diameter - Primary Reference Gauge"] = 0
         else:
             output_dict[
                 "Orifice Diameter - Primary Reference Gauge"
             ] = 3  # including nan
         # Orifice height - Intensity Gauge
-        height = int(matrix_dict["Orifice Height - Intensity Gauge"])
-        if splash or (285 <= height <= 600):
+        height_ig = matrix_dict["Orifice Height - Intensity Gauge"]
+        if pd.isna(height_ig):
+            output_dict["Orifice height - Intensity Gauge"] = 3
+        elif splash or (285 <= int(height_ig) <= 600):
             output_dict["Orifice Height - Intensity Gauge"] = 0
-        elif height <= 1000:
+        elif (
+            not pd.isna(matrix_dict["Orifice Height - Primary Reference Gauge"])
+        ) and (int(height_ig) <= 1000):
             height_diff = np.abs(
-                height - matrix_dict["Orifice Height - Primary Reference Gauge"]
+                int(height_ig)
+                - int(matrix_dict["Orifice Height - Primary Reference Gauge"])
             )
             if height_diff <= 50:
                 output_dict["Orifice Height - Intensity Gauge"] = 1
@@ -122,8 +130,8 @@ def rainfall_nems_site_matrix(site):
         else:
             output_dict["Orifice height - Intensity Gauge"] = 3
         # Orifice Diameter - Intensity Gauge
-        dist = int(matrix_dict["Orifice Diameter - Intensity Gauge"])
-        if 125 <= dist <= 205:
+        dist_ig = matrix_dict["Orifice Diameter - Intensity Gauge"]
+        if (not pd.isna(dist_ig)) and (125 <= int(dist_ig) <= 205):
             output_dict["Orifice Diameter - Intensity Gauge"] = 0
         else:
             output_dict["Orifice Diameter - Intensity Gauge"] = 3  # including nan
@@ -346,7 +354,10 @@ def manual_tip_filter(
     std_series = std_series.copy()
     if pd.isna(manual_tips):
         manual_tips = 0
-    mode = std_series.astype(float).replace(0, np.nan).mode().item()
+
+    if std_series.empty:
+        # No data to filter
+        return std_series, None
 
     if not isinstance(std_series.index, pd.DatetimeIndex):
         warnings.warn(
@@ -354,6 +365,8 @@ def manual_tip_filter(
             stacklevel=2,
         )
         std_series.index = pd.DatetimeIndex(std_series.index)
+
+    mode = std_series.astype(float).replace(0, np.nan).mode().item()
 
     offset = pd.Timedelta(minutes=buffer_minutes)
     inspection_data = std_series[
