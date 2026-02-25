@@ -1,15 +1,25 @@
 """Script to run through a processing task for Soil Moisture."""
 
+import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 
+data_sections_to_delete = []
+
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_st.yaml")
+
+for bad_section in data_sections_to_delete:
+    data.standard_data.loc[
+        (data.standard_data.index > bad_section[0])
+        & (data.standard_data.index < bad_section[1]),
+        "Value",
+    ] = np.nan
 
 #######################################################################################
 # Common auto-processing steps
