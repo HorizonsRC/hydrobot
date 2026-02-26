@@ -15,11 +15,19 @@ from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 synthetic_checks = []
 checks_to_manually_ignore = []
 backup_replacement_times = []
+data_sections_to_delete = []
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_rain.yaml")
+
+for bad_section in data_sections_to_delete:
+    data.standard_data.loc[
+        (data.standard_data.index > bad_section[0])
+        & (data.standard_data.index < bad_section[1]),
+        "Value",
+    ] = np.nan
 
 #######################################################################################
 # Importing external check data

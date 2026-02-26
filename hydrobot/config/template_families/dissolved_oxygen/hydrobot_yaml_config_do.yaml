@@ -13,12 +13,12 @@ standard_measurement_name: "DO Saturation [Dissolved Oxygen (%)]"
 check_measurement_name: "DO saturation check"
 
 #Supplemental site info
-water_temperature_hts: "ProvisionalAuto.hts"
+water_temperature_hts: "Archive.hts"
 water_temperature_frequency: "15min"
 water_temperature_measurement_name: "Water Temperature"
 water_temperature_site:
 
-atmospheric_pressure_hts: "ProvisionalAuto.hts"
+atmospheric_pressure_hts: "Archive.hts"
 atmospheric_pressure_frequency: "15min"
 atmospheric_pressure_measurement_name: "Atmospheric Pressure"
 atmospheric_pressure_site:
@@ -29,9 +29,9 @@ export_file_name: "processed_do.xml"
 
 # Processing Configuration
 defaults:
-  delta: 20
+  delta: 40
   gap_limit: 12
-  high_clip: 200
+  high_clip: 300
   low_clip: 0.01
   max_qc: 600
   span: 10

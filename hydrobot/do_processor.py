@@ -8,6 +8,7 @@ from annalist.decorators import ClassLogger
 from hilltoppy import Hilltop
 
 import hydrobot.config.horizons_source as source
+from hydrobot import data_sources
 from hydrobot.data_acquisition import enforce_site_in_hts
 from hydrobot.evaluator import cap_qc_where_std_high
 from hydrobot.filters import trim_series
@@ -130,9 +131,16 @@ class DOProcessor(Processor):
         available_wt_measurements = wt_hilltop.get_measurement_list(
             water_temperature_site
         )
-        self.water_temperature_measurement_name = water_temperature_measurement_name
+        if self.depth is None:
+            self.water_temperature_measurement_name = water_temperature_measurement_name
+        else:
+            self.water_temperature_measurement_name = (
+                data_sources.depth_standard_measurement_name_by_data_family(
+                    "water_temperature", self.depth
+                )
+            )
         matches = re.search(
-            r"([^\[\n]+)(\[(.+)\])?", water_temperature_measurement_name
+            r"([^\[\n]+)(\[(.+)\])?", self.water_temperature_measurement_name
         )
 
         if matches is not None:

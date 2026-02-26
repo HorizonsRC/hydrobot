@@ -2328,7 +2328,14 @@ class Processor:
             )
         return frame
 
-    def interpolate_depth_profiles(self, depth, measurement, site=None):
+    def interpolate_depth_profiles(
+        self,
+        depth: int | float,
+        measurement: str,
+        site: str | None = None,
+        from_date: str | None | pd.Timestamp = None,
+        to_date: str | None | pd.Timestamp = None,
+    ):
         """
         Looks up depth profile and find interpolates for given depth.
 
@@ -2341,16 +2348,24 @@ class Processor:
             e.g. "Water Temperature (Depth Profile)"
         site : str | None
             site to use to look for depth profiles, if none will use default
+        from_date : str | pd.Timestamp | None
+            start of period to look for, if none will use
+        to_date : str | pd.Timestamp | None
+
         """
         if site is None:
             site = self.site
+        if from_date is None:
+            from_date = pd.Timestamp(self.from_date)
+        if to_date is None:
+            to_date = pd.Timestamp(self.to_date)
         profiles = data_acquisition.get_depth_profiles(
             self._base_url,
             "HydrobotCheckData.hts",
             site,
             measurement,
-            self.from_date,
-            self.to_date,
+            from_date,
+            to_date,
         )
 
         interpolated_data = {}

@@ -7,7 +7,7 @@ DATA_FAMILY_DICT = {
     "dissolved_oxygen": {
         "QC_evaluator_type": "DO",
         "QC_evaluator_values": [6, 3, 0.1, 0.05],
-        "depth_units": "mm",
+        "depth_unit": "mm",
     },
     "water_temperature": {
         "QC_evaluator_type": "Base",
@@ -126,13 +126,17 @@ def depth_check_measurement_name_by_data_family(data_family, depth):
     """
     match data_family:
         case "ph":
-            return f"pH Check (-{str(depth)} mm)"
+            return f"pH Check (-{str(depth)} mm) [pH (-{str(depth)} mm)]"
         case "orp":
-            return f"ORP Check  (-{str(depth)} mm)"
+            return f"ORP Check (-{str(depth)} mm) [ORP (-{str(depth)} mm)]"
         case "conductivity":
-            return f"SP Cond Check (-{str(depth)} mm)"
+            return (
+                f"SP Cond Check (-{str(depth)} mm) [SP Conductivity (-{str(depth)} mm)]"
+            )
         case "water_temperature":
-            return f"Water Temperature Check (-{str(depth)} mm)"
+            return f"Water Temperature Check (-{str(depth)} mm) [Water Temperature (-{str(depth)} mm)]"
+        case "dissolved_oxygen":
+            return f"Sample Check [Dissolved Oxygen Saturation (-{str(depth)} mm)]"
         case _:
             raise ValueError(
                 f"Unimplemented depth data family {data_family}. "

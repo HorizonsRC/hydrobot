@@ -633,7 +633,7 @@ def cap_qc_where_std_high(std_frame, qc_frame, cap_qc, cap_threshold):
     detail_series = qc_frame["Code"].copy()
     detail_series[
         diff_idxs
-    ] += f" [DO above {cap_qc} means apply a maximum qc of {cap_threshold}.]"
+    ] += f" [DO above {cap_threshold} means apply a maximum qc of {cap_qc}.]"
     qc_frame["Details"] = detail_series
 
     qc_frame["Value"] = new_qc
