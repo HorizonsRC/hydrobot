@@ -2,7 +2,7 @@
 History
 =======
 
-? (?)
+0.9.13 (2026-02-27)
 ----------------------------------
 * Making DO depth work
 * Corrections for DO template defaults
