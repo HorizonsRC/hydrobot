@@ -59,7 +59,7 @@ progresses.
 Initial Setup (Repeat for each release)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-#. Install a Python 3.11 interpreter (3.12 is not supported just yet).
+#. Install a Python 3.11 interpreter (3.12+ is not supported just yet).
 
 #. In your favourite shell (if you don't know what that is, use powershell -
    it's already installed on windows), create a new virtual environment using
@@ -67,7 +67,7 @@ Initial Setup (Repeat for each release)
    this is stored somewhere locally. For example, it could be stored in a
    "Hydrobot" folder in the C: drive, which would need the command::
 
-    python -m venv C:/Hydrobot/hydrobot0.9.12/
+    py -3.11 -m venv C:/Hydrobot/hydrobot0.9.12/
     cd C:/Hydrobot/hydrobot0.9.12/
 
 #. Activate this virtual environment. In powershell this should be something
