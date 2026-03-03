@@ -436,7 +436,7 @@ class RFProcessor(Processor):
             if start not in quality_series or quality_series[start] > 400:
                 quality_series[start] = 400
             if previous_end_qc > 400:
-                quality_series[end] = 400
+                quality_series[end] = previous_end_qc
             quality_series[
                 (quality_series.index > start)
                 & (quality_series.index < end)
