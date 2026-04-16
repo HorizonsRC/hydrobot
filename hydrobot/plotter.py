@@ -5,7 +5,7 @@ import pandas as pd
 import plotly.graph_objects as go
 from plotly.subplots import make_subplots
 
-from hydrobot.evaluator import splitter
+from hydrobot.evaluator import find_nearest_valid_time, splitter
 from hydrobot.utils import find_nearest_indices
 
 
@@ -277,7 +277,14 @@ def plot_check_data(
                     .fillna(0)
                 )
         elif diffs:
-            checks = tag_check["Value"].to_numpy() - standard_series.loc[timestamps]
+            checks = (
+                tag_check["Value"].to_numpy()
+                - standard_series.loc[
+                    timestamps.map(
+                        lambda dt: find_nearest_valid_time(standard_series, dt)
+                    )
+                ]
+            )
         else:
             checks = tag_check["Value"].to_numpy()
 

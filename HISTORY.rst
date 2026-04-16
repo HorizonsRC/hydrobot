@@ -5,6 +5,7 @@ History
 0.9.14 (?)
 ----------------------------------
 * Added Groundwater
+* Fixed issue where processing control chart would not display values when the check time corresponds to a nan in the standard series
 
 0.9.13 (2026-02-27)
 ----------------------------------
