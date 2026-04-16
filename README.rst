@@ -53,8 +53,7 @@ the hybrid workflow relies on some R scripts to obtain check data from sources
 other than Hilltop. Further processing using Hilltop manager is also supported.
 
 NOTE: Hydrobot 0.9.13 does not support all NEMS data sources currently,
-but more measurements will be supported in patches as the processing
-progresses.
+but more measurements are planned to will be supported in later releases.
 
 Initial Setup (Repeat for each release)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^

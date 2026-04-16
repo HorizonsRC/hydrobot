@@ -134,6 +134,33 @@ def water_temperature_hydro_inspections(from_date, to_date, site):
     return wt_checks
 
 
+def groundwater_hydro_inspections(from_date, to_date, site):
+    """Returns all info from inspection query."""
+    gw_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("groundwater_check.sql")
+        .read_text()
+    )
+
+    gw_checks = pd.read_sql(
+        gw_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+
+    gw_checks["Index"] = gw_checks.loc[:, "inspection_time"].fillna(
+        gw_checks.loc[:, "arrival_time"]
+    )
+    gw_checks = gw_checks.set_index("Index")
+    gw_checks.index = pd.to_datetime(gw_checks.index)
+    gw_checks.index.name = None
+    return gw_checks
+
+
 def dissolved_oxygen_hydro_inspections(from_date, to_date, site):
     """
     Returns all info from inspection query.
