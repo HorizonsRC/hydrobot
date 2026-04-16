@@ -20,7 +20,7 @@ defaults:
   delta: 130
   gap_limit: 12
   high_clip: 10000
-  low_clip: -10000
+  low_clip: 0
   max_qc: 600
   span: 10
 
