@@ -1510,12 +1510,14 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["low_clip"] is not None
                 else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "high_clip" in self._defaults
+                and self._defaults["high_clip"] is not None
                 else np.nan
             )
 
@@ -1640,12 +1642,14 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["low_clip"] is not None
                 else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["high_clip"] is not None
                 else np.nan
             )
         if span is None:
