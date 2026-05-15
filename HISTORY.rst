@@ -24,7 +24,7 @@ History
 * Maybe fixed compatibility issues with python versions > 3.11?
 * Start of poetry.lock framework
 * ODBC driver update - now requires version 18
-* Added buffer for DO inspection end date (where WT/AP inspection is shortly after last
+* Added buffer for DO inspection end date (where WT/AP inspection is shortly after last DO inspection)
 
 0.9.11 (2025-12-12)
 ----------------------------------
