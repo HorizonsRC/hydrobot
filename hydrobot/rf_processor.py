@@ -799,7 +799,7 @@ class RFProcessor(Processor):
             message_type="info",
         )
 
-    def replace_checks_with_ltco(self, list_of_replaced_checks: [str]):
+    def replace_checks_with_ltco(self, list_of_replaced_checks: list[str]):
         """
         For each check in the list, replace the check with synthetic ltco check.
 

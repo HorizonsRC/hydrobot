@@ -289,6 +289,7 @@ class Processor:
             "units": "",
             "number_format": "$$$",
         }
+        self._check_data_format_titles = []
         self.standard_data_source_info = {
             "ts_type": "StdSeries",
             "data_type": "SimpleTimeSeries",
@@ -1097,6 +1098,12 @@ class Processor:
 
                     # This could be a pd.Series
                     if blob.data.timeseries is not None:
+                        self._check_data_format_titles = [
+                            a.item_name for a in blob.data_source.item_info
+                        ]
+                        self.check_data_source_info[
+                            "item_format"
+                        ] = blob.data_source.item_format
                         raw_check_blob = blob
                         raw_check_data = blob.data.timeseries
                         check_item_info["item_name"] = blob.data_source.item_info[
@@ -2222,19 +2229,52 @@ class Processor:
                 "number_format": "###",
             }
 
+            if len(self._check_data_format_titles) == 3:
+                item_info_dicts = [
+                    self.check_item_info,
+                    recorder_time_item_info,
+                    comment_item_info,
+                ]
+                check_data_selector = ["Value", "Recorder Time", "Comment"]
+            elif len(self._check_data_format_titles) == 4:
+                self.report_processing_issue(
+                    comment=f"The check data has more than 3 columns, assuming 'internal s.g.' as the fourth. {self._check_data_format_titles}"
+                )
+                internal_sg = {
+                    "item_name": "Internal S.G.",
+                    "item_format": "I",
+                    "divisor": "1",
+                    "units": "",
+                    "number_format": "###",
+                }
+                item_info_dicts = [
+                    self.check_item_info,
+                    recorder_time_item_info,
+                    internal_sg,
+                    comment_item_info,
+                ]
+                self.check_data["internal_sg_placeholder"] = -1
+                check_data_selector = [
+                    "Value",
+                    "Recorder Time",
+                    "internal_sg_placeholder",
+                    "Comment",
+                ]
+            else:
+                raise ValueError(
+                    f"Unknown check data format. Only support 3 or 4 check ItemInfos, this has the "
+                    f"following items: {self._check_data_format_titles}"
+                )
+
             data_blob_list += [
                 data_structure.check_to_xml_structure(
-                    item_info_dicts=[
-                        self.check_item_info,
-                        recorder_time_item_info,
-                        comment_item_info,
-                    ],
+                    item_info_dicts=item_info_dicts,
                     check_data_source_name=self.check_data_source_name,
                     check_data_source_info=self.check_data_source_info,
                     check_item_info=self.check_item_info,
                     check_data=self.check_data,
                     site=self.site,
-                    check_data_selector=["Value", "Recorder Time", "Comment"],
+                    check_data_selector=check_data_selector,
                 )
             ]
 
