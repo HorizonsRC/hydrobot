@@ -666,7 +666,7 @@ class Processor:
         if frequency is None and infer_frequency:
             frequency = self._frequency
 
-        xml_tree, blob_list = data_acquisition.get_data(
+        response = data_acquisition.get_data(
             base_url,
             standard_hts_filename,
             site,
@@ -676,14 +676,15 @@ class Processor:
             tstype="Standard",
         )
 
-        blob_found = False
+        response_found = False
 
         date_format = "Calendar"
         data_source_list = []
         raw_standard_data = EMPTY_STANDARD_DATA.copy()
 
-        raw_standard_blob = None
-        if blob_list is None or len(blob_list) == 0:
+        raw_standard_response = None
+        # For each response_measurement in response, loop through.
+        if response.measurements is None or len(response.measurements) == 0:
             self.report_processing_issue(
                 start_time=from_date,
                 end_time=to_date,
@@ -693,39 +694,39 @@ class Processor:
                 code="MSD",
             )
         else:
-            for blob in blob_list:
-                data_source_list += [blob.data_source.name]
+            for response_measurement in response.measurements:
+                data_source_list += [response_measurement.data_source.name]
                 if (
-                    (blob.data_source.name == standard_data_source_name)
-                    and (blob.data_source.ts_type == "StdSeries")
-                    and (blob.data.timeseries is not None)
+                    (response_measurement.data_source.name == standard_data_source_name)
+                    and (response_measurement.data_source.ts_type == "StdSeries")
+                    and (response_measurement.data.timeseries is not None)
                 ):
-                    if blob_found:
+                    if response_found:
                         # Already found something, duplicated StdSeries
                         raise ValueError(
                             f"Multiple StdSeries found. Already found: {raw_standard_data}, "
-                            f"also found: {blob.data.timeseries}."
+                            f"also found: {response_measurement.data.timeseries}."
                         )
 
-                    blob_found = True
-                    raw_standard_data = blob.data.timeseries
-                    date_format = blob.data.date_format
+                    response_found = True
+                    raw_standard_data = response_measurement.data.timeseries
+                    date_format = response_measurement.data.date_format
 
-                    raw_standard_blob = blob
-                    standard_item_info["item_name"] = blob.data_source.item_info[
+                    raw_standard_response = response_measurement
+                    standard_item_info["item_name"] = response_measurement.data_source.item_info[
                         0
                     ].item_name
-                    standard_item_info["item_format"] = blob.data_source.item_info[
+                    standard_item_info["item_format"] = response_measurement.data_source.item_info[
                         0
                     ].item_format
-                    standard_item_info["divisor"] = blob.data_source.item_info[
+                    standard_item_info["divisor"] = response_measurement.data_source.item_info[
                         0
                     ].divisor
-                    standard_item_info["units"] = blob.data_source.item_info[0].units
-                    standard_item_info["number_format"] = blob.data_source.item_info[
+                    standard_item_info["units"] = response_measurement.data_source.item_info[0].units
+                    standard_item_info["number_format"] = response_measurement.data_source.item_info[
                         0
                     ].number_format
-            if not blob_found:
+            if not response_found:
                 raise ValueError(
                     f"Standard Data Not Found under name "
                     f"{standard_measurement_name}. "
@@ -782,7 +783,7 @@ class Processor:
                             message_type="info",
                         )
 
-            if raw_standard_blob is not None:
+            if raw_standard_response is not None:
                 fmt = standard_item_info["item_format"]
                 div = standard_item_info["divisor"]
             else:
@@ -896,7 +897,7 @@ class Processor:
         if base_url is None:
             base_url = self._base_url
 
-        xml_tree, blob_list = data_acquisition.get_data(
+        response = data_acquisition.get_data(
             base_url,
             standard_hts_filename,
             site,
@@ -906,10 +907,10 @@ class Processor:
             tstype="Quality",
         )
 
-        blob_found = False
+        response_found = False
         raw_quality_data = EMPTY_QUALITY_DATA.copy()
 
-        if blob_list is None or len(blob_list) == 0:
+        if response.measurements is None or len(response.measurements) == 0:
             self.report_processing_issue(
                 start_time=from_date,
                 end_time=to_date,
@@ -921,22 +922,22 @@ class Processor:
         else:
             date_format = "Calendar"
             data_source_options = []
-            for blob in blob_list:
-                if blob.data_source.ts_type == "StdQualSeries":
-                    data_source_options += [blob.data_source.name]
-                    if blob.data_source.name == standard_data_source_name:
-                        if blob_found:
+            for response_measurement in response.measurements:
+                if response_measurement.data_source.ts_type == "StdQualSeries":
+                    data_source_options += [response_measurement.data_source.name]
+                    if response_measurement.data_source.name == standard_data_source_name:
+                        if response_found:
                             # Already found something, duplicated StdQualSeries
                             raise ValueError(
-                                f"Multiple StdQualSeries found. Just found: {blob}, "
-                                f"all candidates are: {blob_list}."
+                                f"Multiple StdQualSeries found. Just found: {response}, "
+                                f"all candidates are: {response.measurements}."
                             )
                         # Found it. Now we extract it.
-                        blob_found = True
-                        raw_quality_data = blob.data.timeseries
-                        date_format = blob.data.date_format
+                        response_found = True
+                        raw_quality_data = response_measurement.data.timeseries
+                        date_format = response_measurement.data.date_format
 
-            if not blob_found:
+            if not response_found:
                 self.report_processing_issue(
                     start_time=from_date,
                     end_time=to_date,
@@ -1054,7 +1055,7 @@ class Processor:
         if base_url is None:
             base_url = self._base_url
 
-        xml_tree, blob_list = data_acquisition.get_data(
+        response = data_acquisition.get_data(
             base_url,
             check_hts_filename,
             site,
@@ -1064,10 +1065,10 @@ class Processor:
             tstype="Check",
         )
         raw_check_data = EMPTY_CHECK_DATA.copy()
-        raw_check_blob = None
-        blob_found = False
+        raw_check_response = None
+        response_found = False
         date_format = "Calendar"
-        if blob_list is None or len(blob_list) == 0:
+        if response is None or len(response_list) == 0:
             self.report_processing_issue(
                 start_time=from_date,
                 end_time=to_date,

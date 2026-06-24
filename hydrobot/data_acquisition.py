@@ -1,13 +1,15 @@
 """Main module."""
+from hilltoppy.mountain_top import Hilltop
 
 import pandas as pd
 import requests
 import xmltodict
 import yaml
-from hilltoppy import Hilltop
-from hilltoppy.utils import build_url, get_hilltop_xml
-
-from hydrobot.data_structure import parse_xml
+from whurl.client import HilltopClient
+# from hilltoppy import Hilltop
+# from hilltoppy.utils import build_url, get_hilltop_xml
+#
+# from hydrobot.data_structure import parse_xml
 
 
 def get_data(
@@ -48,22 +50,21 @@ def get_data(
     [DataSourceBlob]
         XML tree parsed to DataSourceBlobs
     """
-    url = build_url(
-        base_url,
-        hts,
-        "GetData",
-        site=site,
-        measurement=measurement,
-        from_date=from_date,
-        to_date=to_date,
-        tstype=tstype,
+
+    client = HilltopClient(
+        base_url=base_url,
+        hts_endpoint=hts,
     )
+    with client:
+        response = client.get_data(
+            site=site,
+            measurement=measurement,
+            from_datetime=from_date,
+            to_datetime=to_date,
+            ts_type=tstype
+        )
 
-    hilltop_xml = get_hilltop_xml(url)
-
-    data_object = parse_xml(hilltop_xml)
-
-    return hilltop_xml, data_object
+    return response
 
 
 def get_time_range(
