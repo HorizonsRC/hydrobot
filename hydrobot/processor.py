@@ -2431,3 +2431,111 @@ class Processor:
                     ) / (higher_index - lower_index)
                 interpolated_data[sample] = weighted_average
         return pd.Series(interpolated_data)
+
+    def set_check_item_info_from_parameters(
+        self,
+        check_hts_filename: str | None = None,
+        site: str | None = None,
+        check_measurement_name: str | None = None,
+        check_data_source_name: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        base_url: str | None = None,
+    ):
+        """
+        Import item info.
+
+        Used in cases where item info was empty so this function is used to obtain item info from another site/hts/etc
+
+        Parameters
+        ----------
+        check_hts_filename : str or None, optional
+            Where to get check data from
+        site : str or None, optional
+            Which site to get data from
+        check_measurement_name : str or None, optional
+            Name for measurement to get
+        check_data_source_name : str or None, optional
+            Name for data source to get
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to the earliest available
+            data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available
+            data.
+        base_url : str, optional
+            Base of the url to use for the hilltop server request. Defaults to the Processor value.
+
+        Returns
+        -------
+        check_data: pd.DataFrame
+
+        Raises
+        ------
+        TypeError
+            If the parsed Check data is not a pandas.DataFrame.
+
+        Notes
+        -----
+        This method imports Check data from the specified server based on the provided
+        parameters. It retrieves data using the `data_acquisition.get_data` function.
+        The data is parsed and formatted according to the item_info in the data source.
+
+        Examples
+        --------
+        >>> processor = Processor(...)  # initialize processor instance
+        >>> processor.import_check(
+        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
+        ... )
+        """
+        if check_hts_filename is None:
+            check_hts_filename = self.check_hts_filename
+        if site is None:
+            site = self._site
+        if check_measurement_name is None:
+            check_measurement_name = self._check_measurement_name
+        if check_data_source_name is None:
+            check_data_source_name = self.check_data_source_name
+        if base_url is None:
+            base_url = self._base_url
+
+        xml_tree, blob_list = data_acquisition.get_data(
+            base_url,
+            check_hts_filename,
+            site,
+            check_measurement_name,
+            from_date,
+            to_date,
+            tstype="Check",
+        )
+        blob_found = False
+        if blob_list is None or len(blob_list) == 0:
+            raise ValueError(
+                f"""No item info found for these parameters: {[base_url,
+            check_hts_filename,
+            site,
+            check_measurement_name,
+            from_date,
+            to_date]}"""
+            )
+        else:
+            data_source_options = []
+            for blob in blob_list:
+                data_source_options += [blob.data_source.name]
+                if (
+                    blob.data_source.name
+                    in [check_data_source_name, self.standard_data_source_name]
+                ) and (blob.data_source.ts_type == "CheckSeries"):
+                    if blob_found:
+                        # Already found something, duplicated CheckSeries
+                        raise ValueError(
+                            f"Multiple CheckSeries found. Just found: {blob}, "
+                            f"all candidates are: {blob_list}."
+                        )
+                    # Found it. Now we extract it.
+                    blob_found = True
+
+                    if blob.data.timeseries is not None:
+                        self._check_data_format_titles = [
+                            a.item_name for a in blob.data_source.item_info
+                        ]
