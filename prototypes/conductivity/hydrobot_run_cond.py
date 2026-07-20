@@ -50,9 +50,30 @@ if data.depth:
         ~data.check_data.index.duplicated(keep="first")
     ].sort_index()
 else:
-    data.check_data = source.conductivity_hydro_check_data(
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field Conductivity (HRC)",
+        ),
+        "1min",
+    )
+    inspections = source.conductivity_hydro_check_data(
         data.from_date, data.to_date, data.site
     )
+
+    check_data = [soe_check, inspections]
+    if [i for i in check_data if not i.empty]:
+        data.check_data = pd.concat([i for i in check_data if not i.empty])
+        data.check_data = data.check_data[
+            ~data.check_data.index.duplicated(keep="first")
+        ].sort_index()
+    else:
+        # no check
+        from hydrobot.processor import EMPTY_CHECK_DATA
+
+        data.check_data = EMPTY_CHECK_DATA.copy()
+
+    data.check_data = data.check_data.loc[~data.check_data.Value.isna()]
 
 # Any manual removals
 for false_check in series_rounder(
@@ -93,6 +114,7 @@ data.standard_data["Value"] = trim_series(
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
+data.check_data.loc[data.check_data.Value.isna(), "Value"] = -1
 data.data_exporter()
 
 #######################################################################################

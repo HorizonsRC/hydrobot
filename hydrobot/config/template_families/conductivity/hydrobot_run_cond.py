@@ -7,6 +7,7 @@ import hydrobot.config.horizons_source as source
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
+from hydrobot.processor import EMPTY_CHECK_DATA
 from hydrobot.utils import series_rounder
 
 checks_to_manually_ignore = []
@@ -50,9 +51,27 @@ if data.depth:
         ~data.check_data.index.duplicated(keep="first")
     ].sort_index()
 else:
-    data.check_data = source.conductivity_hydro_check_data(
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field Conductivity (HRC)",
+        ),
+        "1min",
+    )
+    inspections = source.conductivity_hydro_check_data(
         data.from_date, data.to_date, data.site
     )
+
+    check_data = [soe_check, inspections]
+    if [i for i in check_data if not i.empty]:
+        data.check_data = pd.concat([i for i in check_data if not i.empty])
+        data.check_data = data.check_data[
+            ~data.check_data.index.duplicated(keep="first")
+        ].sort_index()
+    else:
+        # no check
+        data.check_data = EMPTY_CHECK_DATA.copy()
+
     data.check_data = data.check_data.loc[~data.check_data.Value.isna()]
 
 # Any manual removals
