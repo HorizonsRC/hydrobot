@@ -73,6 +73,7 @@ def write_access_row(
     )
 
     cursor = cnxn.cursor()
+    print(values)  # Actually good to have some feedback - not just a debug print
     cursor.execute(insert_query, values)
     cursor.commit()
 
