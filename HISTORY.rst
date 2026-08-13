@@ -2,6 +2,15 @@
 History
 =======
 
+0.9.15 (2026-08-14)
+----------------------------------
+* Added dsn audit copy, which maintains the audit trail when copying from a dsn
+* Added Conductivity
+* Added "linear ramp" function
+* Updated readme to be somewhat accurate
+* Fixed error with millisecond precision check dates
+* Added capability to use alternative sites data_info (useful for cases where there is no data yet)
+
 0.9.14 (2026-04-17)
 ----------------------------------
 * Added Groundwater
