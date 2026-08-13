@@ -60,7 +60,7 @@ contained in the script, with some supporting info in the yaml. Further data is
 drawn from a Hilltop server when run (i.e. the data itself is gathered from the
 server).
 
-NOTE: Hydrobot 0.9.14 does not support all NEMS data sources currently,
+NOTE: Hydrobot 0.9.15 does not support all NEMS data sources currently,
 but more measurements are planned to will be supported in later releases.
 
 Installation (Repeat for each release)
@@ -70,27 +70,27 @@ Installation (Repeat for each release)
 
 #. In your favourite shell (if you don't know what that is, use powershell -
    it's already installed on windows), create a new virtual environment using
-   this python interpreter and name it "hydrobot0.9.14". It's important that
+   this python interpreter and name it "hydrobot0.9.15". It's important that
    this is stored somewhere locally. Assuming it is stored in a "Hydrobot"
    folder in the C: drive, use the command::
 
-    py -3.11 -m venv C:/Hydrobot/hydrobot0.9.14/
+    py -3.11 -m venv C:/Hydrobot/hydrobot0.9.15/
 
 #. Activate this virtual environment. In powershell this should be something
    like::
 
-    C:/Hydrobot/hydrobot0.9.14/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.9.15/Scripts/Activate.ps1
 
 #. With your venv active, install the latest version of Hydrobot using pip::
 
-    pip install hydrobot==0.9.14
+    pip install hydrobot==0.9.15
 
 #. Record which version of dependencies you have installed in the location. The
    following cd changes the location to the relevant point, and the pip freeze
    records which dependencies are installed by the hydrobot install process for
    if auditing/reprocessing is required later::
 
-    cd C:/Hydrobot/hydrobot0.9.14/
+    cd C:/Hydrobot/hydrobot0.9.15/
     pip freeze > dependencies.txt
 
 Processing Steps
@@ -156,7 +156,7 @@ Run the scripts
    instructions) and activate it. To activate, in your shell type the location
    of the "Activate.ps1" script in the venv/Scripts folder, e.g.::
 
-    C:/Hydrobot/hydrobot0.9.14/Scripts/Activate.ps1
+    C:/Hydrobot/hydrobot0.9.15/Scripts/Activate.ps1
 
    You can ensure it is active by typing `gcm python` and confirm that your
    python interpreter (under "Source") is running from your venv folder. You
