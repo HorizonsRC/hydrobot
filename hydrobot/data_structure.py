@@ -1032,13 +1032,13 @@ def standard_to_xml_structure(
 
 
 def check_to_xml_structure(
-    item_info_dicts: [dict],
+    item_info_dicts: list[dict],
     check_data_source_name: str,
     check_data_source_info: dict,
     check_item_info: dict,
     check_data: pd.DataFrame,
     site: str,
-    check_data_selector: [str],
+    check_data_selector: list[str],
 ):
     """
     Give the check data in format ready to be exported to hilltop xml.
@@ -1095,7 +1095,7 @@ def check_to_xml_structure(
     check_data["Recorder Time"] = utils.datetime_index_to_mowsecs(check_data.index)
     check_data = Data(
         date_format="Calendar",
-        num_items=3,
+        num_items=len(check_data_selector),
         timeseries=check_data[check_data_selector],
     )
 

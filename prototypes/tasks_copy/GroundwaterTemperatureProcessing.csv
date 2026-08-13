@@ -1,0 +1,7 @@
+site,from_date,to_date,data_family,standard_measurement_name
+Amons,24/04/2015 20:45,,water_temperature,Water Temperature [Conductivity sensor]
+Butlers,,,water_temperature,Water Temperature [Water Temperature]
+HDC Foxton Beach 1,24/10/2019 12:45,,water_temperature,Water Temperature [Water Temperature]
+HDC Foxton Beach 3,29/10/2019 19:45,,water_temperature,Water Temperature [Water Temperature]
+MDC Himatangi Shallow,08/08/2020 08:30,,water_temperature,Water Temperature [Water Temperature]
+Sexton Land Co,28/01/2016 13:15,,water_temperature,Water Temperature [Conductivity sensor]

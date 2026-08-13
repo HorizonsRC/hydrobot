@@ -289,6 +289,7 @@ class Processor:
             "units": "",
             "number_format": "$$$",
         }
+        self._check_data_format_titles = []
         self.standard_data_source_info = {
             "ts_type": "StdSeries",
             "data_type": "SimpleTimeSeries",
@@ -1097,6 +1098,12 @@ class Processor:
 
                     # This could be a pd.Series
                     if blob.data.timeseries is not None:
+                        self._check_data_format_titles = [
+                            a.item_name for a in blob.data_source.item_info
+                        ]
+                        self.check_data_source_info[
+                            "item_format"
+                        ] = blob.data_source.item_format
                         raw_check_blob = blob
                         raw_check_data = blob.data.timeseries
                         check_item_info["item_name"] = blob.data_source.item_info[
@@ -1510,12 +1517,14 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["low_clip"] is not None
                 else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "high_clip" in self._defaults
+                and self._defaults["high_clip"] is not None
                 else np.nan
             )
 
@@ -1640,12 +1649,14 @@ class Processor:
             low_clip = (
                 float(self._defaults["low_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["low_clip"] is not None
                 else np.nan
             )
         if high_clip is None:
             high_clip = (
                 float(self._defaults["high_clip"])
                 if "low_clip" in self._defaults
+                and self._defaults["high_clip"] is not None
                 else np.nan
             )
         if span is None:
@@ -2218,19 +2229,52 @@ class Processor:
                 "number_format": "###",
             }
 
+            if len(self._check_data_format_titles) == 3:
+                item_info_dicts = [
+                    self.check_item_info,
+                    recorder_time_item_info,
+                    comment_item_info,
+                ]
+                check_data_selector = ["Value", "Recorder Time", "Comment"]
+            elif len(self._check_data_format_titles) == 4:
+                self.report_processing_issue(
+                    comment=f"The check data has more than 3 columns, assuming 'internal s.g.' as the fourth. {self._check_data_format_titles}"
+                )
+                internal_sg = {
+                    "item_name": "Internal S.G.",
+                    "item_format": "I",
+                    "divisor": "1",
+                    "units": "",
+                    "number_format": "###",
+                }
+                item_info_dicts = [
+                    self.check_item_info,
+                    recorder_time_item_info,
+                    internal_sg,
+                    comment_item_info,
+                ]
+                self.check_data["internal_sg_placeholder"] = -1
+                check_data_selector = [
+                    "Value",
+                    "Recorder Time",
+                    "internal_sg_placeholder",
+                    "Comment",
+                ]
+            else:
+                raise ValueError(
+                    f"Unknown check data format. Only support 3 or 4 check ItemInfos, this has the "
+                    f"following items: {self._check_data_format_titles}"
+                )
+
             data_blob_list += [
                 data_structure.check_to_xml_structure(
-                    item_info_dicts=[
-                        self.check_item_info,
-                        recorder_time_item_info,
-                        comment_item_info,
-                    ],
+                    item_info_dicts=item_info_dicts,
                     check_data_source_name=self.check_data_source_name,
                     check_data_source_info=self.check_data_source_info,
                     check_item_info=self.check_item_info,
                     check_data=self.check_data,
                     site=self.site,
-                    check_data_selector=["Value", "Recorder Time", "Comment"],
+                    check_data_selector=check_data_selector,
                 )
             ]
 
@@ -2387,3 +2431,111 @@ class Processor:
                     ) / (higher_index - lower_index)
                 interpolated_data[sample] = weighted_average
         return pd.Series(interpolated_data)
+
+    def set_check_item_info_from_parameters(
+        self,
+        check_hts_filename: str | None = None,
+        site: str | None = None,
+        check_measurement_name: str | None = None,
+        check_data_source_name: str | None = None,
+        from_date: str | None = None,
+        to_date: str | None = None,
+        base_url: str | None = None,
+    ):
+        """
+        Import item info.
+
+        Used in cases where item info was empty so this function is used to obtain item info from another site/hts/etc
+
+        Parameters
+        ----------
+        check_hts_filename : str or None, optional
+            Where to get check data from
+        site : str or None, optional
+            Which site to get data from
+        check_measurement_name : str or None, optional
+            Name for measurement to get
+        check_data_source_name : str or None, optional
+            Name for data source to get
+        from_date : str or None, optional
+            The start date for data retrieval. If None, defaults to the earliest available
+            data.
+        to_date : str or None, optional
+            The end date for data retrieval. If None, defaults to latest available
+            data.
+        base_url : str, optional
+            Base of the url to use for the hilltop server request. Defaults to the Processor value.
+
+        Returns
+        -------
+        check_data: pd.DataFrame
+
+        Raises
+        ------
+        TypeError
+            If the parsed Check data is not a pandas.DataFrame.
+
+        Notes
+        -----
+        This method imports Check data from the specified server based on the provided
+        parameters. It retrieves data using the `data_acquisition.get_data` function.
+        The data is parsed and formatted according to the item_info in the data source.
+
+        Examples
+        --------
+        >>> processor = Processor(...)  # initialize processor instance
+        >>> processor.import_check(
+        ...     from_date='2022-01-01', to_date='2022-01-10', overwrite=True
+        ... )
+        """
+        if check_hts_filename is None:
+            check_hts_filename = self.check_hts_filename
+        if site is None:
+            site = self._site
+        if check_measurement_name is None:
+            check_measurement_name = self._check_measurement_name
+        if check_data_source_name is None:
+            check_data_source_name = self.check_data_source_name
+        if base_url is None:
+            base_url = self._base_url
+
+        xml_tree, blob_list = data_acquisition.get_data(
+            base_url,
+            check_hts_filename,
+            site,
+            check_measurement_name,
+            from_date,
+            to_date,
+            tstype="Check",
+        )
+        blob_found = False
+        if blob_list is None or len(blob_list) == 0:
+            raise ValueError(
+                f"""No item info found for these parameters: {[base_url,
+            check_hts_filename,
+            site,
+            check_measurement_name,
+            from_date,
+            to_date]}"""
+            )
+        else:
+            data_source_options = []
+            for blob in blob_list:
+                data_source_options += [blob.data_source.name]
+                if (
+                    blob.data_source.name
+                    in [check_data_source_name, self.standard_data_source_name]
+                ) and (blob.data_source.ts_type == "CheckSeries"):
+                    if blob_found:
+                        # Already found something, duplicated CheckSeries
+                        raise ValueError(
+                            f"Multiple CheckSeries found. Just found: {blob}, "
+                            f"all candidates are: {blob_list}."
+                        )
+                    # Found it. Now we extract it.
+                    blob_found = True
+
+                    if blob.data.timeseries is not None:
+                        self._check_data_format_titles = [
+                            a.item_name for a in blob.data_source.item_info
+                        ]

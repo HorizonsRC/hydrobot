@@ -596,3 +596,77 @@ def depth_profile_site_name(site: str):
             return "Lake Wiritoa at Site 1"
         case _:
             return site
+
+
+def conductivity_hydro_inspections(from_date, to_date, site):
+    """Returns all info from inspection query."""
+    cond_query = db.text(
+        pkg_resources.files("hydrobot.config.horizons_sql")
+        .joinpath("conductivity_check.sql")
+        .read_text()
+    )
+
+    cond_checks = pd.read_sql(
+        cond_query,
+        survey123_db_engine(),
+        params={
+            "start_time": pd.Timestamp(from_date),
+            "end_time": pd.Timestamp(to_date),
+            "site": site,
+        },
+    )
+
+    cond_checks["Index"] = (
+        cond_checks.loc[:, "inspection_time"]
+        .astype("datetime64[ns]")
+        .fillna(cond_checks.loc[:, "arrival_time"])
+    )
+    cond_checks = cond_checks.set_index("Index")
+    cond_checks.index = pd.to_datetime(cond_checks.index)
+    cond_checks.index.name = None
+
+    # This is needed if all values are null
+    cond_checks.loc[cond_checks.handheld_cond.isna(), "handheld_cond"] = np.nan
+    return cond_checks
+
+
+def conductivity_hydro_check_data(from_date, to_date, site):
+    """Filters conductivity hydro inspection data to be in format for use as hydrobot check data."""
+    inspection_check_data = conductivity_hydro_inspections(from_date, to_date, site)
+
+    inspection_check_data["Time"] = (
+        inspection_check_data.loc[:, "inspection_time"]
+        .astype("datetime64[ns]")
+        .fillna(inspection_check_data.loc[:, "arrival_time"])
+    )
+
+    inspection_check_data = inspection_check_data.rename(
+        columns={"handheld_cond": "Raw", "logger_cond": "Logger Cond"}
+    )
+    inspection_check_data["Value"] = inspection_check_data.loc[:, "Raw"]
+    inspection_check_data["Comment"] = utils.combine_comments(
+        inspection_check_data[["notes", "cond_notes"]].rename(
+            columns={
+                "notes": "HYDRO",
+                "cond_notes": "COND",
+            }
+        )
+    )
+    inspection_check_data["Changes"] = ""
+    inspection_check_data["Source"] = "INS"
+    inspection_check_data["QC"] = True
+
+    inspection_check_data = inspection_check_data[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Logger Cond",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+
+    return inspection_check_data

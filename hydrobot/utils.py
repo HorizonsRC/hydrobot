@@ -636,3 +636,33 @@ def measurement_datasource_splitter(measurement_name):
     if data_source_name is None:
         data_source_name = item_name
     return item_name, data_source_name
+
+
+def linear_ramp(series: pd.Series, adjustment):
+    """
+    Adjust a series by linearly ramping over the index.
+
+    This might be useful for a sensor losing pressure over time, so recording
+    lower and lower over time.
+
+    This has been made for a timeseries index with numerical series values -
+    no guarantees on behaviour for other cases.
+
+    Parameters
+    ----------
+    series : pd.Series
+        The series to ramp
+    adjustment : numerical
+        The adjustment to apply to the series at the end
+
+    Returns
+    -------
+    pd.Series
+        The series post-ramp
+    """
+    start_value = series.index[0]
+    end_value = series.index[-1]
+    series_change = (
+        adjustment * (series.index - start_value) / (end_value - start_value)
+    )
+    return series + series_change
