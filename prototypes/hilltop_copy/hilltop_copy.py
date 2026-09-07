@@ -1,12 +1,40 @@
 """Write data to a Hilltop file."""
+import re
 from datetime import UTC, datetime
+from pathlib import Path
 
-import numpy as np
 import pandas as pd
 import pythoncom
 import pywintypes
+import whurl
 import win32com.client
 from win32com.client import VARIANT
+
+
+def _data_date_converter(df_row, info):
+    if info == "D":
+        return pd.to_datetime(df_row).to_pydatetime().replace(tzinfo=UTC)
+    else:
+        return df_row
+
+
+def tstype_converter(ts_type: str) -> int:
+    """
+    Convert tstype strings into ints for COM interpretation.
+
+    standard = 1
+    quality = 2
+    check = 3
+    """
+    match ts_type:
+        case "StdSeries":
+            return 1
+        case "StdQualSeries":
+            return 2
+        case "CheckSeries":
+            return 3
+        case _:
+            raise ValueError(f"Unrecognised ts_type: {ts_type}")
 
 
 class ToHilltop:
@@ -28,7 +56,6 @@ class ToHilltop:
         self.vtValues = VARIANT(
             pythoncom.VT_BYREF | pythoncom.VT_ARRAY | pythoncom.VT_VARIANT, []
         )
-        return
 
     def close(self):
         """
@@ -40,62 +67,35 @@ class ToHilltop:
         """
         return self.dput.Close
 
+    def put_data(self, data_source_name, ts_type, item_info, site_name, data):
+        """Insert data wrapper."""
+        data.attrs["timeSeriesType"] = tstype_converter(ts_type)  # time series type
+        data.attrs["featureOfInterest"] = site_name  # Site
+        data.attrs["procedure"] = data_source_name  # Datasource
+        if tstype_converter(ts_type) == 2:
+            # Quality doesn't have item_info normally
+            item_info = ["I"]
+
+        self._put(data, item_info)
+
     # Write a Pandas Frame
     def put_std(self, df):
         """Insert Standard data into Hilltop COM."""
-        if not self.dput.PutNew2(
-            df.attrs["featureOfInterest"],
-            df.attrs["procedure"],
-            df.attrs["timeSeriesType"],
-        ):
-            raise RuntimeError(f"{self.dput.ErrorMsg}")
-        if not df.attrs["timeSeriesType"] == 1:
-            raise ValueError(
-                f"Expected timeSeriesType=1 (Standard data), received timeSeriesType"
-                f"={df.attrs['timeSeriesType']}"
-            )
-
-        for row in df.itertuples():
-            if pd.isna(row.v):
-                self.dput.PutGap()
-                continue
-
-            tm = row.Index.to_pydatetime()
-            tm = tm.replace(tzinfo=UTC)  # Remove the time zone win32com hates it
-            self.vtTime = tm
-            self.vtValue = row.v
-            self.dput.PutSingle(self.vtTime, self.vtValue)
-            continue
-        return
+        df.attrs["timeSeriesType"] = 1
+        self._put(df, ["F"])
 
     def put_qual(self, df):
         """Insert Quality data into hilltop COM."""
-        if not self.dput.PutNew2(
-            df.attrs["featureOfInterest"],
-            df.attrs["procedure"],
-            df.attrs["timeSeriesType"],
-        ):
-            raise RuntimeError(f"{self.dput.ErrorMsg}")
-        if not df.attrs["timeSeriesType"] == 2:
-            raise ValueError(
-                f"Expected timeSeriesType=2 (Quality data), received timeSeriesType"
-                f"={df.attrs['timeSeriesType']}"
-            )
-
-        for row in df.itertuples():
-            if pd.isna(row.v):
-                self.dput.PutGap()
-                continue
-
-            tm = row.Index.to_pydatetime()
-            tm = tm.replace(tzinfo=UTC)  # Remove the time zone win32com hates it
-            self.vtTime = tm
-            self.vtValue = row.v
-            self.dput.PutSingle(self.vtTime, self.vtValue)
-            continue
-        return
+        df.attrs["timeSeriesType"] = 2
+        self._put(df, ["I"])
 
     def put_check(self, df, data_type_list):
+        """Insert check data into hilltop COM."""
+        df.attrs["timeSeriesType"] = 3
+        self._put(df, data_type_list)
+
+    def _put(self, df, data_type_list):
+        """Put data of arbitrary type to Hilltop via COM."""
         """Insert check data into hilltop COM."""
         if not self.dput.PutNew2(
             df.attrs["featureOfInterest"],
@@ -103,11 +103,9 @@ class ToHilltop:
             df.attrs["timeSeriesType"],
         ):
             raise RuntimeError(f"{self.dput.ErrorMsg}")
-        if not df.attrs["timeSeriesType"] == 3:
-            raise ValueError(
-                f"Expected timeSeriesType=3 (Check data), received timeSeriesType"
-                f"={df.attrs['timeSeriesType']}"
-            )
+
+        if df.attrs["timeSeriesType"] not in [1, 2, 3]:
+            raise ValueError(f"Invalid time series value {df.attrs['timeSeriesType']}")
 
         for data_type in data_type_list:
             known_data_types = ["F", "D", "S", "I"]  # float, date, string, integer
@@ -121,97 +119,55 @@ class ToHilltop:
                 f"{len(data_type_list)} data types given and {len(df.columns)} values in the data frame."
             )
 
-        def data_date_converter(data, info):
-            if info == "D":
-                return pd.to_datetime(data).to_pydatetime().replace(tzinfo=UTC)
-            else:
-                return data
-
         for row in df.itertuples():
             tm = row.Index.to_pydatetime()
             tm = tm.replace(tzinfo=UTC)  # Remove the time zone win32com hates it
             self.vtTime = tm
             self.vtValues = [
-                data_date_converter(data, info)
+                _data_date_converter(data, info)
                 for (data, info) in zip(row[1:], data_type_list, strict=True)
             ]
             self.dput.PutArray(self.vtTime, self.vtValues)
-            continue
-        return
+
+
+def read_hilltop_xml(xml):
+    """Parse xml to turn it into write instructions for writing to hts."""
+    with open(xml) as file:
+        xml_content = file.read()
+    root = whurl.schemas.responses.GetDataResponse.from_xml(xml_content)
+    outputs = []
+    for meas in root.measurement:
+        meas_dict = {
+            "data_source_name": meas.data_source.name,
+            "ts_type": meas.data_source.ts_type,
+            "item_info": [m.item_format for m in meas.data_source.item_info],
+            "site_name": meas.site_name,
+            "data": meas.data.timeseries,
+        }
+        outputs.append(meas_dict)
+    return outputs
+
+
+def read_hilltop_dsn(dsn):
+    """Parse dsn to turn it into write instructions for writing to hts."""
+    with open(dsn) as file:
+        dsn_text = file.read()
+    regex = re.compile(r'File\d*="(.*)"')
+    source_file = regex.findall(dsn_text)
+    outputs = []
+    for path in source_file:
+        print(path)
+        if Path(path).suffix == ".dsn":
+            outputs.append(read_hilltop_dsn(path))
+        else:
+            outputs.append(read_hilltop_xml(path))
+    return outputs
 
 
 if __name__ == "__main__":
     htsfile = ToHilltop(r"output_dump\tester.hts")
-
-    std_df = pd.DataFrame(
-        [
-            {
-                "t": pd.to_datetime("20240303T10:00:00"),
-                "v": 41,
-            },
-            {
-                "t": pd.to_datetime("20240303T10:05:00"),
-                "v": np.nan,
-            },
-            {
-                "t": pd.to_datetime("20240303T10:10:00"),
-                "v": 40,
-            },
-            {
-                "t": pd.to_datetime("20240303T10:15:00"),
-                "v": 42,
-            },
-        ]
-    )
-    std_df.attrs["featureOfInterest"] = "Example Site The Second"  # Site
-    std_df.attrs["procedure"] = "Water Level"  # Datasource
-    std_df.attrs["timeSeriesType"] = 1  # 1 = Standard Data
-    std_df = std_df.set_index(std_df.t).drop(columns="t")
-
-    qual_df = pd.DataFrame(
-        [
-            {
-                "t": pd.to_datetime("20240303T10:00:00"),
-                "v": 400,
-            },
-            {
-                "t": pd.to_datetime("20240303T10:10:00"),
-                "v": 600,
-            },
-        ]
-    )
-    qual_df.attrs["featureOfInterest"] = "Example Site The Second"  # Site
-    qual_df.attrs["procedure"] = "Water Level"  # Datasource
-    qual_df.attrs["timeSeriesType"] = 2  # 2 = Quality Data
-    qual_df = qual_df.set_index(qual_df.t).drop(columns="t")
-
-    check_df = pd.DataFrame(
-        [
-            {
-                "t": pd.to_datetime("20240303T10:02:00"),  # Check time
-                "v1": 42,  # Check value
-                "v2": "20240303T10:02:00",  # Recorder time
-                "v3": 43,
-                "v4": "This is a comment",  # Comment
-            },
-            {
-                "t": pd.to_datetime("20240303T10:13:00"),  # Check time
-                "v1": 45,  # Check value
-                "v2": "20240303T10:13:00",  # Recorder time
-                "v3": 46,
-                "v4": "This is another comment",  # Comment
-            },
-        ]
-    )
-    check_df.attrs["featureOfInterest"] = "Example Site The Second"  # Site
-    check_df.attrs["procedure"] = "Water Level"  # Datasource
-    check_df.attrs["timeSeriesType"] = 3  # 3 = Check Data
-    check_df = check_df.set_index(check_df.t).drop(columns="t")
-
-    check_data_types = ["I", "D", "I", "S"]
-
-    htsfile.put_std(std_df)
-    htsfile.put_qual(qual_df)
-    htsfile.put_check(check_df, check_data_types)
-
+    qwe = read_hilltop_dsn(r".\output_dump\hydrobot_dsn.dsn")
+    asd = read_hilltop_xml(r".\output_dump\processed_rf.xml")
+    for q in qwe:
+        htsfile.put_data(**q)
     htsfile.close()
