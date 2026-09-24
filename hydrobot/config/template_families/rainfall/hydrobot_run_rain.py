@@ -12,10 +12,18 @@ from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 #######################################################################################
 # Manual interventions
 #######################################################################################
+# Replace this check with a check derived from LTC0 (e.g. check gauge blocked)
 synthetic_checks = []
+# Ignore this check (e.g. inspection did not empty gauge)
 checks_to_manually_ignore = []
+# Replace section of data with backup scada (e.g. blocked scada gauge)
 backup_replacement_times = []
+# Remove data completely (e.g. interferance causing spurious data)
 data_sections_to_delete = []
+# Nullify data but maintain point (e.g. manually removing manual tips)
+data_sections_to_zero = []
+# Do no automatic filtering of manual tips for this inspection arrival time
+manual_tip_filters_to_skip = []
 
 #######################################################################################
 # Reading configuration from config.yaml
@@ -28,6 +36,13 @@ for bad_section in data_sections_to_delete:
         & (data.standard_data.index < bad_section[1]),
         "Value",
     ] = np.nan
+
+for bad_section in data_sections_to_zero:
+    data.standard_data.loc[
+        (data.standard_data.index > bad_section[0])
+        & (data.standard_data.index < bad_section[1]),
+        "Value",
+    ] = 0
 
 #######################################################################################
 # Importing external check data
@@ -59,7 +74,13 @@ data.check_data.index = data.check_data.index.round("s")
 rainfall_inspections["primary_manual_tips"] = (
     rainfall_inspections["primary_manual_tips"].fillna(0).astype(int)
 )
-data.filter_manual_tips(rainfall_inspections)
+
+manual_tip_inspections = rainfall_inspections[
+    ~rainfall_inspections.arrival_time.isin(
+        [pd.to_datetime(d) for d in manual_tip_filters_to_skip]
+    )
+]
+data.filter_manual_tips(manual_tip_inspections)
 
 data.clip()
 
