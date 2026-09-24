@@ -18,7 +18,7 @@ synthetic_checks = []
 checks_to_manually_ignore = []
 # Replace section of data with backup scada (e.g. blocked scada gauge)
 backup_replacement_times = []
-# Remove data completely (e.g. interferance causing spurious data)
+# Remove data completely (e.g. interference causing spurious data)
 data_sections_to_delete = []
 # Nullify data but maintain point (e.g. manually removing manual tips)
 data_sections_to_zero = []
