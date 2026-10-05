@@ -53,6 +53,8 @@ for false_check in series_rounder(
 ).index:
     data.check_data = data.check_data.drop(pd.Timestamp(false_check))
 
+data.check_data.index = data.check_data.index.round("s")
+
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################

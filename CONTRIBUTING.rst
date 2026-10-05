@@ -15,7 +15,7 @@ Types of Contributions
 Report Bugs
 ~~~~~~~~~~~
 
-Report bugs at https://github.com/nicmostert/hydrobot/issues.
+Report bugs at https://github.com/HorizonsRC/hydrobot/issues.
 
 If you are reporting a bug, please include:
 

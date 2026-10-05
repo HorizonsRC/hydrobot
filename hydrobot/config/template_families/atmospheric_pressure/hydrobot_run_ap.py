@@ -58,6 +58,9 @@ data.check_data = pd.concat([i for i in check_data if not i.empty])
 data.check_data = data.check_data[
     ~data.check_data.index.duplicated(keep="first")
 ].sort_index()
+
+data.check_data.index = data.check_data.index.round("s")
+
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################

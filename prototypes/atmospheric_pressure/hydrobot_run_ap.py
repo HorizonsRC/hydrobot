@@ -67,6 +67,9 @@ if len(check_data_list) > 0:
 data.check_data = data.check_data[
     ~data.check_data.index.duplicated(keep="first")
 ].sort_index()
+
+data.check_data.index = data.check_data.index.round("s")
+
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################

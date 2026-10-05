@@ -2,6 +2,15 @@
 History
 =======
 
+0.9.15 (2026-08-14)
+----------------------------------
+* Added dsn audit copy, which maintains the audit trail when copying from a dsn
+* Added Conductivity
+* Added "linear ramp" function
+* Updated readme to be somewhat accurate
+* Fixed error with millisecond precision check dates
+* Added capability to use alternative sites data_info (useful for cases where there is no data yet)
+
 0.9.14 (2026-04-17)
 ----------------------------------
 * Added Groundwater
@@ -24,7 +33,7 @@ History
 * Maybe fixed compatibility issues with python versions > 3.11?
 * Start of poetry.lock framework
 * ODBC driver update - now requires version 18
-* Added buffer for DO inspection end date (where WT/AP inspection is shortly after last
+* Added buffer for DO inspection end date (where WT/AP inspection is shortly after last DO inspection)
 
 0.9.11 (2025-12-12)
 ----------------------------------

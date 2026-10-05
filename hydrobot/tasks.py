@@ -300,7 +300,7 @@ def create_single_hydrobot_batch(
 
 
 def create_mass_hydrobot_batches(
-    home_dir: str, base_dir: str, dict_list: [dict], create_directory=False
+    home_dir: str, base_dir: str, dict_list: list[dict], create_directory=False
 ):
     """
     Create many hydrobot batches via create_single_hydrobot_batch.

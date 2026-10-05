@@ -6,8 +6,9 @@ base_url: http://hilltopdev.horizons.govt.nz/
 standard_hts_filename: RawLoggerNet.hts
 check_hts_filename: HydrobotCheckData.hts
 data_family: conductivity
-standard_measurement_name: Conductivity
-check_measurement_name: Conductivity Check
+standard_measurement_name: Conductivity Low Range (T Comp) [Conductivity Low Range
+  (T Comp)]
+check_measurement_name: Conductivity Check [Conductivity Low Range (T Comp)]
 frequency:
 export_file_name: processed_cond.xml
 defaults:
@@ -30,5 +31,5 @@ inspection_expiry:
 archive_base_url: http://hilltopdev.horizons.govt.nz/
 archive_standard_hts_filename: Archive.hts
 archive_check_hts_filename: Archive.hts
-archive_standard_measurement_name: Conductivity
-depth: 500
+archive_standard_measurement_name: Conductivity Low Range (T Comp) [Conductivity Low
+  Range (T Comp)]

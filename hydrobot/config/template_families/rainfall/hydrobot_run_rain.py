@@ -46,6 +46,8 @@ rainfall_inspections = source.rainfall_inspections(
     data.from_date, data.to_date, data.site
 )
 
+data.check_data.index = data.check_data.index.round("s")
+
 #######################################################################################
 # Common auto-processing steps
 #######################################################################################

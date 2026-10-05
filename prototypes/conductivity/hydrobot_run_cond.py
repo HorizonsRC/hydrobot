@@ -17,6 +17,9 @@ data_sections_to_delete = []
 #######################################################################################
 data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_conductivity.yaml")
 
+# Using a site that is known to have conductivity item info
+data.set_check_item_info_from_parameters(site="Amons")
+
 for bad_section in data_sections_to_delete:
     data.standard_data.loc[
         (data.standard_data.index > bad_section[0])
@@ -40,21 +43,45 @@ if data.depth:
         site=source.depth_profile_site_name(data.site),
     )
     depth_check = source.convert_check_series_to_check_frame(depth_check, "DPF")
+    data.check_data = pd.concat(
+        [i for i in [depth_check, data.check_data] if not i.empty]
+    )
+    data.check_data = data.check_data[
+        ~data.check_data.index.duplicated(keep="first")
+    ].sort_index()
 else:
-    raise ValueError("depth required for this measurement")
+    soe_check = series_rounder(
+        source.soe_check_data(
+            data,
+            "Field Conductivity (HRC)",
+        ),
+        "1min",
+    )
+    inspections = source.conductivity_hydro_check_data(
+        data.from_date, data.to_date, data.site
+    )
 
-check_data = [depth_check]
+    check_data = [soe_check, inspections]
+    if [i for i in check_data if not i.empty]:
+        data.check_data = pd.concat([i for i in check_data if not i.empty])
+        data.check_data = data.check_data[
+            ~data.check_data.index.duplicated(keep="first")
+        ].sort_index()
+    else:
+        # no check
+        from hydrobot.processor import EMPTY_CHECK_DATA
 
-data.check_data = pd.concat([i for i in check_data if not i.empty])
-data.check_data = data.check_data[
-    ~data.check_data.index.duplicated(keep="first")
-].sort_index()
+        data.check_data = EMPTY_CHECK_DATA.copy()
+
+    data.check_data = data.check_data.loc[~data.check_data.Value.isna()]
 
 # Any manual removals
 for false_check in series_rounder(
     pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore)), "1min"
 ).index:
     data.check_data = data.check_data.drop(pd.Timestamp(false_check))
+
+data.check_data.index = data.check_data.index.round("s")
 
 #######################################################################################
 # Common auto-processing steps
@@ -89,6 +116,7 @@ data.standard_data["Value"] = trim_series(
 #######################################################################################
 # Export all data to XML file
 #######################################################################################
+data.check_data.loc[data.check_data.Value.isna(), "Value"] = -1
 data.data_exporter()
 
 #######################################################################################
