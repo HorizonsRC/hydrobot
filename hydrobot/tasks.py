@@ -351,7 +351,7 @@ def create_mass_hydrobot_batches(
 
 def make_dsn(file_list, file_path, sub_dsn_number=0):
     """Make the hilltop dsn."""
-    path_sep = "\\"
+    path_sep = os.sep
     if sub_dsn_number == 0:
         dsn_name = file_path
     else:

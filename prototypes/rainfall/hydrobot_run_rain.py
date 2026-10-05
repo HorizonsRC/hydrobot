@@ -38,10 +38,12 @@ data.check_data = source.rainfall_check_data(data.from_date, data.to_date, data.
 # data.check_data["Recorder Total"] = data.check_data.Value
 
 # Any manual removals
+# TODO
 for false_check in utils.series_rounder(
     pd.Series(index=pd.DatetimeIndex(checks_to_manually_ignore))
 ).index:
     data.check_data = data.check_data.drop(pd.Timestamp(false_check))
+
 rainfall_inspections = source.rainfall_inspections(
     data.from_date, data.to_date, data.site
 )

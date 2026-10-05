@@ -296,7 +296,7 @@ class Processor:
             "item_format": "1",
         }
         self.check_data_source_info = {
-            "ts_type": "CheckSeries",
+            "ts_type": "StdCheckSeries",
             "data_type": "SimpleTimeSeries",
             "interpolation": "Discrete",
             "item_format": "45",
@@ -673,7 +673,7 @@ class Processor:
             standard_measurement_name,
             from_date,
             to_date,
-            tstype="Standard",
+            tstype="StdSeries",
         )
 
         response_found = False
@@ -725,7 +725,7 @@ class Processor:
                     standard_item_info["units"] = response_measurement.data_source.item_info[0].units
                     standard_item_info["number_format"] = response_measurement.data_source.item_info[
                         0
-                    ].number_format
+                    ].format
             if not response_found:
                 raise ValueError(
                     f"Standard Data Not Found under name "
@@ -872,6 +872,7 @@ class Processor:
         provided parameters. It retrieves data using the `data_acquisition.get_data`
         function and updates the Quality Series in the instance. The data is parsed and
         formatted according to the item_info in the data source.
+
 
         Examples
         --------
@@ -1062,62 +1063,62 @@ class Processor:
             check_measurement_name,
             from_date,
             to_date,
-            tstype="Check",
+            tstype="CheckSeries",
         )
         raw_check_data = EMPTY_CHECK_DATA.copy()
         raw_check_response = None
         response_found = False
         date_format = "Calendar"
-        if response is None or len(response_list) == 0:
+        if response is None:
             self.report_processing_issue(
                 start_time=from_date,
                 end_time=to_date,
-                series_type="Check",
+                series_type="CheckSeries",
                 message_type="error",
                 comment="No check data found within specified date range.",
                 code="MCD",
             )
         else:
             data_source_options = []
-            for blob in blob_list:
-                data_source_options += [blob.data_source.name]
+            for meas in response.measurements:
+                data_source_options += [meas.data_source.name]
                 if (
-                    blob.data_source.name
+                    meas.data_source.name
                     in [check_data_source_name, self.standard_data_source_name]
-                ) and (blob.data_source.ts_type == "CheckSeries"):
-                    if blob_found:
+                ) and (meas.data_source.ts_type == "CheckSeries"):
+                    if response_found:
                         # Already found something, duplicated CheckSeries
                         raise ValueError(
-                            f"Multiple CheckSeries found. Just found: {blob}, "
-                            f"all candidates are: {blob_list}."
+                            f"Multiple CheckSeries found. Just found: {meas}, "
+                            f"all candidates are: {response.measurements}."
                         )
                     # Found it. Now we extract it.
-                    blob_found = True
+                    response_found = True
 
-                    date_format = blob.data.date_format
+                    date_format = meas.data.date_format
 
                     # This could be a pd.Series
-                    if blob.data.timeseries is not None:
-                        raw_check_blob = blob
-                        raw_check_data = blob.data.timeseries
-                        check_item_info["item_name"] = blob.data_source.item_info[
+                    if meas.data.timeseries is not None:
+                        raw_check_meas = meas
+                        raw_check_data = meas.data.timeseries
+                        check_item_info["item_name"] = meas.data_source.item_info[
                             0
                         ].item_name
-                        check_item_info["item_format"] = blob.data_source.item_info[
+                        check_item_info["item_format"] = meas.data_source.item_info[
                             0
                         ].item_format
-                        check_item_info["divisor"] = blob.data_source.item_info[
+                        check_item_info["divisor"] = meas.data_source.item_info[
                             0
                         ].divisor
-                        check_item_info["units"] = blob.data_source.item_info[0].units
-                        check_item_info["number_format"] = blob.data_source.item_info[
+                        check_item_info["units"] = meas.data_source.item_info[0].units
+                        check_item_info["number_format"] = meas.data_source.item_info[
                             0
-                        ].number_format
-            if not blob_found:
+                        ].format
+            if not response_found:
                 self.report_processing_issue(
                     start_time=from_date,
                     end_time=to_date,
-                    series_type="Check",
+                    series_type="CheckSeries",
                     message_type="error",
                     comment=f"Check data {check_data_source_name} not found in server "
                     f"response. Available options are {data_source_options}",
@@ -1137,9 +1138,9 @@ class Processor:
                 else:
                     raw_check_data.index = pd.to_datetime(raw_check_data.index)
 
-            if not raw_check_data.empty and raw_check_blob is not None:
+            if not raw_check_data.empty and raw_check_meas is not None:
                 # TODO: Maybe this should happen in the parser?
-                for i, item in enumerate(raw_check_blob.data_source.item_info):
+                for i, item in enumerate(raw_check_meas.data_source.item_info):
                     fmt = item.item_format
                     div = item.divisor
                     col = raw_check_data.iloc[:, i]
@@ -1154,7 +1155,7 @@ class Processor:
                                     :, i
                                 ] = utils.mowsecs_to_datetime_index(col)
                             else:
-                                raw_check_data.iloc[:, i] = col.astype(pd.Timestamp)
+                                raw_check_data.iloc[:, i] = pd.to_datetime(col)
                     elif fmt == "S":
                         raw_check_data.iloc[:, i] = col.astype(str)
 
@@ -2017,6 +2018,7 @@ class Processor:
             case "xml":
                 if self.check_data.empty or self.check_data.Value.isna().all():
                     check = False
+
                 blob_list = self.to_xml_data_structure(
                     standard=standard, quality=quality, check=check
                 )
@@ -2362,7 +2364,7 @@ class Processor:
             to_date = pd.Timestamp(self.to_date)
         profiles = data_acquisition.get_depth_profiles(
             self._base_url,
-            "HydrobotCheckData.hts",
+            "HydrobotCheckData.hts", # Agnosticise
             site,
             measurement,
             from_date,

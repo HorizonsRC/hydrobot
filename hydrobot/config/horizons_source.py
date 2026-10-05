@@ -285,6 +285,7 @@ def rainfall_check_data(from_date, to_date, site):
     check_data["Value"] = check_data.loc[:, "Raw"]
     check_data["Time"] = pd.to_datetime(check_data["Recorder Time"], format="%H:%M:%S")
     check_data["Changes"] = ""
+    # TODO: INS change to something else. Four letter codes?
     check_data["Source"] = "INS"
     check_data["QC"] = True
 

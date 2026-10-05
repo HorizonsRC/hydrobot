@@ -1,9 +1,9 @@
 # Fields to fill out
-analyst_name: script_default
-site: Whanganui at Te Rewa
+analyst_name: Nic
+site: Lake Horowhenua at Buoy
 constant_check_shift: 0
-from_date:
-to_date:
+from_date: 2025-12-02 11:45
+to_date: 2026-08-20 10:51
 
 # Hilltop Server Configuration
 base_url: http://hilltopdev.horizons.govt.nz/
@@ -11,7 +11,7 @@ standard_hts_filename: RawLoggerNet.hts
 check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
-data_family: Atmospheric_Pressure
+data_family: atmospheric_pressure
 standard_measurement_name: Atmospheric Pressure
 check_measurement_name: Check Pressure [Atmospheric Pressure]
 frequency:

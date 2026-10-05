@@ -9,14 +9,21 @@ from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 from hydrobot.utils import series_rounder
 
-data_sections_to_delete = []
+#######################################################################################
+# Manual interventions
+#######################################################################################
+synthetic_checks = []
+checks_to_manually_ignore = []
+backup_replacement_times = []
+data_blocks_to_delete = []
+
 
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
 data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_ap.yaml")
 
-for bad_section in data_sections_to_delete:
+for bad_section in data_blocks_to_delete:
     data.standard_data.loc[
         (data.standard_data.index > bad_section[0])
         & (data.standard_data.index < bad_section[1]),
@@ -49,12 +56,14 @@ soe_check = series_rounder(
     ),
     "1min",
 )
-check_data = [
+check_data_list = [
     atmospheric_pressure_inspections,
     soe_check,
 ]
 
-data.check_data = pd.concat([i for i in check_data if not i.empty])
+check_data_list = [i for i in check_data_list if not i.empty]
+if len(check_data_list) > 0:
+    data.check_data = pd.concat(check_data_list)
 data.check_data = data.check_data[
     ~data.check_data.index.duplicated(keep="first")
 ].sort_index()

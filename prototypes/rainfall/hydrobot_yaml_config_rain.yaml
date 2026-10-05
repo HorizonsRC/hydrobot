@@ -1,8 +1,8 @@
 # Fields to fill out
 analyst_name: script_default
 site: Ahuahu at Te Tuhi Junction
-from_date:
-to_date:
+from_date: 2025-12-10 12:12
+to_date: 2026-09-15 14:20
 
 # Hilltop Server Configuration
 base_url: http://hilltopdev.horizons.govt.nz/

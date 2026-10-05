@@ -6,8 +6,7 @@ import requests
 import xmltodict
 import yaml
 from whurl.client import HilltopClient
-# from hilltoppy import Hilltop
-# from hilltoppy.utils import build_url, get_hilltop_xml
+from whurl.schemas.requests import GetDataRequest
 #
 # from hydrobot.data_structure import parse_xml
 
@@ -117,7 +116,7 @@ def get_server_dataframe(
     measurement,
     from_date,
     to_date,
-    tstype="Standard",
+    tstype="StdSeries",
 ) -> pd.DataFrame:
     """
     Call hilltop server and transform to pd.DataFrame.
@@ -152,19 +151,34 @@ def get_server_dataframe(
     KeyError
         if there is no measurement for the given parameters
     """
-    url = build_url(
-        base_url,
-        hts,
-        "GetData",
+
+    req = GetDataRequest(
+        base_url=base_url,
+        hts_endpoint=hts,
         site=site,
         measurement=measurement,
-        from_date=from_date,
-        to_date=to_date,
-        tstype=tstype,
+        from_datetime=from_date,
+        to_datetime=to_date,
+        ts_type=tstype,
     )
+    url = req.gen_url()
 
-    root = get_hilltop_xml(url)
+    with HilltopClient(
+        base_url=base_url,
+        hts_endpoint=hts
+    ) as client:
+        resp = client.get_data(
+            site=site,
+            measurement=measurement,
+            from_datetime=from_date,
+            to_datetime=to_date,
+            ts_type=tstype,
+        )
+
+
     data_list = []
+    if resp is not None:
+        print(resp)
     if root.find("Measurement") is None:
         raise KeyError(f"No measurement at the url: {url}")
 

@@ -33,6 +33,7 @@ def initialise_hydrobot_from_yaml(yaml_path: str):
             f"missing. Available keys are: {processing_parameters.keys()}"
         )
     family = processing_parameters["data_family"]
+    #TODO
     if family not in DATA_FAMILY_DICT:
         raise KeyError(
             f"Attempted to create Hydrobot processor from {yaml_path}, "
