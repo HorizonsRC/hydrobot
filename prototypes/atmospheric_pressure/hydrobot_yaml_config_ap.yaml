@@ -5,10 +5,12 @@ constant_check_shift: 0
 from_date: 2025-12-02 11:45
 to_date: 2026-08-20 10:51
 
-# Hilltop Server Configuration
-base_url: http://hilltopdev.horizons.govt.nz/
-standard_hts_filename: RawLoggerNet.hts
-check_hts_filename: HydrobotCheckData.hts
+# Data Provider Configuration
+provider: horizons
+provider_params:
+    base_url: http://hilltopdev.horizons.govt.nz/
+    standard_hts_filename: RawLoggerNet.hts
+    check_hts_filename: HydrobotCheckData.hts
 
 # Data Source Configuration
 data_family: atmospheric_pressure

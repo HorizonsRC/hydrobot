@@ -8,6 +8,8 @@ from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
 from hydrobot.utils import series_rounder
+from hydrobot.io import read_yaml_config
+from hydrobot.providers.factory import build_provider
 
 #######################################################################################
 # Manual interventions
@@ -21,7 +23,15 @@ data_blocks_to_delete = []
 #######################################################################################
 # Reading configuration from config.yaml
 #######################################################################################
-data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_ap.yaml")
+# data, ann = initialise_hydrobot_from_yaml("hydrobot_yaml_config_ap.yaml")
+
+# Read the config
+config = read_yaml_config("hydrobot_yaml_config_ap.yaml")
+
+# Construct the provider
+data_provider = build_provider(config)
+
+processor =
 
 for bad_section in data_blocks_to_delete:
     data.standard_data.loc[
