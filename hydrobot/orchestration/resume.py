@@ -21,7 +21,7 @@ def resume_point(std: pd.DataFrame, qual: pd.Series) -> pd.Timestamp | None:
     ----------
     std : DataFrame
         Standard series fetched with quality shown. Indexed by timestamp,
-        with a ``quality`` column (NaN where a point has no quality).
+        with a ``Quality`` column (NaN where a point has no quality).
     qual : Series
         The quality series, indexed by timestamp.
 
@@ -33,7 +33,9 @@ def resume_point(std: pd.DataFrame, qual: pd.Series) -> pd.Timestamp | None:
     candidates = []
 
     if not std.empty:
-        # Hilltop Quality Codes are from 0 - 600
+        # Quality code 0 means unknown/unprocessed; NaN means no value at all.
+        # Neither counts as processed.
+        # See QUALITY_CODES.rst for more information.
         has_quality = std["Quality"].fillna(0) > 0
         with_quality = std.index[has_quality]
         if len(with_quality):
