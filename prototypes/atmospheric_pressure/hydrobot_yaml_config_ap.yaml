@@ -11,6 +11,9 @@ provider_params:
     base_url: http://hilltopdev.horizons.govt.nz/
     standard_hts_filename: RawLoggerNet.hts
     check_hts_filename: HydrobotCheckData.hts
+    archive_base_url: http://hilltopdev.horizons.govt.nz/
+    archive_standard_hts_filename: Archive.hts
+    archive_check_hts_filename: Archive.hts
 
 # Data Source Configuration
 data_family: atmospheric_pressure
@@ -45,6 +48,3 @@ inspection_expiry:
 
 provisional_wq_measurement_name: Field Baro Pressure (HRC)
 
-archive_base_url: http://hilltopdev.horizons.govt.nz/
-archive_standard_hts_filename: Archive.hts
-archive_check_hts_filename: Archive.hts

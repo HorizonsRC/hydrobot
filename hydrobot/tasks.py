@@ -6,7 +6,10 @@ import os
 import platform
 import re
 import shutil
+from copy import deepcopy
+from typing import Any
 from datetime import datetime
+import pandas as pd
 
 import ruamel.yaml
 
@@ -289,7 +292,7 @@ def create_single_hydrobot_batch(
     target_dir = [base_dir, site, str(batch_no)]
     if depth is not None:
         depth_unit = data_sources.DATA_FAMILY_DICT[data_family]["depth_unit"]
-        target_dir.append(str(depth) + depth_unit)
+        target_dir.append(str(depth) + str(depth_unit))
         kwargs["depth"] = int(depth)
     target_dir = str(os.path.join(*target_dir))
     os.makedirs(target_dir, exist_ok=False)

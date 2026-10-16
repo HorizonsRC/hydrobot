@@ -83,7 +83,3 @@ class HorizonsProvider(DataProvider):
             metadata=metadata,
         )
 
-    def get_levels(
-        self,
-        site: str,
-

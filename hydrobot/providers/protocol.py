@@ -26,3 +26,14 @@ class DataProvider(Protocol):
     ) -> CheckData:
         """Return check data and associated metadata."""
         ...
+
+    def last_processed_time(
+        self,
+        site: str,
+        measurement: str
+    ) -> datetime | None:
+        """Return the timestamp from which new processing should resume.
+
+        None if this series has never been archived.
+        """
+        ...
