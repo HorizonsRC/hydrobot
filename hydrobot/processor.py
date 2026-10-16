@@ -2539,3 +2539,64 @@ class Processor:
                         self._check_data_format_titles = [
                             a.item_name for a in blob.data_source.item_info
                         ]
+
+    def use_synthetic_data_from_alternative_site(
+        self,
+        alt_site,
+        from_date,
+        to_date,
+        multiplier=1,
+        offset=0,
+        alt_measurement=None,
+        alt_datasource=None,
+    ):
+        """
+        Replace standard data with synthetic data from another site.
+
+        Note: does not yet modify the quality codes automatically
+
+        Parameters
+        ----------
+        alt_site : str
+            Site to get alterative data from
+        from_date : pd.Timestamp or valid input to pd.Timestamp()
+            Start of period to replace
+        to_date : pd.Timestamp or valid input to pd.Timestamp()
+            End of period ot replace
+        multiplier : numeric (optional)
+            Multiply data by this factor (default 1, i.e. no change)
+        offset : numeric (optional)
+            Add this value to data (default 0, i.e. no change)
+        alt_measurement : str (optional)
+            Measurement name to use - will use original measurement name if none provided
+        alt_datasource : str (optional)
+            Data Source name to use - will use original data source name if none provided
+
+        Returns
+        -------
+        None
+            modifies the standard data
+        """
+        alt_data = self.import_standard(
+            standard_hts_filename=None,
+            site=alt_site,
+            standard_measurement_name=alt_measurement,
+            standard_data_source_name=alt_datasource,
+            standard_item_info={},
+            standard_data=None,
+            from_date=from_date,
+            to_date=to_date,
+            frequency=None,
+            base_url=None,
+            infer_frequency=False,
+        )
+        alt_data.Value *= multiplier
+        alt_data.Value += offset
+
+        self.standard_data.loc[
+            (self.standard_data.index > pd.Timestamp(from_date))
+            & (self.standard_data.index < pd.Timestamp(to_date)),
+            "Value",
+        ] = np.nan
+        self.standard_data = pd.concat([self.standard_data, alt_data])
+        self.standard_data = self.standard_data.sort_index()
