@@ -17,15 +17,15 @@ class DataProvider(Protocol):
         """Return standard data and associated metadata."""
         ...
 
-    def get_check(
-        self,
-        site: str,
-        measurement: str,
-        from_date: datetime,
-        to_date: datetime,
-    ) -> CheckData:
-        """Return check data and associated metadata."""
-        ...
+    # def get_check(
+    #     self,
+    #     site: str,
+    #     measurement: str,
+    #     from_date: datetime,
+    #     to_date: datetime,
+    # ) -> CheckData:
+    #     """Return check data and associated metadata."""
+    #     ...
 
     def last_processed_time(
         self,
