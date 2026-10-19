@@ -1,6 +1,11 @@
 from datetime import datetime
 from typing import Protocol
-from hydrobot.providers.types import CheckData, StandardData, DataProviderError
+from hydrobot.providers.types import (
+    CheckData,
+    StandardData,
+    DataProviderError,
+    SiteInfo,
+)
 from hydrobot.providers.protocol import DataProvider
 from whurl.client import HilltopClient
 from whurl.schemas.requests import GetDataRequest
@@ -16,6 +21,8 @@ class HorizonsProviderConfig(BaseModel):
     archive_base_url: str | None = None
     archive_standard_hts_filename: str | None = None
     archive_check_hts_filename: str | None = None
+    # Which Hilltop SiteInfo fields holds the site's short code at Horizons.
+    site_code_field: str = "SecondSynonym"
 
 class HorizonsProvider:
     """Hilltop-backed provider for Horizons.
@@ -38,6 +45,7 @@ class HorizonsProvider:
             base_url=config.base_url,
             hts_endpoint=config.check_hts_filename,
         )
+        self.site_code_field = config.site_code_field
         self.archive_client = None
         if config.archive_base_url and config.archive_standard_hts_filename:
             self.archive_client = HilltopClient(
@@ -134,6 +142,34 @@ class HorizonsProvider:
         result = resume_point(std, qual)
 
         return None if result is None else result.to_pydatetime()
+
+    def get_site_info(self, site: str) -> SiteInfo:
+        """Return site info, with the short code read from Hilltop's SiteInfo.
+
+        Which SiteInfo field holds the code is Horizons-specific, so it is
+        configurable (``site_code_field``, default "SecondSynonym").
+        """
+        with self.client:
+            response = self.client.get_site_info(site=site)
+
+        matches = [s for s in response.site if s.name == site]
+        if len(matches) != 1:
+            raise DataProviderError(
+                f"Expected exactly one SiteInfo entry for {site!r}; "
+                f"got {len(matches)}."
+            )
+
+        info = matches[0].info
+
+        code = info.get(self.site_code_field)
+        if code is None or not str(code).strip():
+            raise DataProviderError(
+                f"SiteInfo for {site!r} has no usable {self.site_code_field!r} "
+                f"field. Fields available: {sorted(info)}."
+            )
+        return SiteInfo(code=str(code).strip(), metadata=info)
+
+
 
 def _timeseries(response, site: str, measurement: str) -> pd.DataFrame:
     """The single matching timeseries in a response; empty if none."""

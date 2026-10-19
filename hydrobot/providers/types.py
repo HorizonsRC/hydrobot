@@ -19,3 +19,13 @@ class CheckData(BaseModel):
 
     data: pd.DataFrame
     metadata: dict[str, Any] = {}
+
+
+class SiteInfo(BaseModel):
+    """What hydrobot needs to know about a site, whatever the data source."""
+
+    # Short code for the site (e.g. "TCO"), used in file names. Where a
+    # council stores it is the provider's business.
+    code: str
+    # Everything else the source returned, unprocessed, for later use.
+    metadata: dict[str, Any] = {}

@@ -20,6 +20,7 @@ from datetime import datetime
 from typing import Protocol, runtime_checkable
 
 from hydrobot.orchestration.expansion import RunConfig, expand_layers
+from hydrobot.providers.types import SiteInfo
 from hydrobot.providers.protocol import DataProvider
 
 # How dates are written in run configs: hyman-readable, to the minute
@@ -27,22 +28,28 @@ DATE_FORMAT = "%Y-%m-%d %H:%M"
 
 
 @runtime_checkable
-class SupportsLastProcessedTime(Protocol):
-    """The ONE thing this module needs from a provider.
+class ResolveProvider(Protocol):
+    """What resolving needs from a provider (and nothing more).
 
-    Resolving only ever asks "where did processing last get to?". Asking for
-    the whole DataProvider would make this module depend on methods it never
-    calls (get_standard, get_check, ...), and would force every test fake to
-    stub them all. Any full DataProvider satisfies this automatically, because
-    it has this method; so does a tiny fake test provider.
+    Resolving asks two questions: "where did processing last get to?" and
+    "what is this site's code?". Asking for the whole DataProvider would make
+    this module depend on methods it never calls (get_standard, ...), and
+    would force every test fake to stub them all. Any full DataProvider
+    satisfies this automatically, because it has both methods; so does a tiny
+    test fake.
     """
+
     def last_processed_time(self, site: str, measurement: str) -> datetime | None:
         """When processing should resume, or None if never archived. """
         ...
 
+    def get_site_info(self, site: str) -> SiteInfo:
+        """Information about a site, including its short code."""
+        ...
+
 def fill_run_config(
     run: RunConfig,
-    provider: SupportsLastProcessedTime,
+    provider: ResolveProvider,
     *,
     now: datetime
 ) -> RunConfig:
@@ -88,6 +95,9 @@ def fill_run_config(
     """
     filled = copy.deepcopy(run)
 
+    if filled.get("site_code") is None:
+        filled["site_code"] = provider.get_site_info(filled["site"]).code
+
     if filled.get("to_date") is None:
         filled["to_date"] = now.strftime(DATE_FORMAT)
 
@@ -110,7 +120,7 @@ def fill_run_config(
 
 def resolve(
     entry: RunConfig,
-    provider: SupportsLastProcessedTime,
+    provider: ResolveProvider,
     *,
     now: datetime
 ) -> list[RunConfig]:

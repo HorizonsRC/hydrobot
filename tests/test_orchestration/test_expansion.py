@@ -141,3 +141,16 @@ def test_layers_of_one_matches_single_layer():
     a = expand_layers({"layers": [500], "layer_expansion_template": tmpl})
     b = expand_layers({"layer": 500, "layer_expansion_template": tmpl})
     assert a == b
+
+
+def test_template_can_build_a_layer_label_for_paths():
+    # The folder and file name of a layered run use a "layer_label", and the
+    # template is how it gets made: no special code, just another key. Here
+    # a depth family writes -500mm; a family with another kind of layer would
+    # use a different template.
+    entry = {
+        "layers": [500, 1000],
+        "layer_expansion_template": {"layer_label": "-{layer}mm"},
+    }
+    assert [r["layer_label"] for r in expand_layers(entry)] == ["-500mm", "-1000mm"]
+

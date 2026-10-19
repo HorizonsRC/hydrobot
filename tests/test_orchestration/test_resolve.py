@@ -26,7 +26,7 @@ from datetime import datetime
 import pytest
 
 from hydrobot.orchestration.resolve import fill_run_config, resolve
-from hydrobot.providers.types import DataProviderError
+from hydrobot.providers.types import DataProviderError, SiteInfo
 
 # The "current time" for every test. Fixed so expected values never change.
 NOW = datetime(2026, 10, 19, 9, 30)
@@ -44,13 +44,19 @@ class FakeProvider:
     ``self.calls`` records each question asked, in order.
     """
 
-    def __init__(self, answers):
+    def __init__(self, answers, site_codes=None):
         self.answers = answers
-        self.calls = []
+        self.site_codes = site_codes or {}
+        self.calls = []  # last_processed_time questions: (site, measurement)
+        self.site_calls = []  # get_site_info questions: site
 
     def last_processed_time(self, site, measurement):
         self.calls.append((site, measurement))
         return self.answers[(site, measurement)]
+
+    def get_site_info(self, site):
+        self.site_calls.append(site)
+        return SiteInfo(code=self.site_codes[site])
 
 
 class FailingProvider:
@@ -59,11 +65,15 @@ class FailingProvider:
     def last_processed_time(self, site, measurement):
         raise DataProviderError("archive unreachable")
 
+    def get_site_info(self, site):
+        raise DataProviderError("archive uncreachable")
+
 
 def make_run(**overrides):
     """A minimal run config; keyword arguments add or replace fields."""
     run = {
         "site": "Site A",
+        "site_code": "SA",
         "standard_measurement_name": "Rainfall"
     }
     run.update(overrides)
@@ -201,6 +211,7 @@ def test_resolve_fills_each_layer_using_its_own_measurement_name():
     # correct questions, so asking about an unexpected name would fail.
     entry = {
         "site": "Lake",
+        "site_code": "LK",
         "layers": [500, 1000],
         "layer_expansion_template": {"standard_measurement_name": "pH (-{layer} mm)"},
     }
@@ -231,6 +242,7 @@ def test_resolve_with_from_date_given_never_asks_the_provider():
     # date across all runs and needs no archive lookups at all.
     entry = {
         "site": "Lake",
+        "site_code": "LK",
         "from_date": "2025-06-01 00:00",
         "layers": [500, 1000],
         "layer_expansion_template": {"standard_measurement_name": "pH (-{layer} mm)"},
@@ -239,3 +251,18 @@ def test_resolve_with_from_date_given_never_asks_the_provider():
     runs = resolve(entry, provider, now=NOW)
     assert[r["from_date"] for r in runs] == ["2025-06-01 00:00"] * 2
     assert provider.calls == []
+
+
+def test_resolve_gives_every_layer_the_site_code():
+    # Layers belong to one site, so each run ends up with the same site_code
+    # (looked up per run here, the fake would raise if asked about any other
+    # site).
+    entry = {
+        "site": "Lake",
+        "from_date": "2025-06-01 00:00",
+        "layers": [500, 1000],
+        "layer_expansion_template": {"standard_measurement_name": "pH (-{layer} mm)"},
+    }
+    provider = FakeProvider({}, site_codes={"Lake": "LK"})
+    runs = resolve(entry, provider, now=NOW)
+    assert [r["site_code"] for r in runs] == ["LK", "LK"]

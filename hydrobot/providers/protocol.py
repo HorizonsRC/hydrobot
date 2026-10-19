@@ -1,7 +1,7 @@
 from typing import Protocol
 from datetime import datetime
 
-from hydrobot.providers.types import CheckData, StandardData
+from hydrobot.providers.types import CheckData, SiteInfo, StandardData
 
 class DataProvider(Protocol):
     """Provides processor-ready data."""
@@ -36,4 +36,8 @@ class DataProvider(Protocol):
 
         None if this series has never been archived.
         """
+        ...
+
+    def get_site_info(self, site: str) -> SiteInfo:
+        """Return information about a site, including its short code."""
         ...

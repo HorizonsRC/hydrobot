@@ -18,12 +18,13 @@ the measurement (the value) plus a "Quality" column, indexed by timestamp.
 
 
 from types import SimpleNamespace
+from typing import Any
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from hydrobot.orchestration.resolve import SupportsLastProcessedTime
+from hydrobot.orchestration.resolve import ResolveProvider
 from hydrobot.providers.horizons import HorizonsProvider, HorizonsProviderConfig
 from hydrobot.providers.protocol import DataProvider
 from hydrobot.providers.types import DataProviderError
@@ -130,11 +131,12 @@ def test_archive_is_optional():
 
 
 def test_satisfied_what_resolve_needs():
-    # resolve() only asks its provider for last_processed_time (it declares
-    # that as SupportsLastProcessedTime). Check the real provider fits, so the
-    # narrow type used in orchestration can't drift from the real class.
+    # resolve() only asks its provider for last_processed_time and
+    # get_site_info (it declares that as ResolveProvider). Check the real
+    # provider fits, so the narrow type used in orchestration can't drift
+    # from the real class
     p = HorizonsProvider(HorizonsProviderConfig(**YAML_PROVIDER_PARAMS))
-    assert isinstance(p, SupportsLastProcessedTime)
+    assert isinstance(p, ResolveProvider)
 
 
 def test_implements_every_protocol_method():
@@ -260,3 +262,127 @@ def test_quality_frame_with_extra_columns_is_an_error():
 
     with pytest.raises(DataProviderError, match="single quality"):
         provider_with(FakeArchive(qual, pd.DataFrame())).last_processed_time(SITE, MEAS)
+
+
+# -----------------------------------------------------------------------------
+# get_site_info
+#
+# whurl returns site info as a list of sites, each with a name and a dict of
+# fields. The provider picks the field holding the site code (at Horizons,
+# "SecondSynonym") and returns it as a normalised SiteInfo.
+# -----------------------------------------------------------------------------
+
+
+# A real SiteInfo response from the Horizons server (trimmed from ~50 fields).
+# Note the field is the XML tag "SecondSynonym": the space in "Second Synonym"
+# is only how Hilltop's own screens display it.
+SITE_INFO_XML = """<?xml version="1.0" ?>
+<HilltopServer>
+<Agency>Horizons</Agency>
+<Site Name="Manawatu at Teachers College">
+<AEP0.01>3678000</AEP0.01>
+<AirQNES>false</AirQNES>
+<Altitude>21.209</Altitude>
+<SecondSynonym>TCO</SecondSynonym>
+<ShortName>Hor-0034</ShortName>
+<SiteID>340</SiteID>
+</Site>
+</HilltopServer>"""
+
+class FakeSiteClient:
+    """Stands in for HilltopClient for site-info requests only."""
+
+    def __init__(self, sites):
+        # sites: a list of (name, {field: value}) pairs the "server" knows.
+        self.sites = sites
+        self.calls = []
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *exc):
+        return False
+
+    def get_site_info(self, **kwargs):
+        self.calls.append(kwargs)
+        return SimpleNamespace(
+            site=[SimpleNamespace(name=n, info=i) for n, i in self.sites]
+        )
+
+
+def provider_with_sites(sites, field="SecondSynonym"):
+    # Typed as Any because we deliberately put a fake where a real
+    # HilltopClient belongs, and the type checker will complain.
+    p: Any = object.__new__(HorizonsProvider)  # skip __init__: no real clients
+    p.client = FakeSiteClient(sites)
+    p.site_code_field = field
+    return p
+
+
+def test_site_code_read_from_the_configured_field():
+    p = provider_with_sites([(SITE, {"SecondSynonym": "TCO", "Other": "x"})])
+    info = p.get_site_info(SITE)
+    assert info.code == "TCO"
+    assert info.metadata["Other"] == "x"  # the rest is kept, unprocessed
+    assert p.client.calls == [{"site": SITE}]
+
+
+def test_site_code_field_is_configurable():
+    # Another council (or a renamed field) just changes the setting.
+    p = provider_with_sites([(SITE, {"Code": "TCO"})], field="Code")
+    assert p.get_site_info(SITE).code == "TCO"
+
+
+
+def test_missing_code_field_lists_what_is_available():
+    # The likeliest mistake is the wrong field name, so the error lists the
+    # fields that DO exist.
+    p = provider_with_sites([(SITE, {"Synonym": "TCO"})])
+    with pytest.raises(DataProviderError, match="Synonym"):
+        p.get_site_info(SITE)
+
+
+def test_blank_code_is_an_error():
+    # A field that exists but is empty is no use as a file-name component.
+    p = provider_with_sites([(SITE, {"SecondSynonym": "  "})])
+    with pytest.raises(DataProviderError, match="no usable"):
+        p.get_site_info(SITE)
+
+
+def test_site_not_found_is_an_error():
+    # The server returned some other site (or none): not what we asked about.
+    p = provider_with_sites([("Some Other Site", {"SecondSynonym": "XXX"})])
+    with pytest.raises(DataProviderError, match="exactly one"):
+        p.get_site_info(SITE)
+
+
+def test_real_site_info_xml_through_whurls_parser():
+    # End to end through whurl's REAL parser (only the network is faked): a
+    # genuine Horizons response goes in, and the provider must find the code.
+    # This is what guards against the field name drifting from reality.
+    from whurl.schemas.responses.site_info import SiteInfoResponse
+
+    parsed = SiteInfoResponse.from_xml(SITE_INFO_XML)
+
+    class ParsedClient:
+        """Hands back the already-parsed response, like HilltopClient would."""
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def get_site_info(self, **kwargs):
+            return parsed
+
+    p: Any = object.__new__(HorizonsProvider)  # skip __init__: no real clients
+    p.client = ParsedClient()
+    # Use the DEFAULT field name from the config, not a hand-typed one, so the
+    # test fails if the default ever stops matching real responses.
+    p.site_code_field = HorizonsProviderConfig(**YAML_PROVIDER_PARAMS).site_code_field
+
+    info = p.get_site_info("Manawatu at Teachers College")
+
+    assert info.code == "TCO"
+    assert info.metadata["ShortName"] == "Hor-0034" # other fields kept
