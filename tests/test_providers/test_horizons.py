@@ -23,6 +23,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from hydrobot.orchestration.resolve import SupportsLastProcessedTime
 from hydrobot.providers.horizons import HorizonsProvider, HorizonsProviderConfig
 from hydrobot.providers.protocol import DataProvider
 from hydrobot.providers.types import DataProviderError
@@ -126,6 +127,14 @@ def test_archive_is_optional():
     params = {k: v for k, v in YAML_PROVIDER_PARAMS.items() if "archive" not in k}
     p = HorizonsProvider(HorizonsProviderConfig(**params))
     assert p.archive_client is None
+
+
+def test_satisfied_what_resolve_needs():
+    # resolve() only asks its provider for last_processed_time (it declares
+    # that as SupportsLastProcessedTime). Check the real provider fits, so the
+    # narrow type used in orchestration can't drift from the real class.
+    p = HorizonsProvider(HorizonsProviderConfig(**YAML_PROVIDER_PARAMS))
+    assert isinstance(p, SupportsLastProcessedTime)
 
 
 def test_implements_every_protocol_method():
