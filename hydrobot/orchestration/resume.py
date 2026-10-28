@@ -21,7 +21,7 @@ def resume_point(std: pd.DataFrame, qual: pd.Series) -> pd.Timestamp | None:
     ----------
     std : DataFrame
         Standard series fetched with quality shown. Indexed by timestamp,
-        with a ``Quality`` column (NaN where a point has no quality).
+        with a ``Quality`` column (0 where a point has no quality).
     qual : Series
         The quality series, indexed by timestamp.
 

@@ -1,0 +1,19 @@
+# Minimal config for scripts/try_provider_live.py.
+# The script reads ONLY the provider_params block, so any of your real hydrobot
+# configs works too. Replace the two hosts with your real ones.
+
+provider: horizons
+
+provider_params:
+    base_url: http://hilltopdev.horizons.govt.nz/   # live server
+    standard_hts_filename: RawLoggerNet.hts         # standard + quality data
+    check_hts_filename: HydrobotCheckData.hts       # check data
+
+    # Only needed for last_processed_time. Leave these out to see the clear
+    # "needs archive_base_url..." error instead.
+    archive_base_url: http://hilltopdev.horizons.govt.nz/
+    archive_standard_hts_filename: Archive.hts
+    archive_check_hts_filename: Archive.hts
+
+    # Which SiteInfo tag holds the site code (this is the default anyway).
+    site_code_field: SecondSynonym
