@@ -1476,7 +1476,7 @@ class Processor:
                     .infer_objects(copy=False)
                 )
 
-            # Step 3: Combine the two dataframes, prioritizing non-null values from df2
+            # Step 3: Combine the two dataframes, prioritising non-null values from df2
             self.quality_data = merged_df[["Value", "Code", "Details"]].combine_first(
                 self.quality_data
             )
