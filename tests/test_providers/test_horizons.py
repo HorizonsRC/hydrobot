@@ -26,12 +26,53 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from whurl.exceptions import HilltopResponseError
 from hydrobot.orchestration.resolve import ResolveProvider
+from hydrobot.providers import horizons as horizons_module
 from hydrobot.providers.horizons import HorizonsProvider, HorizonsProviderConfig
 from hydrobot.providers.protocol import DataProvider
 from hydrobot.providers.types import DataProviderError
 
 SITE, MEAS = "Manawatu at Teachers College", "Atmospheric Pressure"
+
+
+# What a real Horizons server sends when a time range has no data. It is an
+# ERROR document (xml response), not an empty one, and whurl raises it as
+# an exception. Copied from a live run (quality is event-based, so quiet
+# days are routine.
+NO_DATA_MESSAGE = (
+    "Parse Error: Hilltop GetData error: "
+    "No data from 25-Oct-2026 16:32:10 to 28-Oct-2026 16:32:10"
+)
+
+
+def no_data_error():
+    return HilltopResponseError(NO_DATA_MESSAGE)
+
+
+class FakeGetDataRequest:
+    """Stands in for whurl's GetDataRequest, recording how it was built.
+
+    The provider uses the real class only to work out the URL of a request
+    that returned no data. Unit tests shouldn't depend on whurl's own request
+    validation (the live smoke script checks that), so every test in this file
+    gets this fake instead; see the fixture just below.
+
+    """
+
+    built_with = None
+
+    def __init__(self, **kwargs):
+        FakeGetDataRequest.built_with = kwargs
+
+    def gen_url(self):
+        return "http://example.invalid/hilltop/RawLoggerNet.hts?built=by-whurl-request"
+
+
+@pytest.fixture(autouse=True)  # Autouse applies to every test in this file
+def fake_request_class(monkeypatch):
+    monkeypatch.setattr(horizons_module, "GetDataRequest", FakeGetDataRequest)
+
 
 
 # A copy of the provider_params block from a real hydrobot YAML config.
@@ -63,7 +104,9 @@ def fake_response(df, name=MEAS, ts_type="StdSeries"):
                 data_source=SimpleNamespace(name=name, ts_type=ts_type),
                 data=SimpleNamespace(timeseries=df),
             )
-        ]
+        ],
+        # Real responses always carry the request that produced them.
+        request=SimpleNamespace(gen_url=lambda: "http://example.invalid/archive"),
     )
 
 
@@ -101,9 +144,14 @@ class FakeArchive(ClosableFake):
     Like the real client, it refuses requests once closed (see ClosableFake).
     """
 
-    def __init__(self, qual_df, std_df, data_source=MEAS):
+    base_url = "http://example.invalid/archive"
+    hts_endpoint = "Archive.hts"
+
+    def __init__(self, qual_df, std_df, data_source=MEAS, errors=None):
         self.qual_df = qual_df
         self.std_df = std_df
+        # {ts_type: exception}: raised instead of answering, as the real client does.
+        self.errors = errors or {}
         # The data source name the "server" reports (see the bracketed-name test).
         self.data_source = data_source
         self.calls = [] # each get_data call's keyword arguments, in order
@@ -113,6 +161,8 @@ class FakeArchive(ClosableFake):
         self.calls.append(kwargs)
         # Answer with the series type that was asked for, labelled as such.
         ts_type = kwargs["ts_type"]
+        if ts_type in self.errors:
+            raise self.errors[ts_type]
         df = self.qual_df if ts_type == "StdQualSeries" else self.std_df
 
         return fake_response(df, name=self.data_source, ts_type=ts_type)
@@ -461,7 +511,7 @@ FIXED_NOW = datetime(2026, 10, 19, 9, 30)
 
 
 
-class FakeStandardClient:
+class FakeStandardClient(ClosableFake):
     """Stands in for HilltopClient; returns the measurements you give it.
 
     ``base_url`` and ``hts_endpoint`` are what the real client exposes; the
@@ -476,8 +526,9 @@ class FakeStandardClient:
     base_url = "http://example.invalid/hilltop"
     hts_endpoint = "RawLoggerNet.hts"
 
-    def __init__(self, measurements):
+    def __init__(self, measurements, error=None):
         self.measurements=measurements
+        self.error = error
         self.calls = []
         self.last_url = None
 
@@ -489,14 +540,18 @@ class FakeStandardClient:
             f"&TSType={kwargs['ts_type']}"
         )
 
-    def __enter__(self):
-        return self
-
-    def __exit__(self, *exc):
-        return False
+    def get_site_info(self, **kwargs):
+        # A site-info read through this same client (used by the lifetime tests).
+        self._check_open()
+        return SimpleNamespace(
+            site=[SimpleNamespace(name=kwargs["site"], info={"SecondSynonym": "TCO"})]
+        )
 
     def get_data(self, **kwargs):
+        self._check_open()
         self.calls.append(kwargs)
+        if self.error is not None:
+            raise self.error
         self.last_url = self._url_for(kwargs)
         return SimpleNamespace(
             measurements=self.measurements,
@@ -504,9 +559,9 @@ class FakeStandardClient:
         )
 
 
-def provider_returning(measurements):
+def provider_returning(measurements, error=None):
     p: Any = object.__new__(HorizonsProvider)  # skip __init__: no real clients
-    p.client = FakeStandardClient(measurements)
+    p.client = FakeStandardClient(measurements, error)
     p._clock = lambda: FIXED_NOW  # a fixed clock, so origins are predictable
     return p
 
@@ -562,6 +617,8 @@ def test_bracketed_names_match_on_the_data_source_part():
 def test_no_data_in_range_is_empty_not_an_error():
     # A quiet period returns no measurements at all. That's normal, so the
     # provider hands back empty data and leaves the reporting to the caller.
+    # The metadata still carries the origin: "we asked, got nothing" is worth
+    # recording. It's the ONLY thing in it.
     for nothing in ([], None):
         result = provider_returning(nothing).get_standard(SITE, MEAS, START, END)
         assert result.data.empty
@@ -695,9 +752,9 @@ class FakeCheckClient(FakeStandardClient):
     hts_endpoint = "HydrobotCheckData.hts"
 
 
-def provider_with_check(measurements):
+def provider_with_check(measurements, error=None):
     p: Any = object.__new__(HorizonsProvider)  # skip __init__: no real clients
-    p.check_client = FakeCheckClient(measurements)
+    p.check_client = FakeCheckClient(measurements, error)
     p._clock = lambda: FIXED_NOW  # a fixed clock, so origins are predictable
     return p
 
@@ -813,6 +870,7 @@ def test_origin_is_recorded_even_when_nothing_was_found():
     assert quality.data.empty and quality.metadata["origin"]["measurement"] == MEAS
     assert check.data.empty and check.metadata["origin"]["measurement"] == CHECK_NAME
 
+
 def test_origin_url_has_credentials_and_query_removed():
     # A base URL might carry a password or a token. Origin ends up in files
     # and logs, so only scheme, host, port and path are kept.
@@ -887,4 +945,190 @@ def test_request_url_hides_secret_looking_parameters_only():
     url = "https://h.example.nz/a.hts?Service=Hilltop&ApiKey=abc123&Site=Lake%20A&token=xyz&Flag"
     assert _public_request_url(url) == (
         "https://h.example.nz/a.hts?Service=Hilltop&ApiKey=REDACTED&Site=Lake%20A&token=REDACTED&Flag"
+    )
+
+
+def test_ordinary_hilltop_parameters_are_never_mistaken_for_secrets():
+    # Guard against the secret-matching being too eager: every parameter name
+    # Hilltop actually uses must survive untouched.
+    from hydrobot.providers.horizons import _public_request_url
+
+    names = ["Service", "Request", "Site", "Measurement", "From", "To", "TSType",
+             "Internal", "Method", "Alignment", "ShowQuality", "Collection", "Format"]
+    url = "http://h/x.hts?" + "&".join(f"{n}=v" for n in names)
+    assert "REDACTED" not in _public_request_url(url)
+
+
+# -----------------------------------------------------------------------------
+# Connection lifetime
+#
+# The first live run failed on the SECOND read through a client: every read
+# used to close the client when it finished, and a closed client can't be used
+# again. These tests reproduce the exact sequences that failed. The provider
+# now keeps its clients open and only closes them when it is told to.
+# -----------------------------------------------------------------------------
+
+
+def test_a_closed_fake_refuses_like_the_real_client():
+    # A check on the test helper itself: if this passed silently, none of the
+    # lifetime tests below would mean anything.
+    client = FakeStandardClient([])
+    client.close()
+    with pytest.raises(RuntimeError, match="has been closed"):
+        client.get_data(site=SITE, measurement=MEAS, ts_type="StdSeries")
+
+
+def test_a_site_info_read_does_not_stop_later_reads():
+    # The sequence that failed live: get_site_info, then get_standard, both
+    # through the same client
+    p = provider_returning([std_measurement()])
+    p.site_code_field = "SecondSynonym"
+    assert p.get_site_info(SITE).code == "TCO"
+    assert not p.get_standard(SITE, MEAS, START, END).data.empty
+
+
+def test_the_same_read_can_be_repeated():
+    # A batch asks the same provider for many sites, one after another.
+    p = provider_returning([std_measurement()])
+    for _ in range(3):
+        assert not p.get_standard(SITE, MEAS, START, END).data.empty
+
+
+def test_archive_lookups_can_be_repeated():
+    # Setup calls last_processed_time once per layer, on the same archive client.
+    qual = pd.DataFrame({MEAS: [100]}, index=timestamps("2025-10-22 11:00:00"))
+    p = provider_with(FakeArchive(qual, pd.DataFrame()))
+    first = p.last_processed_time(SITE, MEAS)
+    second = p.last_processed_time(SITE, MEAS)
+    assert first == second == pd.Timestamp("2025-10-22 11:00:00")
+
+
+def make_provider_with_all_clients(archive=True):
+    p: Any = object.__new__(HorizonsProvider)  # skip __init__: no real clients
+    p.client = FakeStandardClient([])
+    p.check_client = FakeCheckClient([])
+    p.archive_client = FakeArchive(pd.DataFrame(), pd.DataFrame()) if archive else None
+    return p
+
+
+def test_close_closes_every_client():
+    p = make_provider_with_all_clients()
+    p.close()
+    assert p.client.closed and p.check_client.closed and p.archive_client.closed
+
+
+def test_close_copes_with_no_archive():
+    # The archive is optional, so closing must not trip over its absence.
+    p = make_provider_with_all_clients(archive=False)
+    p.close()
+    assert p.client.closed and p.check_client.closed
+
+
+# -----------------------------------------------------------------------------
+# Quality delivered as text
+#
+# The second live failure: the archive's "Quality" column came back as TEXT
+# ("600"), and comparing text with a number raises a TypeError. The provider
+# now turns it into numbers before working out where to resume.
+# -----------------------------------------------------------------------------
+
+
+def test_quality_delivered_as_text_is_understood():
+    # The same shape as the trailing-chunk test, but with text quality values.
+    # "0" and the blank both mean unprocessed, so we resume from the 600 point.
+    qual = pd.DataFrame({MEAS: [600]}, index=timestamps("2025-01-01 00:00"))
+    std = pd.DataFrame(
+        {MEAS: [1.0, 2.0, 3.0], "Quality": ["600", "0", ""]},
+            index=timestamps("2025-01-01 00:00", "2025-01-01 01:00", "2025-01-01 02:00"),
+    )
+    result = provider_with(FakeArchive(qual, std)).last_processed_time(SITE, MEAS)
+    assert result == pd.Timestamp("2025-01-01 00:00")
+
+
+# -----------------------------------------------------------------------------
+# Hilltop's "No data" error
+#
+# The second live run failed on get_quality: a quiet range came back as an
+# ERROR ("No data from ... to ..."), which whurl raised, instead of an empty
+# result. Our fakes had only ever returned empty lists, which is not what the
+# server does. The provider now treats that one error as "no data", and turns
+# every other whurl error into a DataProviderError.
+# -----------------------------------------------------------------------------
+
+
+def test_standard_no_data_error_is_an_empty_result():
+    p = provider_returning([], error=no_data_error())
+    result = p.get_standard(SITE, MEAS, START, END)
+    assert result.data.empty
+    assert result.metadata.keys() == {"origin"}
+
+
+def test_quality_no_data_error_is_an_empty_result():
+    # The case that failed live: quality is event-based, so a few quiet days
+    # with no entries is routine.
+    p = provider_returning([], error=no_data_error())
+    result = p.get_quality(SITE, MEAS, START, END)
+    assert result.data.empty
+    assert result.metadata.keys() == {"origin"}
+
+
+def test_check_no_data_error_is_an_empty_result():
+    p = provider_with_check([], error=no_data_error())
+    result = p.get_check(SITE, CHECK_NAME, START, END)
+    assert result.data.empty
+    assert result.metadata.keys() == {"origin"}
+
+
+def test_an_empty_read_still_records_the_url_it_would_have_used():
+    # When the server says "No data" there is no response to read the URL from,
+    # and whurl's error doesn't carry it. So the provider asks whurl's own
+    # request class to build it, with the same arguments the call used. That is
+    # exactly the URL to paste in a browser to see the server's "No data" reply.
+    p = provider_returning([], error=no_data_error())
+
+    origin = p.get_quality(SITE, MEAS, START, END).metadata["origin"]
+
+    assert origin["request_url"].endswith("built=by-whurl-request")
+    assert FakeGetDataRequest.built_with == {
+        "base_url": "http://example.invalid/hilltop",
+        "hts_endpoint": "RawLoggerNet.hts",
+        "site": SITE,
+        "measurement": MEAS,
+        "from_datetime": START,
+        "to_datetime": END,
+        "ts_type": "StdQualSeries",
+    }
+
+
+def test_any_other_hilltop_error_is_a_provider_error_with_the_original_message():
+    # Anything that isn't "no data" (a server fault, an unknown site...) is a
+    # real problem. Callers only ever see DataProviderError, never whurl's own
+    # exception types, but the server's message is kept so it can be diagnosed.
+    server_fault = HilltopResponseError("HTTP error occurred: 500 - database offline")
+    p = provider_returning([], error=server_fault)
+
+    with pytest.raises(DataProviderError, match="database offline") as raised:
+        p.get_standard(SITE, MEAS, START, END)
+
+    assert raised.value.__cause__ is server_fault
+
+
+def test_never_archived_is_none_even_when_the_server_says_no_data():
+    # last_processed_time: the quality lookup hits "No data" for a series that
+    # has never been archived. That means "never processed", not a failure.
+    archive = FakeArchive(
+        pd.DataFrame(), pd.DataFrame(), errors={"StdQualSeries": no_data_error(),
+                                                "StdSeries": no_data_error()}
+    )
+    assert provider_with(archive).last_processed_time(SITE, MEAS) is None
+
+
+def test_no_standard_data_after_the_last_quality_entry_still_resumes_there():
+    # The checkpoint is the newest thing in the archive, so asking for stanard
+    # data from that moment on finds nothing, and the server says "No data".
+    # That's the normal state after a checkpoint, so resume at the checkpoint.
+    qual = pd.DataFrame({MEAS: [100]}, index=timestamps("2025-10-22 11:00:00"))
+    archive = FakeArchive(qual, pd.DataFrame(), errors={"StdSeries": no_data_error()})
+    assert provider_with(archive).last_processed_time(SITE, MEAS) == pd.Timestamp(
+        "2025-10-22 11:00:00"
     )

@@ -13,6 +13,8 @@ from urllib.parse import urlsplit, urlunsplit
 import pandas as pd
 from pydantic import BaseModel
 from whurl.client import HilltopClient
+from whurl.exceptions import HilltopError
+from whurl.schemas.requests import GetDataRequest
 
 from hydrobot.orchestration.resume import resume_point
 from hydrobot.providers.types import (
@@ -132,7 +134,8 @@ class HorizonsProvider:
         ``divisor`` in the metadata is for information only: don't divide again.
         """
 
-        response = self.client.get_data(
+        response, request_url = self._fetch(
+            self.client,
             site=site,
             measurement=measurement,
             from_datetime=from_date,
@@ -142,7 +145,7 @@ class HorizonsProvider:
 
         origin = self._origin(
             self.client,
-            response,
+            request_url,
             site=site,
             measurement=measurement,
             ts_type="StdSeries",
@@ -150,9 +153,11 @@ class HorizonsProvider:
             to_date=to_date,
         )
 
-        returned = response.measurements or []
-        if not returned:
+        # No data at all: either the server said so (no response), or it sent
+        # an empty reply. Either way, report empty and let the caller decide.
+        if response is None or not response.measurements:
             return StandardData(data=pd.DataFrame(), metadata={"origin": origin})
+        returned = response.measurements
 
         found = _matching_series(response, measurement, "StdSeries", site)
         if found is None:
@@ -187,7 +192,8 @@ class HorizonsProvider:
         quality series is normal (means nothing has been processed yet), so
         that returns empty data rather than raising.
         """
-        response = self.client.get_data(
+        response, request_url = self._fetch(
+            self.client,
             site=site,
             measurement=measurement,
             from_datetime=from_date,
@@ -197,7 +203,7 @@ class HorizonsProvider:
 
         origin = self._origin(
             self.client,
-            response,
+            request_url,
             site=site,
             measurement=measurement,
             ts_type="StdQualSeries",
@@ -231,7 +237,8 @@ class HorizonsProvider:
         name. Only ``measurement`` is searched for: the run config names the
         check measurement exactly, so there's no fallback to another name.
         """
-        response = self.check_client.get_data(
+        response, request_url = self._fetch(
+            self.check_client,
             site=site,
             measurement=measurement,
             from_datetime=from_date,
@@ -241,7 +248,7 @@ class HorizonsProvider:
 
         origin = self._origin(
             self.check_client,
-            response,
+            request_url,
             site=site,
             measurement=measurement,
             ts_type="CheckSeries",
@@ -293,8 +300,8 @@ class HorizonsProvider:
             )
 
         archive = self.archive_client
-        qual_response = archive.get_data(
-            site=site, measurement=measurement, ts_type="StdQualSeries"
+        qual_response, _ = self._fetch(
+            archive, site=site, measurement=measurement, ts_type="StdQualSeries"
         )
         found_qual = _matching_series(qual_response, measurement, "StdQualSeries", site)
         qual = _quality_series(
@@ -305,7 +312,8 @@ class HorizonsProvider:
         if not qual.empty:
             from_kwargs["from_datetime"] = qual.index.max().to_pydatetime()
 
-        std_response = archive.get_data(
+        std_response, _ = self._fetch(
+            archive,
             site=site,
             measurement=measurement,
             ts_type="StdSeries",
@@ -364,10 +372,38 @@ class HorizonsProvider:
     # Internals
     # -------------------------------------------------------------------------
 
+    def _fetch(self, client, **kwargs):
+        """Make a GetData request. Returns ``(response, request_url)``.
+
+        Hilltop reports an empty range ("No data from X to Y") as an ERROR
+        document (xml response), which whurl raises as an exception. For us
+        that is not an error: it is just "no data", so ``response`` is None.
+        Quality is event-based, so a quiet few days with no entries is
+        completely normal.
+
+        Any other Hilltop error is a genuine problem. It is re-raised as a
+        DataProviderError (keeping the original message), so callers never
+        need to know whurl's exception types.
+
+        The URL is the request actually made when there is a response. When
+        there was none, whurl's error doesn't carry the URL, so we ask whurl's
+        own GetDataRequest to build the one it would have used.
+        """
+        try:
+            response = client.get_data(**kwargs)
+        except HilltopError as error:
+            if _NO_DATA.search(str(error)):
+                return None, _request_url_for(client, kwargs)
+            raise DataProviderError(
+                f"Hilltop returned an error for {kwargs.get('site')!r} / "
+                f"{kwargs.get('measurement')!r}: {error}"
+            ) from error
+        return response, response.request.gen_url()
+
     def _origin(
         self,
         client,
-        response,
+        request_url: str,
         *,
         site: str,
         measurement: str,
@@ -385,7 +421,7 @@ class HorizonsProvider:
             source_tag=self.SOURCE_TAG,
             base_url=_public_url(client.base_url),
             hts=client.hts_endpoint,
-            request_url=_public_request_url(response.request.gen_url()),
+            request_url=_public_request_url(request_url),
             site=site,
             measurement=measurement,
             ts_type=ts_type,
@@ -446,6 +482,8 @@ def _matching_series(response, measurement: str, ts_type: str, site: str):
     server reports, so that is what is matched. Raises if more than one
     series matches, since there's no way to know which is right.
     """
+    if response is None:
+        return None
     _, data_source_name = _split_measurement_name(measurement)
     found = [
         m
@@ -502,3 +540,16 @@ def _public_request_url(url: str) -> str:
     return urlunsplit(
         (parts.scheme, _strip_userinfo(parts.netloc), parts.path, query, parts.fragment)
     )
+
+# Hilltop's wording for an empty range, e.g. "No data from 25-Oct-2026 16:32:10
+# to 28-Oct-2026 16:32:10". Seen in a real response; whurl wraps it with a prefix.
+_NO_DATA = re.compile(r"\bNo data\b", re.IGNORECASE)
+
+def _request_url_for(client, kwargs: dict) -> str:
+    """The URL whurl WOULD have requested, built the same way its client does."""
+    request = GetDataRequest(
+        base_url=str(client.base_url),
+        hts_endpoint=str(client.hts_endpoint),
+        **kwargs,
+    )
+    return request.gen_url()
