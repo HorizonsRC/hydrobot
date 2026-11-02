@@ -392,6 +392,12 @@ class RFProcessor(Processor):
         time_points = rf.rainfall_time_since_inspection_points(checks_for_qcing)
 
         site_survey_frame = rf.rainfall_nems_site_matrix(self.site)
+        if len(site_survey_frame) == 0:
+            self.report_processing_issue(
+                message_type="error",
+                comment="No site surveys found at this site, QC will be 0.",
+                series_type="quality",
+            )
 
         if self.from_date not in site_survey_frame.index:
             site_survey_frame = (
