@@ -10,9 +10,9 @@ import shutil
 import warnings
 from datetime import datetime
 
-import config.horizons_source as source
 import ruamel.yaml
 
+import hydrobot.config.horizons_source as source
 import hydrobot.data_sources as data_sources
 import hydrobot.utils as utils
 
@@ -509,7 +509,7 @@ def create_depth_hydrobot_batches(
         raise OSError("Unsupported operating system for run script creation.")
 
 
-def rename_hilltop_file(directory):
+def rename_hilltop_file(directory, depth_flag=False):
     """Given a directory with a single hts and accdb, will rename those to final_name."""
     rename_candidates = [
         d for d in os.listdir(directory) if os.path.splitext(d)[1] in [".hts", ".accdb"]
@@ -541,7 +541,9 @@ def rename_hilltop_file(directory):
         )
 
     # Rename files
-    final_name = make_hilltop_file_name(*find_batch_and_site_code_from_dir(directory))
+    final_name = make_hilltop_file_name(
+        *find_batch_and_site_code_from_dir(directory, depth_flag)
+    )
     for candidate in rename_candidates:
         file_to_be_renamed = os.path.join(directory, candidate)
         renamed_file = os.path.join(
@@ -550,22 +552,34 @@ def rename_hilltop_file(directory):
         os.rename(file_to_be_renamed, renamed_file)
 
 
-def find_batch_and_site_code_from_dir(directory):
+def find_batch_and_site_code_from_dir(directory, depth_flag=False):
     """Given a directory, find the batch number and the site 3-letter code."""
     path_list = pathlib.Path(directory).parts
-    batch_no = path_list[-1]
-    site_name = path_list[-2]
-    data_source = path_list[-3]
+    if depth_flag:
+        depth = path_list[-1]
+        batch_no = path_list[-2]
+        site_name = path_list[-3]
+        data_source = path_list[-4]
+    else:
+        batch_no = path_list[-1]
+        site_name = path_list[-2]
+        data_source = path_list[-3]
     if not batch_no.isnumeric():
         raise ValueError(f"Expect that batch number is numeric, got {batch_no}")
     site_code = source.find_three_letter_code(site_name)
 
-    return batch_no, site_code, data_source
+    if depth_flag:
+        return batch_no, site_code, data_source, depth
+    else:
+        return batch_no, site_code, data_source
 
 
-def make_hilltop_file_name(batch_no, site_code, data_source):
+def make_hilltop_file_name(batch_no, site_code, data_source, depth=None):
     """Make the standard filename from these components."""
-    return f"{batch_no}_{data_source}_{site_code}_data".replace(" ", "_")
+    if depth is None:
+        return f"{batch_no}_{data_source}_{site_code}_data".replace(" ", "_")
+    else:
+        return f"{batch_no}_{data_source}_{site_code}_data_{depth}".replace(" ", "_")
 
 
 def list_files_from_dsn(dsn):
@@ -583,7 +597,7 @@ def list_files_from_dsn(dsn):
         return file_list
 
 
-def rename_files_from_dsn_and_make_shadoof_commands(dsn):
+def rename_files_from_dsn_and_make_shadoof_commands(dsn, depth_flag=False):
     """Given a dsn, rename hts/accdb files found in the directories of the dsn files and construct shadoof commands."""
     shadoof_file = os.path.join(os.path.dirname(dsn), "shadoof_commands.txt")
     target_xmls = list_files_from_dsn(dsn)
@@ -592,12 +606,14 @@ def rename_files_from_dsn_and_make_shadoof_commands(dsn):
         target_dir = os.path.dirname(xml)
         hts_file_name = os.path.join(
             target_dir,
-            make_hilltop_file_name(*find_batch_and_site_code_from_dir(target_dir))
+            make_hilltop_file_name(
+                *find_batch_and_site_code_from_dir(target_dir, depth_flag)
+            )
             + ".hts",
         )
         shadoof_command = f'shadoof "{xml}" "{hts_file_name}"'
         shadoof_command_list.append(shadoof_command)
-        rename_hilltop_file(target_dir)
+        rename_hilltop_file(target_dir, depth_flag)
     with open(shadoof_file, "w") as file:
         for command in shadoof_command_list:
             file.write(command)
