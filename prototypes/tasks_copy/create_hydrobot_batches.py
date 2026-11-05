@@ -4,7 +4,7 @@ import os
 
 import hydrobot.tasks as tasks
 
-site_list_path = r"WaterTemperatureProcessing.csv"
+site_list_path = r"AtmosphericPressureProcessing.csv"
 destination_path = r"output_dump"
 dsn_destination_path = destination_path + os.sep + r"hydrobot"
 
@@ -17,4 +17,8 @@ tasks.create_mass_hydrobot_batches(
     destination_path,
     config_dicts,
     create_directory=True,
+)
+
+tasks.rename_files_from_dsn_and_make_shadoof_commands(
+    os.path.join(dsn_destination_path, "hydrobot_dsn.dsn")
 )
