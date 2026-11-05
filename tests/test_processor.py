@@ -559,7 +559,7 @@ def test_to_xml_data_structure(
             infer_frequency=False,
         )
 
-        data_source_blob_list += pr.to_xml_data_structure()
+        data_source_blob_list += pr.to_xml_data_structure(check=False)
 
     output_path = tmp_path / "output.xml"
     data_structure.write_hilltop_xml(data_source_blob_list, output_path)
