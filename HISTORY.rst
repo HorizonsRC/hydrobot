@@ -6,6 +6,7 @@ History
 ----------------------------------
 * Added issue report for missing rainfall site survey
 * Fixed error where process control plot would have constant_check_shift applied twice
+* Minor template clarity/QOL updates
 
 0.9.15 (2026-08-14)
 ----------------------------------
