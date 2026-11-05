@@ -92,7 +92,7 @@ for site_index in site_config.index:
 
 
 def remove_prefix_dots(string):
-    """Remove any "."s at the start of a string."""
+    """Remove any '.'s at the start of a string."""
     if len(string) == 0:
         return string
     elif string[0] == ".":

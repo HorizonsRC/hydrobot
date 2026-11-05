@@ -377,6 +377,12 @@ def manual_tip_filter(
     if manual_tips == 0:
         # No manual tips to remove
         return std_series, None
+    elif manual_tips == 1:
+        # This breaks the indexing later on, so is explicitly barred - need manual intervention
+        raise ValueError(
+            f"A single manual tip is reported. If this is a legitimate occurance delete any non-representative tips "
+            f"manually and add the arrival time {arrival_time} to the skip tip filter list."
+        )
     elif inspection_data.sum() <= ((manual_tips - 1.5) * mode):
         # Manual tips presumed to be in inspection mode, no further action
         return std_series, None
@@ -431,6 +437,7 @@ def manual_tip_filter(
                 "message_type": "warning",
             }
 
+            # This indexing breaks for a single manual tip
             differences = (
                 events.index[manual_tips - 1 :] - events.index[: -manual_tips + 1]
             )
