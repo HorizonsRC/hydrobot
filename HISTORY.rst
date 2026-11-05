@@ -2,9 +2,10 @@
 History
 =======
 
-0.9.16 (?)
+0.9.16 (2026-11-05)
 ----------------------------------
-* Added issue report for missing site survey
+* Added issue report for missing rainfall site survey
+* Fixed error where process control plot would have constant_check_shift applied twice
 
 0.9.15 (2026-08-14)
 ----------------------------------
