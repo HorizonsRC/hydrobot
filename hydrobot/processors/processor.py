@@ -1,18 +1,22 @@
 """Processor class."""
+from hydrobot.utils import infer_frequency
+from hydrobot.data_structure import Data
 
+import copy
+import dataclasses
 import warnings
 from datetime import datetime
 
 import numpy as np
 import pandas as pd
-import ruamel.yaml
 from annalist.annalist import Annalist
 from annalist.decorators import ClassLogger
-from hilltoppy import Hilltop
 
 import pandas as pd
 
 import hydrobot
+from hydrobot.processors import importing
+from hydrobot.providers.protocol import DataProvider
 from hydrobot import (
     data_acquisition,
     data_sources,
@@ -25,37 +29,25 @@ from hydrobot import (
 
 annalizer = Annalist()
 
-EMPTY_STANDARD_DATA = pd.DataFrame(
-    columns=[
-        "Time",
-        "Raw",
-        "Value",
-        "Changes",
-        "Remove",
-    ]
-).set_index("Time")
-EMPTY_CHECK_DATA = pd.DataFrame(
-    columns=[
-        "Time",
-        "Raw",
-        "Value",
-        "Changes",
-        "Recorder Time",
-        "Comment",
-        "Source",
-        "QC",
-    ]
-).set_index("Time")
-EMPTY_QUALITY_DATA = pd.DataFrame(
-    columns=[
-        "Time",
-        "Raw",
-        "Value",
-        "Code",
-        "Details",
-    ]
-).set_index("Time")
+# These used to be defined here. They moved to frames.py so that the helpers
+# which build them can import them without imorting this module. Other modules
+# still import them from here, so the names stay available.
+from hydrobot.processors.frames import (  # noqa: E402, f401
+    EMPTY_CHECK_DATA,
+    EMPTY_QUALITY_DATA,
+    EMPTY_STANDARD_DATA,
+)
 
+
+# The run config keys that must be present and not None. ``resolve()`` fills in
+# the dates, so a config straight from a batch file is not ready to process.
+REQUIRED_RUN_CONFIG_KEYS = (
+    "site",
+    "standard_measurement_name",
+    "data_family",
+    "from_date",
+    "to_date",
+)
 
 class Processor:
     """
@@ -107,74 +99,74 @@ class Processor:
     """
 
     @ClassLogger  # type:ignore
-    def __init__(
-        self,
-        base_url: str,
-        site: str,
-        standard_hts_filename: str,
-        standard_measurement_name: str,
-        frequency: str | None,
-        data_family: str,
-        from_date: str | pd.Timestamp |None = None,
-        to_date: str | pd.Timestamp | None = None,
-        check_hts_filename: str | None = None,
-        check_measurement_name: str | None = None,
-        defaults: dict | None = None,
-        interval_dict: dict | None = None,
-        constant_check_shift: float = 0,
-        fetch_quality: bool = False,
-        export_file_name: str | None = None,
-        archive_base_url: str | None = None,
-        archive_standard_hts_filename: str | None = None,
-        archive_check_hts_filename: str | None = None,
-        provisional_wq_filename: str | None = None,
-        archive_standard_measurement_name: str | None = None,
-        depth: float | None = None,
-        infer_frequency: bool = True,
-        **kwargs,
-    ):
-        """
-        Construct all the necessary attributes for the Processor object.
+    def __init__(self, run_config: dict, provider: DataProvider):
+        """Construct all the necessary attributes for the Processor object.
+
+        Build a Processor for one run.
+
+        Building a processor does NOT read any data, or touch a server. Call
+        ``load_data()`` for that. (The old constructor fetched everything before
+        returning, which made a Processor impossible to build without a live
+        server, and impossible to test without one.)
 
         Parameters
         ----------
-        base_url : str
-            The base URL of the Hilltop server.
-        site : str
-            The site to be processed.
-        standard_hts_filename : str
-            The standard Hilltop service.
-        standard_measurement_name : str
-            The standard measurement to be processed.
-        frequency : str
-            The frequency of the data.
-        data_family : str
-            The type of data processing to be done
-        from_date : str, optional
-            The start date of the data (default is None).
-        to_date : str, optional
-            The end date of the data (default is None).
-        check_hts_filename : str, optional
-            The Hilltop service to be checked (default is None).
-        check_measurement_name : str, optional
-            The measurement to be checked (default is None).
-        defaults : dict, optional
-            The default settings (default is None).
-        interval_dict : dict, optional
-            Determines how data with old checks is downgraded
-        export_file_name : string, optional
-            Where the data is exported to. Used as default when exporting without
-            specified filename.
-        provisional_wq_filename : str, optional
-            Filename for provisional WQ data to be converted to check
-        archive_standard_measurement_name : str, optional
-            standard_measurement_name used in the archive file used to find last
-            processed time and for final exported data
-        depth : numeric, optional
-            Depth of measurement - used for lake buoys. Number in positive mm.
-        kwargs : dict
-            Additional keyword arguments.
+        run_config : dict
+            Everything this run needs, as produced by ``resolve()``.
+            These keys must be present, and not None:
+            ``site``,
+            ``standard_measurement_name``,
+            ``data_family``,
+            ``from_date``,
+            ``to_date``
+            These are optional:
+            ``check_measurement_name``,
+            ``archive_standard_measurement_name``,
+            ``frequency``,
+            ``infer_frequency`` (default True),
+            ``defaults``,
+            ``interval_dict``,
+            ``constant_check_shift``,
+            ``export_file_name``,
+            ``layer``,
+            ``provisional_wq_filename``.
+            Anything else in the config is ignored.
+            The config is copied, so changing it afterwards changes nothing here.
+        provider : DataProvider
+            Where data comes from. The Processor only asks it questions. It does
+            not own it and never closes it: whoever built the provider does.
+
+        Raises
+        ------
+        ValueError
+            If a required key is missing or None, a date is not a date, or
+            ``from_date`` is not before ``to_date``. All the problems with the
+            keys are reported together.
+        KeyError
+            If ``data_family`` is not a known family.
         """
+        run_config = copy.deepcopy(run_config)
+
+        missing = [k for k in REQUIRED_RUN_CONFIG_KEYS if run_config.get(k) is None]
+        if missing:
+            raise ValueError(
+                f"The run config is missing {missing}. A run config comes from "
+                "resolve(), which fills in from_date and to_date; one straight "
+                "from a batch file is not ready to process."
+            )
+        from_date = self._read_date(run_config, "from_date")
+        to_date = self._read_date(run_config, "to_date")
+        if from_date >= to_date:
+            raise ValueError(
+                f"from_date ({from_date}) must be before to_date ({to_date}). "
+                "An empty window is almost certainly a mistake."
+            )
+
+        def option(key, default):
+            """A config value, or ``default`` if it is missing or None."""
+            value = run_config.get(key)
+            return default if value is None else value
+
         # Processing issues reporting setup
         self.processing_issues = pd.DataFrame(
             {
@@ -192,83 +184,50 @@ class Processor:
             start_time=datetime.now().strftime("%Y-%m-%d %H:%M"),
         )
 
-        # replacements
-        if check_measurement_name is None:
-            check_measurement_name = standard_measurement_name
-        if interval_dict is None:
-            interval_dict = {}
-        if archive_standard_measurement_name is None:
-            archive_standard_measurement_name = standard_measurement_name
-        if pd.isna(from_date):
-            from_date = utils.find_last_time(
-                archive_base_url,
-                archive_standard_hts_filename,
-                site,
-                archive_standard_measurement_name,
-            )
-            self.report_processing_issue(
-                comment=f"from_date inferred as: {str(from_date)}",
-                message_type="info",
-            )
-        if pd.isna(to_date):
-            to_date = pd.Timestamp.now().round("s")
-            self.report_processing_issue(
-                comment=f"to_date inferred as: {str(to_date)}",
-                message_type="info",
-            )
+        # What this run is, and where its data comes from.
+        self.run_config = run_config
+        self.provider = provider
+        self.data_family = run_config["data_family"]
+        self._site = run_config["site"]
+        self._standard_measurement_name = run_config["standard_measurement_name"]
+        self._check_measurement_name = run_config.get("check_measurement_name")
+        self._from_date = from_date
+        self._to_date = to_date
 
-        self.data_family = data_family
-        # set input values
-        self._base_url = base_url
-        self._site = site
-        self._standard_hts_filename = standard_hts_filename
-        self._standard_measurement_name = standard_measurement_name
-        self._frequency = frequency
-        self._from_date = pd.Timestamp(from_date)
-        self._to_date = pd.Timestamp(to_date)
-        self._check_hts_filename = check_hts_filename
-        self._check_measurement_name = check_measurement_name
-        self._defaults = defaults
-        self._interval_dict = interval_dict
-        self.export_file_name = export_file_name
-        self.archive_base_url = archive_base_url
-        self.archive_standard_hts_filename = archive_standard_hts_filename
-        self.archive_check_hts_filename = archive_check_hts_filename
-        self.archive_standard_measurement_name = archive_standard_measurement_name
-        self.provisional_wq_filename = provisional_wq_filename
-        self.depth = depth
-        self.infer_frequency = infer_frequency
+        # How to process it
+        self._frequency = run_config.get("frequency")
+        self.infer_frequency = option("infer_frequency", True)
+        self._defaults = option("defaults", {})
+        self._interval_dict = option("interval_dict", {})
+        self.export_file_name = run_config.get("export_file_name")
+        self.layer = run_config.get("layer")
+        self.provisional_wq_filename = run_config.get("provisional_wq_filename")
+        self.archive_standard_measurement_name = option(
+            "archive_standard_measurement_name", self._standard_measurement_name
+        )
 
-        # Set other value initial values
+        # Where the data goes, once load_data() has run
         self._standard_data = EMPTY_STANDARD_DATA.copy()
         self._check_data = EMPTY_CHECK_DATA.copy()
         self._quality_data = EMPTY_QUALITY_DATA.copy()
-
-        # standard hilltop
-        standard_hilltop = Hilltop(base_url, standard_hts_filename)
-        data_acquisition.enforce_site_in_hts(standard_hilltop, self.site)
-        self.enforce_measurement_at_site(standard_measurement_name, standard_hilltop)
+        self.standard_origin = None  # set by load_data()
 
         (
             self.standard_item_name,
             self.standard_data_source_name,
-        ) = utils.measurement_datasource_splitter(standard_measurement_name)
+        ) = utils.measurement_datasource_splitter(self._standard_measurement_name)
 
         (
             self.archive_standard_item_name,
             self.archive_standard_data_source_name,
-        ) = utils.measurement_datasource_splitter(archive_standard_measurement_name)
-
-        # check hilltop
-        if check_hts_filename is not None:
-            check_hilltop = Hilltop(base_url, check_hts_filename)
-            data_acquisition.enforce_site_in_hts(check_hilltop, self.site)
-            self.enforce_measurement_at_site(check_measurement_name, check_hilltop)
+        ) = utils.measurement_datasource_splitter(self.archive_standard_measurement_name)
 
         (
             self.check_item_name,
             self.check_data_source_name,
-        ) = utils.measurement_datasource_splitter(check_measurement_name)
+        ) = utils.measurement_datasource_splitter(
+            self._check_measurement_name or self._standard_measurement_name
+        )
 
         self.standard_item_info = {
             "item_name": self.standard_item_name,
@@ -306,180 +265,25 @@ class Processor:
         }
 
         self._quality_code_evaluator = data_sources.get_qc_evaluator(self.data_family)
-        self._quality_code_evaluator.constant_check_shift = constant_check_shift
-
-        # Load data for the first time
-        get_check = (self.check_hts_filename is not None) and self.depth is None
-        self.import_data(
-            from_date=self.from_date,
-            to_date=self.to_date,
-            check=get_check,
-            quality=fetch_quality,
+        self._quality_code_evaluator.constant_check_shift = option(
+            "constant_check_shift", 0
         )
-
-    def enforce_measurement_at_site(self, measurement_name, hilltop):
-        """Unimplemented test that measurement is in a given hilltop."""
-        pass
-        """
-        available_measurements = hilltop.get_measurement_list(self.site)
-        if measurement_name not in list(available_measurements.MeasurementName):
-            raise ValueError(
-                f"Measurement name '{measurement_name}' not found at"
-                f" site '{self.site}'. "
-                "Available measurements are "
-                f"{list(available_measurements.MeasurementName)}"
-            )
-        """
-
-    @classmethod
-    def from_processing_parameters_dict(
-        cls, processing_parameters, fetch_quality=False
-    ):
-        """
-        Initialises a Processor class given a config file.
-
-        Parameters
-        ----------
-        processing_parameters : dict
-            Dictionary of processing parameters
-        fetch_quality : bool, optional
-            Whether to fetch any existing quality data, default false
-
-        Returns
-        -------
-        Processor, Annalist
-        """
-        ###################################################################################
-        # Setting up logging with Annalist
-        ###################################################################################
-
-        ann = Annalist()
-        ann.configure(
-            logfile=processing_parameters.get("logfile", None),
-            analyst_name=processing_parameters["analyst_name"],
-            stream_format_str=processing_parameters["format"].get("stream", None),
-            file_format_str=processing_parameters["format"].get("file", None),
-        )
-
-        ###################################################################################
-        # Creating a Hydrobot Processor object which contains the data to be processed
-        ###################################################################################
-        return cls(**processing_parameters, fetch_quality=fetch_quality), ann
-
-    @classmethod
-    def from_config_yaml(cls, config_path, fetch_quality=False):
-        """
-        Initialises a Processor class given a config file.
-
-        Parameters
-        ----------
-        config_path : string
-            Path to config.yaml.
-        fetch_quality : bool, optional
-            Whether to fetch any existing quality data, default false
-
-        Returns
-        -------
-        Processor, Annalist
-        """
-        cls.complete_yaml_parameters(config_path)
-        processing_parameters = data_acquisition.config_yaml_import(config_path)
-        processing_parameters = data_acquisition.convert_inspection_expiry(
-            processing_parameters
-        )
-
-        return cls.from_processing_parameters_dict(processing_parameters, fetch_quality)
 
     @staticmethod
-    def _keys_to_be_set_to_none_if_missing():
-        keys = [
-            "frequency",
-            "from_date",
-            "check_hts_filename",
-            "check_measurement_name",
-            "export_file_name",
-            "archive_base_url",
-            "archive_standard_hts_filename",
-            "archive_check_hts_filename",
-        ]
-        return keys
+    def _read_date(run_config: dict, key: str) -> pd.Timestamp:
+        """Read a date from the run config, naming the key if it is not one."""
+        try:
+            return pd.Timestamp(run_config[key])
+        except (ValueError, TypeError) as error:
+            raise ValueError(
+                f"{key} {run_config[key]!r} is not a date. Run configs write "
+                'dates like "2025-01-31 09:30".'
+            ) from error
 
-    @classmethod
-    def complete_yaml_parameters(cls, config_path):
-        """Ensure a yaml holds all relevant parameters, filling in missing from/to dates."""
-        yaml = ruamel.yaml.YAML()
-        with open(config_path) as fp:
-            config_string = fp.read()
-        processing_parameters = yaml.load(config_string)
-
-        # Set to_date if missing
-        if (
-            "to_date" not in processing_parameters
-            or processing_parameters["to_date"] is None
-        ):
-            processing_parameters["to_date"] = datetime.now().strftime("%Y-%m-%d %H:%M")
-
-        def key_and_substitute(key, sub, values):
-            """Return values[key] if that is valid, otherwise returns values[sub]."""
-            if key in values and values[key] is not None:
-                return values[key]
-            else:
-                return values[sub]
-
-        # Set from_date if missing
-        if (
-            "from_date" not in processing_parameters
-            or processing_parameters["from_date"] is None
-        ):
-            try:
-                processing_parameters["from_date"] = utils.find_last_time(
-                    base_url=key_and_substitute(
-                        "archive_base_url", "base_url", processing_parameters
-                    ),
-                    hts=key_and_substitute(
-                        "archive_standard_hts_filename",
-                        "standard_hts_filename",
-                        processing_parameters,
-                    ),
-                    site=processing_parameters["site"],
-                    measurement=key_and_substitute(
-                        "archive_standard_measurement_name",
-                        "standard_measurement_name",
-                        processing_parameters,
-                    ),
-                ).strftime("%Y-%m-%d %H:%M")
-            except ValueError as e:
-                warnings.warn(
-                    f"Could not infer from_date from archive data: {str(e)}. "
-                    "Please check your archive settings are correct.",
-                    stacklevel=1,
-                )
-
-        # Amend measurement names if depth
-        if "depth" in processing_parameters:
-            # standard measurement name
-            processing_parameters[
-                "standard_measurement_name"
-            ] = data_sources.depth_standard_measurement_name_by_data_family(
-                processing_parameters["data_family"], processing_parameters["depth"]
-            )
-            qc_evaluator_type = data_sources.DATA_FAMILY_DICT[
-                processing_parameters["data_family"]
-            ]["QC_evaluator_type"]
-            if qc_evaluator_type != "Unchecked":
-                # check measurement name
-                processing_parameters[
-                    "check_measurement_name"
-                ] = data_sources.depth_check_measurement_name_by_data_family(
-                    processing_parameters["data_family"], processing_parameters["depth"]
-                )
-        with open(config_path, "w") as fp:
-            yaml.dump(processing_parameters, fp)
-
-        # Ensure these keys are not missing - raises error if it is
-        utils.enforce_config_values_not_missing(
-            config_path, cls._keys_to_be_set_to_none_if_missing()
-        )
+    @property
+    def check_measurement_name(self):  # type: ignore
+        """The check measurement, or None if the run config names none."""
+        return self._check_measurement_name
 
     @property
     def standard_measurement_name(self):  # type: ignore
@@ -566,261 +370,77 @@ class Processor:
     def quality_data(self, value):
         self._quality_data = value
 
-    @ClassLogger
+    @ClassLogger  # type: ignore
     def import_standard(
         self,
-        standard_hts_filename: str | None = None,
         site: str | None = None,
-        standard_measurement_name: str | None = None,
-        standard_data_source_name: str | None = None,
-        standard_item_info: dict | None = None,
-        standard_data: pd.DataFrame | None = None,
-        from_date: str | None = None,
-        to_date: str | None = None,
-        frequency: str | None = None,
-        base_url: str | None = None,
-        infer_frequency: bool | None = None,
-    ):
-        """
-        Import standard data.
+        measurement: str | None = None,
+        from_date: str | pd.Timestamp | None = None,
+        to_date: str | pd.Timestamp | None = None,
+    ) -> pd.DataFrame:
+        """Read a standard series from the provider and return it as a frame.
+
+        This READS and RETURNS. It stores nothing, so it can fetch other series
+        too (a companion series from another site, say) without disturbing the
+        run's own data. ``load_data()`` is what stores the run's own series.
 
         Parameters
         ----------
-        standard_hts_filename : str or None, optional
-            The standard Hilltop service. If None, defaults to the standard HTS.
-        site : str or None, optional
-            The site to be processed. If None, defaults to the site on the processor object.
-        standard_measurement_name : str or None, optional
-            The standard measurement to be processed. If None, defaults to the standard
-            measurement name on the processor object.
-        standard_data_source_name : str or None, optional
-            The name of the standard data source. If None, defaults to the standard data
-            source name on the processor object.
-        standard_item_info : dict or None, optional
-            The item information for the standard data. If None, defaults to the
-            standard item info on the processor object.
-        standard_data : pd.DataFrame or None, optional
-            The standard data. If None, makes an empty standard_data object
-        from_date : str or None, optional
-            The start date for data retrieval. If None, defaults to the earliest available
-            data.
-        to_date : str or None, optional
-            The end date for data retrieval. If None, defaults to latest available
-            data.
-        frequency : str or None, optional
-            The frequency of the data. If None and infer_frequency, defaults to the frequency on the
-            processor object. If that's also None, self.infer_frequency is consulted to
-            determine whether to infer the frequency from the data.
-        base_url : str or None, optional
-            URL to look for hilltop server. Will use self.base_url if None.
-        infer_frequency : str or None, optional.
-            Whether to look for frequency. Uses self.infer_frequency if None. If True and frequency is provided will
-            issue a warning.
+        site : str, optional
+            Defaults to the run's site.
+        measurement : str, optional
+            Defaults to the run's standard measurement.
+        from_date, to_date : str or pd.Timestamp, optional
+            Defaults to the run's dates.
 
         Returns
         -------
         pd.DataFrame
-            The standard data
+            Columns ``Raw``, ``Value``, ``Changes``, and ``Remove``, indexed by
+            ``Time``. ``Raw`` and ``Value`` hold the readings. The provider has
+            already applied the Hilltop divisor, so nothing is divided here. If
+            there is no data in the range, the frame is empty and an error is
+            added to ``processing_issues`` (with the request URL, which is how to
+            tell a quiet period from a misspelt name).
 
         Raises
         ------
-        ValueError
-            - If no standard data is found within the specified date range.
-
-
-        TypeError
-            If the parsed Standard data is not a pandas.Series.
+        DataProviderError
+            If the provider fails, or finds data but not this measurement.
 
         Notes
         -----
-        This method imports Standard data from the specified server based on the
-        provided parameters.
-        It retrieves data using the `data_acquisition.get_data` function and updates
-        the Standard Series in the instance.
-        The data is parsed and formatted according to the item_info in the data source.
-
-        Examples
-        --------
-        >>> processor = Processor(...)  # initialize processor instance
-        >>> processor.import_standard(
-        ...     from_date='2022-01-01', to_date='2022-01-10'
-        ... )
+        The frequency is the run's ``frequency`` if it has one. Otherwise, if
+        ``infer_frequency`` is on, it is worked out from the data, and noted in
+        ``processing_issues``. See ``hydrobot.processors.importing``.
         """
-        if standard_hts_filename is None:
-            standard_hts_filename = self._standard_hts_filename
-        if site is None:
-            site = self._site
-        if standard_measurement_name is None:
-            standard_measurement_name = self._standard_measurement_name
-        if standard_data_source_name is None:
-            standard_data_source_name = self.standard_data_source_name
-        if standard_item_info is None:
-            standard_item_info = self.standard_item_info
-        if from_date is None:
-            from_date = self.from_date
-        if to_date is None:
-            to_date = self.to_date
-        if standard_data is None:
-            standard_data = EMPTY_STANDARD_DATA.copy()
-        if base_url is None:
-            base_url = self._base_url
-        if infer_frequency is None:
-            infer_frequency = self.infer_frequency
-        if frequency is None and infer_frequency:
-            frequency = self._frequency
+        frame, _ = self._read_standard(site, measurement, from_date, to_date)
+        return frame.data
 
-        response = data_acquisition.get_data(
-            base_url,
-            standard_hts_filename,
-            site,
-            standard_measurement_name,
-            from_date,
-            to_date,
-            tstype="StdSeries",
+    def _read_standard(self, site, measurement, from_date, to_date):
+        """Ask the provider for a seires and build its frame.
+
+        Returns ``(StandardFrame, StandardData)``: the frame to use, and what the
+        provider said about it, for callers that want the metadata too. Reports
+        what building the frame noted as processing issues.
+        """
+        site = self._site if site is None else site
+        measurement = (
+            self._standard_measurement_name if measurement is None else measurement
         )
+        from_date = self._from_date if from_date is None else pd.Timestamp(from_date)
+        to_date = self._to_date if to_date is None else pd.Timestamp(to_date)
 
-        response_found = False
-
-        date_format = "Calendar"
-        data_source_list = []
-        raw_standard_data = EMPTY_STANDARD_DATA.copy()
-
-        raw_standard_response = None
-        # For each response_measurement in response, loop through.
-        if response.measurements is None or len(response.measurements) == 0:
-            self.report_processing_issue(
-                start_time=from_date,
-                end_time=to_date,
-                series_type="Standard",
-                message_type="error",
-                comment="No standard data found within specified date range.",
-                code="MSD",
-            )
-        else:
-            for response_measurement in response.measurements:
-                data_source_list += [response_measurement.data_source.name]
-                if (
-                    (response_measurement.data_source.name == standard_data_source_name)
-                    and (response_measurement.data_source.ts_type == "StdSeries")
-                    and (response_measurement.data.timeseries is not None)
-                ):
-                    if response_found:
-                        # Already found something, duplicated StdSeries
-                        raise ValueError(
-                            f"Multiple StdSeries found. Already found: {raw_standard_data}, "
-                            f"also found: {response_measurement.data.timeseries}."
-                        )
-
-                    response_found = True
-                    raw_standard_data = response_measurement.data.timeseries
-                    date_format = response_measurement.data.date_format
-
-                    raw_standard_response = response_measurement
-                    standard_item_info["item_name"] = response_measurement.data_source.item_info[
-                        0
-                    ].item_name
-                    standard_item_info["item_format"] = response_measurement.data_source.item_info[
-                        0
-                    ].item_format
-                    standard_item_info["divisor"] = response_measurement.data_source.item_info[
-                        0
-                    ].divisor
-                    standard_item_info["units"] = response_measurement.data_source.item_info[0].units
-                    standard_item_info["number_format"] = response_measurement.data_source.item_info[
-                        0
-                    ].format
-            if not response_found:
-                raise ValueError(
-                    f"Standard Data Not Found under name "
-                    f"{standard_measurement_name}. "
-                    f"Available data sources are: {data_source_list}"
-                )
-
-            if not isinstance(raw_standard_data, pd.DataFrame):
-                raise TypeError(
-                    "Expecting pd.DataFrame for Standard data, "
-                    f"but got {type(raw_standard_data)} from parser."
-                )
-
-            if not raw_standard_data.empty:
-                if date_format == "mowsecs":
-                    raw_standard_data.index = utils.mowsecs_to_datetime_index(
-                        raw_standard_data.index
-                    )
-                else:
-                    raw_standard_data.index = pd.to_datetime(raw_standard_data.index)
-
-                if frequency is not None:
-                    # Frequency is provided
-                    raw_standard_data = raw_standard_data.asfreq(
-                        frequency, fill_value=np.nan
-                    )
-                    if infer_frequency:
-                        warnings.warn(
-                            f"infer_frequency is true, but frequency has been provided as {frequency}. Will not "
-                            f"attempt to find frequency from data.",
-                            stacklevel=1,
-                        )
-                else:
-                    if infer_frequency:
-                        # We have been asked to infer the frequency
-                        frequency = utils.infer_frequency(
-                            raw_standard_data.index, method="mode"
-                        )
-                        raw_standard_data = raw_standard_data.asfreq(
-                            frequency, fill_value=np.nan
-                        )
-                        self.report_processing_issue(
-                            code="IRR",
-                            comment=f"frequency inferred as {frequency}",
-                            message_type="info",
-                        )
-                        self._frequency = frequency
-                    else:
-                        # infer_frequency is explicitly set to false and frequency is None
-                        # Assuming irregular data
-                        self.report_processing_issue(
-                            code="IRR",
-                            comment=f"No frequency provided and infer_frequency"
-                            f" is set to False. Assuming irregular data for {standard_measurement_name}.",
-                            message_type="info",
-                        )
-
-            if raw_standard_response is not None:
-                fmt = standard_item_info["item_format"]
-                div = standard_item_info["divisor"]
-            else:
-                self.report_processing_issue(
-                    code="HXD",
-                    comment="Could not extract standard data format from data source. "
-                    "Defaulting to float format.",
-                    series_type="standard",
-                    message_type="error",
-                )
-
-                fmt = "F"
-                div = 1
-            if div is None or div == "None":
-                div = 1
-            if fmt == "I":
-                raw_standard_data.iloc[:, 0] = raw_standard_data.iloc[:, 0].astype(
-                    int
-                ) / int(div)
-            elif fmt == "F":
-                raw_standard_data.iloc[:, 0] = raw_standard_data.iloc[:, 0].astype(
-                    np.float32
-                ) / float(div)
-            elif fmt == "D":  # Not sure if this would ever really happen, but...
-                raw_standard_data.iloc[:, 0] = utils.mowsecs_to_datetime_index(
-                    raw_standard_data.iloc[:, 0]
-                )
-            else:
-                raise ValueError(f"Unknown Format Spec: {fmt}")
-
-            standard_data["Raw"] = raw_standard_data.iloc[:, 0]
-            standard_data["Value"] = standard_data["Raw"]
-
-        return standard_data
+        standard = self.provider.get_standard(site, measurement, from_date, to_date)
+        frame = importing.standard_frame(
+            standard,
+            measurement=measurement,
+            frequency=self._frequency,
+            infer_frequency=self.infer_frequency,
+        )
+        for note in frame.notes:
+            self.report_processing_issue(**dataclasses.asdict(note))
+        return frame, standard
 
     @ClassLogger
     def import_quality(
@@ -1177,81 +797,53 @@ class Processor:
                 check_data["QC"] = True
         return check_data
 
-    def import_data(
+    @ClassLogger  # type: ignore
+    def load_data(
         self,
-        from_date: pd.Timestamp | str | None = None,
-        to_date: pd.Timestamp | str | None = None,
-        standard: bool = True,
-        check: bool = True,
-        quality: bool = True,
+        from_date: str | pd.Timestamp | None = None,
+        to_date: str | pd.Timestamp | None = None,
     ):
-        """
-        Import data using the class parameter range.
+        """Read the run's own data from the provider, and store it.
+
+        This is the step the old constructor did on its own. It is separate now,
+        so a Processor can be built without a server (for testing and such).
+
+        For now this loads the standard series only. Quality and check data are
+        still being moved across to the provider.
 
         Parameters
         ----------
-        from_date : str or None, optional
-            start of data to be imported, if None will use defaults
-        to_date : str or None, optional
-            end of data to be imported, if None will use defaults
-        standard : bool, optional
-            Whether to import standard data, by default True.
-        check : bool, optional
-            Whether to import check data, by default True.
-        quality : bool, optional
-            Whether to import quality data, by default False.
-
-        Returns
-        -------
-        None
+        from_date, to_date : str or pd.Timestamp, optional
+            Default to the run's dates.
 
         Notes
         -----
-        This method imports data for the specified date range, using the class
-        parameters `_from_date` and `_to_date`. It updates the internal series data in
-        the Processor instance for standard, check, and quality measurements
-        separately.
-
-        Examples
-        --------
-        >>> processor = Processor(base_url="https://hilltop-server.com", site="Site1")
-        >>> processor.import_data("2022-01-01", "2022-12-31",standard=True, check=True)
-        False
+        Besides ``standard_data``, this sets ``standard_item_info`` from what the
+        provider said about the series (when it found some), ``standard_origin``
+        (where the data came from, found or not), and, if the run had no
+        frequency and one was inferred, ``frequency``. If the provider fails,
+        nothing is changed. Calling it again replaces what was loaded before.
         """
-        if standard:
-            self._standard_data = self.import_standard(
-                standard_hts_filename=self.standard_hts_filename,
-                site=self.site,
-                standard_measurement_name=self._standard_measurement_name,
-                standard_data_source_name=self.standard_data_source_name,
-                standard_item_info=self.standard_item_info,
-                standard_data=self._standard_data,
-                from_date=from_date,
-                to_date=to_date,
-                frequency=self._frequency,
-            )
-        if quality:
-            self._quality_data = self.import_quality(
-                standard_hts_filename=self.standard_hts_filename,
-                site=self._site,
-                standard_measurement_name=self._standard_measurement_name,
-                standard_data_source_name=self.standard_data_source_name,
-                quality_data=self.quality_data,
-                from_date=from_date,
-                to_date=to_date,
-            )
-        if check:
-            self._check_data = self.import_check(
-                check_hts_filename=self.check_hts_filename,
-                site=self._site,
-                check_measurement_name=self._check_measurement_name,
-                check_data_source_name=self.check_data_source_name,
-                check_item_info=self.check_item_info,
-                check_item_name=self.check_item_name,
-                check_data=self.check_data,
-                from_date=from_date,
-                to_date=to_date,
-            )
+        frame, standard = self._read_standard(None, None, from_date, to_date)
+
+        self._standard_data = frame.data
+        if self._frequency is None and frame.frequency is not None:
+            self._frequency = frame.frequency
+
+        metadata = standard.metadata
+        self.standard_origin = metadata.get("origin")
+        # An empty read carries only the origin: there is no item to describe.
+        if "item_name" in metadata:
+            self.standard_item_info = {
+                key: metadata[key]
+                for key in (
+                    "item_name",
+                    "item_format",
+                    "divisor",
+                    "units",
+                    "number_format",
+                )
+            }
 
     @ClassLogger
     def add_standard(self, extra_standard):
