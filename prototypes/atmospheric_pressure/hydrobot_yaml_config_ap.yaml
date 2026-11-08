@@ -36,9 +36,8 @@ defaults:
 # Annalist Configuration
 logfile: hydrobot_logs.csv
 format:
-  file: '%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s,
-    %(from_date)s, %(to_date)s, %(message)s'
-  stream: ''
+  file: "%(asctime)s, %(analyst_name)s, %(function_name)s, %(site)s, %(measurement)s, %(from_date)s, %(to_date)s, %(message)s"
+  stream: "%(function_name)s | %(measurement)s | %(from_date)s -> %(to_date)s | %(message)s"
 
 inspection_expiry:
   500:

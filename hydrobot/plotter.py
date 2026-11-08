@@ -244,6 +244,7 @@ def plot_check_data(
 
 
     """
+    check_data = check_data.copy()
     if fig is None:
         fig = go.Figure()
     if tag_list is None:

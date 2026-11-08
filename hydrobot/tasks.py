@@ -3,8 +3,10 @@
 import csv
 import importlib.resources as pkg_resources
 import os
+import pathlib
 import platform
 import re
+import warnings
 import shutil
 from copy import deepcopy
 from typing import Any
@@ -13,6 +15,7 @@ import pandas as pd
 
 import ruamel.yaml
 
+import hydrobot.config.horizons_source as source
 import hydrobot.data_sources as data_sources
 import hydrobot.utils as utils
 
@@ -507,3 +510,120 @@ def create_depth_hydrobot_batches(
         make_batch(hydrobot_scripts, os.path.join(home_dir, "run_hydrobot.bat"))
     else:
         raise OSError("Unsupported operating system for run script creation.")
+
+
+def rename_hilltop_file(directory, depth_flag=False):
+    """Given a directory with a single hts and accdb, will rename those to final_name."""
+    rename_candidates = [
+        d for d in os.listdir(directory) if os.path.splitext(d)[1] in [".hts", ".accdb"]
+    ]
+    hts_candidates = [d for d in rename_candidates if os.path.splitext(d)[1] == ".hts"]
+    accdb_candidates = [
+        d for d in rename_candidates if os.path.splitext(d)[1] == ".accdb"
+    ]
+
+    # Error checking
+    if len(hts_candidates) != 1:
+        if len(hts_candidates) == 0:
+            raise FileNotFoundError(f"No hts file found in {directory}")
+        else:
+            raise FileExistsError(
+                f"Multiple hts files found in {directory}, only one may exist for this function."
+            )
+    if len(accdb_candidates) == 0:
+        warnings.warn(f"No accdb file found in {directory}", stacklevel=2)
+    elif len(accdb_candidates) == 1:
+        if (
+            os.path.splitext(accdb_candidates[0])[0]
+            != os.path.splitext(hts_candidates[0])[0]
+        ):
+            raise ValueError(f"accdb and hts exist in {directory}, but do not match.")
+    else:
+        raise FileExistsError(
+            f"Multiple accdb files found in {directory}, only one may exist for this function."
+        )
+
+    # Rename files
+    final_name = make_hilltop_file_name(
+        *find_batch_and_site_code_from_dir(directory, depth_flag)
+    )
+    for candidate in rename_candidates:
+        file_to_be_renamed = os.path.join(directory, candidate)
+        renamed_file = os.path.join(
+            directory, final_name + os.path.splitext(candidate)[1]
+        )
+        os.rename(file_to_be_renamed, renamed_file)
+
+
+def find_batch_and_site_code_from_dir(directory, depth_flag=False):
+    """Given a directory, find the batch number and the site 3-letter code."""
+    path_list = pathlib.Path(directory).parts
+    if depth_flag:
+        depth = path_list[-1]
+        batch_no = path_list[-2]
+        site_name = path_list[-3]
+        data_source = path_list[-4]
+    else:
+        batch_no = path_list[-1]
+        site_name = path_list[-2]
+        data_source = path_list[-3]
+    if not batch_no.isnumeric():
+        raise ValueError(f"Expect that batch number is numeric, got {batch_no}")
+    site_code = source.find_three_letter_code(site_name)
+
+    if depth_flag:
+        return batch_no, site_code, data_source, depth
+    else:
+        return batch_no, site_code, data_source
+
+
+def make_hilltop_file_name(batch_no, site_code, data_source, depth=None):
+    """Make the standard filename from these components."""
+    if depth is None:
+        return f"{batch_no}_{data_source}_{site_code}_data".replace(" ", "_")
+    else:
+        return f"{batch_no}_{data_source}_{site_code}_data_{depth}".replace(" ", "_")
+
+
+def list_files_from_dsn(dsn):
+    """List the files looked at by a dsn. Will recursively search dsns."""
+    with open(dsn) as file:
+        file_list = []
+        for line in file:
+            output = re.search('File\d+="(.*)"', line)
+            if output is not None:
+                output = output.group(1)
+                if os.path.splitext(output)[1] == ".dsn":
+                    file_list += list_files_from_dsn(output)
+                else:
+                    file_list.append(output)
+        return file_list
+
+
+def rename_files_from_dsn_and_make_shadoof_commands(dsn, depth_flag=False):
+    """Given a dsn, rename hts/accdb files found in the directories of the dsn files and construct shadoof commands."""
+    shadoof_file = os.path.join(os.path.dirname(dsn), "shadoof_commands.txt")
+    target_xmls = list_files_from_dsn(dsn)
+    shadoof_command_list = []
+    for xml in target_xmls:
+        target_dir = os.path.dirname(xml)
+        hts_file_name = os.path.join(
+            target_dir,
+            make_hilltop_file_name(
+                *find_batch_and_site_code_from_dir(target_dir, depth_flag)
+            )
+            + ".hts",
+        )
+        shadoof_command = f'shadoof "{xml}" "{hts_file_name}"'
+        shadoof_command_list.append(shadoof_command)
+        rename_hilltop_file(target_dir, depth_flag)
+    with open(shadoof_file, "w") as file:
+        for command in shadoof_command_list:
+            file.write(command)
+            file.write("\n")
+
+
+if __name__ == "__main__":
+    input_dir = "test.dsn"
+
+    rename_files_from_dsn_and_make_shadoof_commands(input_dir)

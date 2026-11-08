@@ -16,3 +16,7 @@ tasks.create_depth_hydrobot_batches(
     rainfall_config,
     create_directory=True,
 )
+
+tasks.rename_files_from_dsn_and_make_shadoof_commands(
+    os.path.join(dsn_destination_path, "hydrobot_dsn.dsn"), depth_flag=True
+)
