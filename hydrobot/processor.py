@@ -2593,10 +2593,10 @@ class Processor:
         alt_data.Value *= multiplier
         alt_data.Value += offset
 
-        self.standard_data.loc[
-            (self.standard_data.index > pd.Timestamp(from_date))
-            & (self.standard_data.index < pd.Timestamp(to_date)),
-            "Value",
-        ] = np.nan
-        self.standard_data = pd.concat([self.standard_data, alt_data])
+        keep_data = self.standard_data.loc[
+            (self.standard_data.index < pd.Timestamp(from_date))
+            & (self.standard_data.index > pd.Timestamp(to_date))
+        ]
+
+        self.standard_data = pd.concat([keep_data, alt_data])
         self.standard_data = self.standard_data.sort_index()
