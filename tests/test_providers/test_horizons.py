@@ -1129,6 +1129,239 @@ def test_no_standard_data_after_the_last_quality_entry_still_resumes_there():
     # That's the normal state after a checkpoint, so resume at the checkpoint.
     qual = pd.DataFrame({MEAS: [100]}, index=timestamps("2025-10-22 11:00:00"))
     archive = FakeArchive(qual, pd.DataFrame(), errors={"StdSeries": no_data_error()})
+
     assert provider_with(archive).last_processed_time(SITE, MEAS) == pd.Timestamp(
         "2025-10-22 11:00:00"
     )
+
+# -----------------------------------------------------------------------------
+# The three things the server says when "there is nothing"
+#
+# These look alike and are NOT the same. A wrong measurement name or a wrong
+# site name used to be treated as an empty time range, because the provider
+# matched "No data" loosely. A typo the looked like a quiet period, and the run
+# carried on with no data. Copied from live responses (9 November 2026).
+# -----------------------------------------------------------------------------
+
+EMPTY_RANGE_MESSAGE = (
+    "Hilltop GetData error: No data from 9-Nov-2026 08:00:00 to 9-Nov-2026 09:00:00"
+)
+
+NO_DATA_SOURCE_MESSAGE = (
+    "Hilltop GetData error: No Data Source for Atmospheric Pressurk at this site."
+)
+NO_SITE_MESSAGE = "Hilltop GetData error: No data for site Manawatu at Keachers Bollege"
+
+
+def no_data_source_error():
+    """A wrong-measurement error, as whurl raises it."""
+    return HilltopResponseError(NO_DATA_SOURCE_MESSAGE)
+
+
+def no_site_error():
+    """A wrong-site error, as whurl raises it."""
+    return HilltopResponseError(NO_SITE_MESSAGE)
+
+
+@pytest.mark.parametrize(
+    ("message", "expected"),
+    [
+        (EMPTY_RANGE_MESSAGE, "empty_range"),
+        (NO_DATA_SOURCE_MESSAGE, "no_data_source"),
+        (NO_SITE_MESSAGE, "no_site"),
+        # whurl has worded the prefix differently over time.
+        ("Response error: " + EMPTY_RANGE_MESSAGE, "empty_range"),
+        ("Parse error: " + NO_DATA_SOURCE_MESSAGE, "no_data_source"),
+        ("Response error: " + NO_SITE_MESSAGE, "no_site"),
+        # The case of the words has to be told apart on the words, not the case.
+        ("no data from X to Y", "empty_range"),
+    ],
+)
+def test_the_three_kinds_of_nothing_are_told_apart(message, expected):
+    """The three kinds of nothing are told apart."""
+    assert horizons_module.classify_not_found(message) == expected
+
+
+@pytest.mark.parametrize(
+    "message",
+    [
+        "HTTP error occurred: 500 - database offline",
+        "Something else entirely",
+        # Unknown wording is NOT assumed to be an empty range. Treating a real
+        # problem as "no data" hides it; treating "no data" as a problem is loud.
+        "No data",
+        "No data available",
+    ],
+)
+def test_anything_else_is_not_classified(message):
+    """Anything lse is not classified."""
+    assert horizons_module.classify_not_found(message) is None
+
+
+def test_the_empty_range_message_is_still_an_empty_result():
+    """The empty range message is still an empty result."""
+    p = provider_returning([], error=HilltopResponseError(EMPTY_RANGE_MESSAGE))
+
+    result = p.get_standard(SITE, MEAS, START, END)
+
+    assert result.data.empty
+    assert result.metadata.keys() == {"origin"}
+
+
+class TestAWrongMeasurementName:
+    # The reads, and the name each is given. "Atmospheric Pressurk" is the typo
+    # from the live response; the check read uses its own name.
+    """A wrong measurement name."""
+
+    READS = [
+        ("standard", lambda p, name: p.get_standard(SITE, name, START, END)),
+        ("quality", lambda p, name: p.get_quality(SITE, name, START, END)),
+    ]
+
+    @pytest.mark.parametrize(("label", "read"), READS)
+    def test_it_is_an_error_not_an_empty_result(self, label, read):
+        """It is an error not an empty result."""
+        p = provider_returning([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError):
+            read(p, "Atmospheric Pressurk")
+
+    def test_a_check_read_is_an_error_too(self):
+        """A check read is an errro too."""
+        p = provider_with_check([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError):
+            p.get_check(SITE, "Check Pressurk [Atmospheric Pressure]", START, END)
+
+    @pytest.mark.parametrize(("label", "read"), READS)
+    def test_the_message_names_the_measurement_and_the_site(self, label, read):
+        """The message names the measurement and the site."""
+        p = provider_returning([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError) as raised:
+            read(p, "Atmospheric Pressurk")
+
+        message = str(raised.value)
+        assert "Atmospheric Pressurk" in message
+        assert SITE in message
+        assert "data source" in message.lower()
+
+    @pytest.mark.parametrize(("label", "read"), READS)
+    def test_the_message_keeps_the_server_own_words(self, label, read):
+        """The message keeps the servers own words."""
+        p = provider_returning([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError, match="No Data Source for"):
+            read(p, "Atmospheric Pressurk")
+
+    @pytest.mark.parametrize(("label", "read"), READS)
+    def test_the_message_carries_the_url_to_paste_into_a_browser(self, label, read):
+        """The message carries the url to paste into a browser."""
+        p = provider_returning([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError) as raised:
+            read(p, "Atmosphric Pressurk")
+
+        assert str(raised.value).count("built=by-whurl-request") == 1
+
+    def test_the_original_error_is_kept_as_the_cause(self):
+        """The original error is kept as the cause."""
+        error = no_data_source_error()
+        p = provider_returning([], error=error)
+
+        with pytest.raises(DataProviderError) as raised:
+            p.get_standard(SITE, "Atmospheric Pressurk", START, END)
+
+        assert raised.value.__cause__ is error
+
+class TestAWrongSiteName:
+    """A wrong site name."""
+
+    @pytest.mark.parametrize(
+        ("label", "read"),
+        [
+            (
+                "standard",
+                lambda p: p.get_standard("Keachers Bollege", MEAS, START, END),
+            ),
+            ("quality", lambda p: p.get_quality("Keachers Bollege", MEAS, START, END)),
+        ],
+    )
+    def test_it_is_an_error_naming_the_site(self, label, read):
+        """It is an error naming the site."""
+        p = provider_returning([], error=no_site_error())
+
+        with pytest.raises(DataProviderError) as raised:
+            read(p)
+
+        message = str(raised.value)
+        assert "Keachers Bollege" in message
+        assert "site" in message.lower()
+        assert "No data for site" in message
+        assert str(message).count("built=by-whurl-request") == 1
+
+    def test_a_check_read_is_an_error_too(self):
+        """A check read is an error too."""
+        p = provider_with_check([], error=no_site_error())
+
+        with pytest.raises(DataProviderError, match="Keachers Bollege"):
+            p.get_check("Keachers Bollege", CHECK_NAME, START, END)
+
+    def test_it_is_not_confused_with_a_wrong_measurement(self):
+        """It is not confused with a wrong measurement."""
+        site_problem = provider_returning([], error=no_site_error())
+        source_problem = provider_returning([], error=no_data_source_error())
+
+        with pytest.raises(DataProviderError) as for_site:
+            site_problem.get_standard(SITE, MEAS, START, END)
+        with pytest.raises(DataProviderError) as for_source:
+            source_problem.get_standard(SITE, MEAS, START, END)
+
+        assert "does not know the site" in str(for_site.value)
+        assert "has no data source" in str(for_source.value)
+
+
+class TestTheArchiveLookup:
+    """``last_processed_time`` asks the ARCHIVE, where "not found" is an answer.
+
+    A measurement that has never been archived, or a brand-new site that is not
+    in the archive yet, is reported by the server exactly like a typo. For a
+    resume point that means "never processed", so all three come back as None
+    and ``resolve()`` asks the analyst for a from_date, listing the causes. It
+    is only the live reads, where the site and data source must exist, that
+    treat them as errors.
+
+    Unconfirmed: the wording the real archive uses for a never-archived
+    measurement or site. Confirm it on a live run.
+    """
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            HilltopResponseError(EMPTY_RANGE_MESSAGE),
+            HilltopResponseError(NO_DATA_SOURCE_MESSAGE),
+            HilltopResponseError(NO_SITE_MESSAGE),
+        ],
+        ids=["empty range", "no data source", "no site"],
+    )
+    def test_never_archived_is_none_whatever_the_server_calls_it(self, error):
+        """Never archived is none whatever the server calls it."""
+        archive = FakeArchive(
+            pd.DataFrame(),
+            pd.DataFrame(),
+            errors={"StdQualSeries": error, "StdSeries": error},
+        )
+
+        assert provider_with(archive).last_processed_time(SITE, MEAS) is None
+
+    def test_any_other_error_is_still_an_error(self):
+        """Any other error is still an error."""
+        server_fault = HilltopResponseError("HTTP error occurred: 500 - offline")
+        archive = FakeArchive(
+            pd.DataFrame(),
+            pd.DataFrame(),
+            errors={"StdQualSeries": server_fault, "StdSeries": server_fault},
+        )
+
+        with pytest.raises(DataProviderError, match="offline"):
+            provider_with(archive).last_processed_time(SITE, MEAS)

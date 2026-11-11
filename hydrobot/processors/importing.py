@@ -51,6 +51,7 @@ class StandardFrame:
     frequency: str | None
     notes: list[Note] = field(default_factory=list)
 
+
 def standard_frame(
     standard: StandardData,
     *,
@@ -88,9 +89,10 @@ def standard_frame(
     """
     if standard.data.empty:
         origin = standard.metadata.get("origin", {})
-        # Hilltop answers a misspelt measurement name with "no data", exactly
-        # as it does for a quiet period, so the URL is the way to tell which
-        # it was: paste it into a browser.
+        # Only an empty RANGE arrives here as "no data": the provider raises for
+        # a site or measurement the server does not know. It is still reported
+        # as an error, since a run that expected data found none, and the URL
+        # lets an analyst paste it into a browser and see what the server said.
         where = origin.get("request_url", "unknown request")
         note = Note(
             comment=(

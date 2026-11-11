@@ -11,7 +11,6 @@ The input data is built by tests/fake_provider.py, which runs real XML through
 whurl's real parser. So the shapes here are the shapes the real provider hands
 over, not hand-made DataFrames that could drift.
 """
-from matplotlib.pylab import empty
 
 import numpy as np
 import pandas as pd
@@ -70,8 +69,8 @@ class TestTheFrame:
         assert result.data["Remove"].isna().all()
 
     def test_values_are_float64_and_not_stuffed_into_float32(self):
-        # The old Processor cast to float32, which turns 998.4a into
-        # 998.400244140625. whurl already gives float64, and nothing needs
+        # The old Processor cast to float32, which turns 998.4 into
+        # 998.4000244140625. whurl already gives float64, and nothing needs
         # the loss.
         """Values are float64 and not stuffed into float32."""
         result = build(make_standard([998.4, 998.5, 998.6]))
@@ -205,6 +204,7 @@ class TestInferredFrequency:
         assert result.frequency is None
         assert len(result.data) == 1
 
+
 class TestIrregularData:
     """Irregular data."""
 
@@ -240,9 +240,8 @@ class TestNoData:
         assert build(empty_standard()).frequency is None
 
     def test_an_error_note_carries_the_request_url(self):
-        # The server answers a misspelt name with "no data", exaclty as it does
-        # for a quiet period. The URL is how an analyst tells which it was.
         """An error note carries the request url."""
+        # So an analyst can paste it into a browser and see what the server said.
         origin = make_origin(request_url="http://example.invalid/x.hts?Site=Typo")
 
         result = build(empty_standard(origin))
@@ -283,6 +282,7 @@ class TestNoData:
 
         assert result.data.empty
         assert result.notes[0].code == NO_DATA_CODE
+
 
 @pytest.mark.parametrize("frequency", ["5min", "1h", "15min"])
 def test_the_regularised_index_has_that_spacing(frequency):

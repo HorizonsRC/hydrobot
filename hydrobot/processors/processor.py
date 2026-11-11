@@ -1,6 +1,5 @@
 """Processor class."""
-from hydrobot.utils import infer_frequency
-from hydrobot.data_structure import Data
+from pandas.tseries.api import infer_freq
 
 import copy
 import dataclasses
@@ -15,8 +14,6 @@ from annalist.decorators import ClassLogger
 import pandas as pd
 
 import hydrobot
-from hydrobot.processors import importing
-from hydrobot.providers.protocol import DataProvider
 from hydrobot import (
     data_acquisition,
     data_sources,
@@ -26,18 +23,19 @@ from hydrobot import (
     plotter,
     utils,
 )
+from hydrobot.processors import importing
+from hydrobot.providers.protocol import DataProvider
 
 annalizer = Annalist()
 
 # These used to be defined here. They moved to frames.py so that the helpers
 # which build them can import them without imorting this module. Other modules
 # still import them from here, so the names stay available.
-from hydrobot.processors.frames import (  # noqa: E402, f401
+from hydrobot.processors.frames import (  # noqa: E402, F401
     EMPTY_CHECK_DATA,
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
 )
-
 
 # The run config keys that must be present and not None. ``resolve()`` fills in
 # the dates, so a config straight from a batch file is not ready to process.
@@ -48,6 +46,19 @@ REQUIRED_RUN_CONFIG_KEYS = (
     "from_date",
     "to_date",
 )
+
+
+def _measurement_name(item_name: str, data_source_name: str) -> str:
+    """Join an item name and a data source name into a measurement name.
+
+    The reverse of ``utils.measurement_datasource_splitter``: ``"Water
+    Temperature [Water Temp]"`` for an item and a data source that differ, and
+    just the name when they are the same.
+    """
+    if item_name == data_source_name:
+        return item_name
+    return f"{item_name} [{data_source_name}]"
+
 
 class Processor:
     """
@@ -220,7 +231,9 @@ class Processor:
         (
             self.archive_standard_item_name,
             self.archive_standard_data_source_name,
-        ) = utils.measurement_datasource_splitter(self.archive_standard_measurement_name)
+        ) = utils.measurement_datasource_splitter(
+            self.archive_standard_measurement_name
+        )
 
         (
             self.check_item_name,
@@ -377,6 +390,8 @@ class Processor:
         measurement: str | None = None,
         from_date: str | pd.Timestamp | None = None,
         to_date: str | pd.Timestamp | None = None,
+        frequency: str | None = None,
+        infer_frequency: bool | None = None,
     ) -> pd.DataFrame:
         """Read a standard series from the provider and return it as a frame.
 
@@ -392,6 +407,10 @@ class Processor:
             Defaults to the run's standard measurement.
         from_date, to_date : str or pd.Timestamp, optional
             Defaults to the run's dates.
+        frequency : str, optional
+            A pandas frequency such as ``"5min"`` to regularise this series to.
+        infer_frequency : bool, optional
+            Whether to work the frequency out from this series.
 
         Returns
         -------
@@ -399,25 +418,43 @@ class Processor:
             Columns ``Raw``, ``Value``, ``Changes``, and ``Remove``, indexed by
             ``Time``. ``Raw`` and ``Value`` hold the readings. The provider has
             already applied the Hilltop divisor, so nothing is divided here. If
-            there is no data in the range, the frame is empty and an error is
-            added to ``processing_issues`` (with the request URL, which is how to
-            tell a quiet period from a misspelt name).
+            the range holds no data, the frame is empty and an error is added to
+            ``processing_issues``, with the request URL so the server's own
+            answer can be seen.
 
         Raises
         ------
         DataProviderError
             If the provider fails, or finds data but not this measurement.
+            If the server does not know the site, or the site has no data
+            source of this name (a typo, usually), or the provider otherwise
+            fails. An empty RANGE is not an error: it is the empty frame above.
 
         Notes
         -----
         The frequency is the run's ``frequency`` if it has one. Otherwise, if
         ``infer_frequency`` is on, it is worked out from the data, and noted in
+        Frequency settings: give neither ``frequency`` nor ``infer_frequency``
+        and teh run's own apply. Give either, and this read's settings replace
+        the run's (so ``infer_frequency=False`` alone means "as the server has
+        it", whatever the run's frequency is). The run's own settings are never
+        changed by a read. When a frequency is inferred it is noted in
         ``processing_issues``. See ``hydrobot.processors.importing``.
         """
-        frame, _ = self._read_standard(site, measurement, from_date, to_date)
+        frame, _ = self._read_standard(
+            site, measurement, from_date, to_date, frequency, infer_frequency
+        )
         return frame.data
 
-    def _read_standard(self, site, measurement, from_date, to_date):
+    def _read_standard(
+        self,
+        site,
+        measurement,
+        from_date,
+        to_date,
+        frequency=None,
+        infer_frequency=None,
+    ):
         """Ask the provider for a seires and build its frame.
 
         Returns ``(StandardFrame, StandardData)``: the frame to use, and what the
@@ -431,12 +468,19 @@ class Processor:
         from_date = self._from_date if from_date is None else pd.Timestamp(from_date)
         to_date = self._to_date if to_date is None else pd.Timestamp(to_date)
 
+        if frequency is None and infer_frequency is None:
+            frequency, infer_frequency = self._frequency, self.infer_frequency
+        else:
+            # This read has settings of its own. They replace the run's, and
+            # only for this read.
+            infer_frequency = bool(infer_frequency)
+
         standard = self.provider.get_standard(site, measurement, from_date, to_date)
         frame = importing.standard_frame(
             standard,
             measurement=measurement,
-            frequency=self._frequency,
-            infer_frequency=self.infer_frequency,
+            frequency=frequency,
+            infer_frequency=infer_frequency,
         )
         for note in frame.notes:
             self.report_processing_issue(**dataclasses.asdict(note))
@@ -2175,16 +2219,13 @@ class Processor:
             modifies the standard data
         """
         alt_data = self.import_standard(
-            standard_hts_filename=None,
             site=alt_site,
-            standard_measurement_name=alt_measurement,
-            standard_data_source_name=alt_datasource,
-            standard_item_info={},
-            standard_data=None,
+            measurement=_measurement_name(
+                alt_measurement or self.standard_item_name,
+                alt_datasource or self.standard_data_source_name,
+            ),
             from_date=from_date,
             to_date=to_date,
-            frequency=None,
-            base_url=None,
             infer_frequency=False,
         )
         alt_data.Value *= multiplier

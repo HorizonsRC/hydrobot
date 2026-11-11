@@ -85,6 +85,7 @@ def make_origin(**overrides) -> dict:
     origin.update(overrides)
     return origin
 
+
 def make_xml(
     values: list[float | None],
     *,
@@ -122,6 +123,7 @@ def make_xml(
     return _GET_DATA_XML.format(
         site=SITE, measurement=measurement, divisor=divisor, entries=entries
     )
+
 
 def make_standard(
     values: list[float | None],
@@ -165,7 +167,7 @@ def empty_standard(origin: dict | None = None) -> StandardData:
     """
     return StandardData(
         data=pd.DataFrame(),
-        metadata={"origin": origin if origin is not None else make_origin()}
+        metadata={"origin": origin if origin is not None else make_origin()},
     )
 
 
@@ -182,9 +184,14 @@ class FakeProvider:
         *,
         standard: StandardData | None = None,
         standard_error: Exception | None = None,
+        standard_by_series: dict[tuple[str, str], StandardData] | None = None,
     ):
         self.standard = standard
         self.standard_error = standard_error
+        # Answers for particular series, keyed by ``(site, measurement)``. A
+        # series not listed here gets ``standard``. This is for the few things
+        # that read a second series (companion or alternative sites).
+        self.standard_by_series = standard_by_series or {}
         self.calls: list[tuple] = []
         self.closed = False
 
@@ -220,6 +227,10 @@ class FakeProvider:
 
     def get_quality(self, site, measurement, from_date, to_date) -> QualityData:
         """Fail loudly: the Processor does not read quality yet."""
+        raise NotImplementedError("the Processor does not read quality data yet")
+
+    def get_check(self, site, measurement, from_date, to_date) -> CheckData:
+        """Fail loudly: the Processor does not read check data yet."""
         raise NotImplementedError("the Processor does not read check data yet")
 
     def last_processed_time(self, site, measurement) -> datetime | None:

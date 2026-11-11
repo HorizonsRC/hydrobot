@@ -121,12 +121,17 @@ class HorizonsProvider:
     ) -> StandardData:
         """Return standard data and associated metadata.
 
-        Three outcomes, kept distinct on purpose:
+        Four outcomes, kept distinct on purpose:
 
         *   Data found: returned with its metadata.
-        *   No data at all in the requested range: returned EMPTY (an empty
-            DataFrame and empty metadata), not an error. A quiet period is
-            normal, and the caller decides how to report it.
+        *   No data in the requested range (the server says "No data from X to
+            Y"): returned EMPTY (an empty DataFrame and metadata holding only
+            the origin), not an error. A quiety period is normal, and the caller
+            decides how to report it.
+        *   The server has no site of that name, or the site has no data source
+            of that name (it says "No data for site X" or "No Data Source for
+            Y at this site"): an error. These are NOT an empty range. They are
+            almost always a typo, and must not look like a quiet period.
         *   Data came back but none of it is this measurement: an error that
             lists what WAS available, since that means a wrong name.
 
@@ -301,7 +306,11 @@ class HorizonsProvider:
 
         archive = self.archive_client
         qual_response, _ = self._fetch(
-            archive, site=site, measurement=measurement, ts_type="StdQualSeries"
+            archive,
+            absent_is_empty=True,
+            site=site,
+            measurement=measurement,
+            ts_type="StdQualSeries",
         )
         found_qual = _matching_series(qual_response, measurement, "StdQualSeries", site)
         qual = _quality_series(
@@ -314,6 +323,7 @@ class HorizonsProvider:
 
         std_response, _ = self._fetch(
             archive,
+            absent_is_empty=True,
             site=site,
             measurement=measurement,
             ts_type="StdSeries",
@@ -372,31 +382,51 @@ class HorizonsProvider:
     # Internals
     # -------------------------------------------------------------------------
 
-    def _fetch(self, client, **kwargs):
+    def _fetch(self, client, *, absent_is_empty=False, **kwargs):
         """Make a GetData request. Returns ``(response, request_url)``.
 
-        Hilltop reports an empty range ("No data from X to Y") as an ERROR
-        document (xml response), which whurl raises as an exception. For us
-        that is not an error: it is just "no data", so ``response`` is None.
-        Quality is event-based, so a quiet few days with no entries is
-        completely normal.
+        Hilltop reports "nothing" as an ERROR document, which whurl raises as an
+        exception, in three different ways (see ``classify_not_found``):
 
-        Any other Hilltop error is a genuine problem. It is re-raised as a
-        DataProviderError (keeping the original message), so callers never
-        need to know whurl's exception types.
+        *   "No data from X to Y": the range is empty. That is not an error, so
+            ``response`` is None. Quality is event-based, so a quiet few days
+            with no entries is completely normal.
+        *   "No Data Source for X at this site" and "No data for site X": the
+            measurement or the site does not exist, nearly always a typo. These
+            ARE errors, and say which one it was, unless ``absent_is_empty``.
+        *   Anything else is a genuine problem.
 
-        The URL is the request actually made when there is a response. When
-        there was none, whurl's error doesn't carry the URL, so we ask whurl's
-        own GetDataRequest to build the one it would have used.
+        ``absent_is_empty`` is for looking something up in the ARCHIVE, where
+        "not there" is an answer ("never archived") and not a mistake. Then all
+        three come back as ``response=None``.
+
+        Every error is re-raised as a DataProviderError (keeping the original as
+        its cause), so callers never need to know whurl's exception types.
+
+        When there is no response to read the URL from, we ask whurl's own
+        GetDataRequest to build the one it would have used.
         """
         try:
             response = client.get_data(**kwargs)
         except HilltopError as error:
-            if _NO_DATA.search(str(error)):
+            kind = classify_not_found(str(error))
+            if kind == "empty_range" or (kind is not None and absent_is_empty):
                 return None, _request_url_for(client, kwargs)
+            url = _public_request_url(_request_url_for(client, kwargs))
+            site, measurement = kwargs.get("site"), kwargs.get("measurement")
+            if kind == "no_data_source":
+                raise DataProviderError(
+                    f"Hilltop has no data source {measurement!r} at site {site!r}. "
+                    f"Check the measurement name. The server said: {error} "
+                    f"Request: {url}"
+                ) from error
+            if kind == "no_site":
+                raise DataProviderError(
+                    f"Hilltop does not know the site {site!r}. Check the site "
+                    f"name. The server said: {error} Request: {url}"
+                ) from error
             raise DataProviderError(
-                f"Hilltop returned an error for {kwargs.get('site')!r} / "
-                f"{kwargs.get('measurement')!r}: {error}"
+                f"Hilltop returned an error for {site!r} / {measurement!r}: {error}"
             ) from error
         return response, response.request.gen_url()
 
@@ -541,9 +571,35 @@ def _public_request_url(url: str) -> str:
         (parts.scheme, _strip_userinfo(parts.netloc), parts.path, query, parts.fragment)
     )
 
-# Hilltop's wording for an empty range, e.g. "No data from 25-Oct-2026 16:32:10
-# to 28-Oct-2026 16:32:10". Seen in a real response; whurl wraps it with a prefix.
-_NO_DATA = re.compile(r"\bNo data\b", re.IGNORECASE)
+
+# What Hilltop says when "there is nothing". Three different things, copied from
+# real responses; whurl wraps each with a prefix of its own.
+#
+#   "No data from 9-Nov-2026 08:00:00 to 9-Nov-2026 09:00:00"   a quiet range
+#   "No Data Source for Atmospheric Pressurk at this site."     wrong measurment
+#   "No data for site Manawatu at Keachers Bollege"             wrong site
+#
+# They must not be matched loosely: all three contain "No data".
+_EMPTY_RANGE = re.compile(r"\bNo data from\b", re.IGNORECASE)
+_NO_DATA_SOURCE = re.compile(r"\bNo Data Source for\b", re.IGNORECASE)
+_NO_SITE = re.compile(r"\bNo data for site\b", re.IGNORECASE)
+
+
+def classify_not_found(message: str) -> str | None:
+    """Say which kind of "nothing" a Hilltop error message is.
+
+    Returns ``"empty_range"``, ``"no_data_source"`` or ``"no_site"``, or None if
+    the message is not one of those. Unknown wording is deliberately NOT treated
+    as an empty range: calling a real problem "no data" hides it, while calling
+    "no data" a problem is just a little noisy.
+    """
+    if _EMPTY_RANGE.search(message):
+        return "empty_range"
+    if _NO_DATA_SOURCE.search(message):
+        return "no_data_source"
+    if _NO_SITE.search(message):
+        return "no_site"
+    return None
 
 def _request_url_for(client, kwargs: dict) -> str:
     """The URL whurl WOULD have requested, built the same way its client does."""

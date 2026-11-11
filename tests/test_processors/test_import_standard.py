@@ -14,10 +14,7 @@ There are two methods, with different jobs:
 The provider is a FakeProvider (see tests/fake_provider.py), which records
 what it was asked, so these tests can check the question as well as the answer.
 """
-import whurl
-from cycler import L
-from pandas.tseries.api import infer_freq
-from markdown_it.presets.commonmark import make
+from hydrobot.utils import infer_frequency
 
 from datetime import datetime
 
@@ -55,6 +52,7 @@ class TestWhatIsAsked:
     """What is asked."""
 
     def test_the_provider_is_asked_for_the_runs_series_and_range(self):
+        """The provider is asked for the run's series and range."""
         processor, provider = build(make_standard([1.0, 2.0, 3.0]))
 
         processor.import_standard()
@@ -103,6 +101,14 @@ class TestWhatIsAsked:
 
     def test_the_provider_is_asked_once(self):
         """The provider is asked once."""
+        processor, provider = build(make_standard([1.0, 2.0, 3.0]))
+
+        processor.import_standard()
+
+        assert len(provider.calls) == 1
+
+    def test_the_provider_is_left_open(self):
+        """The provider is left open."""
         processor, provider = build(make_standard([1.0, 2.0, 3.0]))
 
         processor.import_standard()
@@ -213,6 +219,7 @@ class TestNoData:
     """No data."""
 
     def test_the_frame_is_empty(self):
+        """The frame is empty."""
         processor, _ = build(empty_standard())
 
         frame = processor.import_standard()
@@ -322,11 +329,11 @@ class TestLoadData:
         processor.load_data()
 
         assert processor.standard_item_info == {
-                "item_name": MEASUREMENT,
-                "item_format": "F",
-                "divisor": 10,
-                "units": "hPa",
-                "number_format": "####.#",
+            "item_name": MEASUREMENT,
+            "item_format": "F",
+            "divisor": 10,
+            "units": "hPa",
+            "number_format": "####.#",
         }
 
     def test_where_the_data_came_from_is_kept(self):
@@ -383,3 +390,61 @@ class TestLoadData:
 
         assert processor.standard_data.empty
         assert processor.frequency is None
+
+
+class TestFrequencyOverrides:
+    """Frequency overrides for a single read.
+
+    A read can bring its own frequency settings. ``do_processor`` reads
+    companion series with their own explicit frequencies, and the synthetic
+    data method reads another site's series as it is. The rule: give neither
+    ``frequency`` nor ``infer_frequency`` and the run's settings apply; give
+    either and the read's own settings replace the run's, and only those.
+    """
+
+    GAPPY = {"values": [1.0, 2.0, 4.0], "positions": [0, 1, 3]}
+
+    def test_a_given_frequency_replaces_the_runs(self):
+        """A given frequency replaces the run's."""
+        processor, _ = build(
+            make_standard(**self.GAPPY, step_minutes=15), frequency="5min"
+        )
+
+        frame = processor.import_standard(frequency="15min", infer_frequency=False)
+
+        assert len(frame) == 4  # regularised to 15 minutes, not the run's 5
+
+    def test_turning_inference_off_gives_irregular_data(self):
+        """Turning inference off gives irregular data."""
+        # The run has a frequency, but this read says "as the server has it".
+        processor, _ = build(make_standard(**self.GAPPY), frequency="5min")
+
+        frame = processor.import_standard(infer_frequency=False)
+
+        assert len(frame) == 3
+
+    def test_turning_inference_on_infers_even_if_the_run_does_not(self):
+        """Turning inference on infers even if the run does not."""
+        processor, _ = build(make_standard(**self.GAPPY), infer_frequency=False)
+
+        frame = processor.import_standard(infer_frequency=True)
+
+        assert len(frame) == 4
+
+    def test_a_frequency_alone_is_used(self):
+        """A frequency alone is used."""
+        processor, _ = build(make_standard(**self.GAPPY), infer_frequency=False)
+
+        frame = processor.import_standard(frequency="5min")
+
+        assert len(frame) == 4
+
+    def test_giving_neither_uses_the_runs_settings(self):
+        """Giving neither uses the run's settings."""
+        processor, _ = build(make_standard(**self.GAPPY), frequency="5min")
+
+        processor.import_standard(frequency="15min", infer_frequency=False)
+
+        assert processor.frequency == "5min"
+        assert processor.infer_frequency is True
+
