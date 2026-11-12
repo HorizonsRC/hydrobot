@@ -94,7 +94,7 @@ def provider_with(client) -> HorizonsProvider:
 # tell them apart: only the first is a quiet period.
 NO_DATA_ERROR = HilltopResponseError(
     "Response error: Hilltop GetData error: "
-    "No Data Source for Atmospheric Pressurk at this site."
+    "No data from 9-Nov-2026 08:00:00 to 9-Nov-2026 09:00:00"
 )
 NO_DATA_SOURCE_ERROR = HilltopResponseError(
     "Response error: Hilltop GetData error: "
@@ -190,7 +190,7 @@ class TestLoadingThroughTheRealProvider:
         assert processor.standard_item_info["units"] == "hPa"
         assert processor.standard_origin["provider"] == "horizons-hilltop"
         assert processor.standard_origin["source_tag"] == "HTP"
-        assert processor.standard_origin["hts"] == "HTS"
+        assert processor.standard_origin["hts"] == HTS
 
     def test_the_origin_url_is_the_real_request(self):
         """The origin url is the real request."""
@@ -338,6 +338,19 @@ class TestWhenTheNameIsWrong:
 
         with pytest.raises(DataProviderError, match="Something Else"):
             processor.load_data()
+
+
+    def test_nothing_is_stored(self):
+        """Nothing is stored."""
+        xml = make_xml([1.0, 2.0, 3.0], measurement="Something Else")
+        client = FakeHilltopClient(xml=xml)
+        processor = Processor(make_run_config(), provider_with(client))
+
+        with pytest.raises(DataProviderError):
+            processor.load_data()
+
+        assert processor.standard_data.empty
+        assert processor.standard_origin is None
 
         assert processor.standard_data.empty
         assert processor.standard_origin is None

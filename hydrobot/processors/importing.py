@@ -7,7 +7,6 @@ table and no fakes.
 
 The other half, asking the provider, lives on the Processor.
 """
-from pandas.tseries.api import infer_freq
 
 from dataclasses import dataclass, field
 

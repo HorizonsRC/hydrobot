@@ -41,6 +41,7 @@ def build(alt_standard=None, **config):
     processor.load_data()
     return processor, provider
 
+
 def alt_standard():
     """Three readings, 10, 20, and 30, from 00:17 (off the run's own times)."""
     return make_standard([10.0, 20.0, 30.0], start="2025-01-01 00:17")
@@ -83,7 +84,7 @@ class TestWhatIsAsked:
 
         assert provider.calls[-1][2] == f"Water Temperature [{MEASUREMENT}]"
 
-    def test_a_differe_data_source_keeps_the_original_measurement(self):
+    def test_a_different_data_source_keeps_the_original_measurement(self):
         """A different data source keeps the original measurement."""
         processor, provider = build(alt_standard())
 

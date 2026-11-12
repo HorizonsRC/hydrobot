@@ -1139,7 +1139,7 @@ def test_no_standard_data_after_the_last_quality_entry_still_resumes_there():
 #
 # These look alike and are NOT the same. A wrong measurement name or a wrong
 # site name used to be treated as an empty time range, because the provider
-# matched "No data" loosely. A typo the looked like a quiet period, and the run
+# matched "No data" loosely. A typo then looked like a quiet period, and the run
 # carried on with no data. Copied from live responses (9 November 2026).
 # -----------------------------------------------------------------------------
 
@@ -1194,7 +1194,7 @@ def test_the_three_kinds_of_nothing_are_told_apart(message, expected):
     ],
 )
 def test_anything_else_is_not_classified(message):
-    """Anything lse is not classified."""
+    """Anything else is not classified."""
     assert horizons_module.classify_not_found(message) is None
 
 
@@ -1260,7 +1260,7 @@ class TestAWrongMeasurementName:
         p = provider_returning([], error=no_data_source_error())
 
         with pytest.raises(DataProviderError) as raised:
-            read(p, "Atmosphric Pressurk")
+            read(p, "Atmospheric Pressurk")
 
         assert str(raised.value).count("built=by-whurl-request") == 1
 

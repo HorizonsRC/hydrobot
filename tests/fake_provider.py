@@ -221,6 +221,8 @@ class FakeProvider:
         self.calls.append(("get_standard", site, measurement, from_date, to_date))
         if self.standard_error is not None:
             raise self.standard_error
+        if (site, measurement) in self.standard_by_series:
+            return self.standard_by_series[(site, measurement)]
         if self.standard is None:
             raise AssertionError("this test gave the FakeProvider no standard data")
         return self.standard

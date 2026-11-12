@@ -14,7 +14,6 @@ There are two methods, with different jobs:
 The provider is a FakeProvider (see tests/fake_provider.py), which records
 what it was asked, so these tests can check the question as well as the answer.
 """
-from hydrobot.utils import infer_frequency
 
 from datetime import datetime
 
@@ -443,8 +442,13 @@ class TestFrequencyOverrides:
         """Giving neither uses the run's settings."""
         processor, _ = build(make_standard(**self.GAPPY), frequency="5min")
 
+        assert len(processor.import_standard()) == 4
+
+    def test_an_override_does_not_change_the_runs_own_settings(self):
+        """An override does not change the run's own settings."""
+        processor, _ = build(make_standard(**self.GAPPY), frequency="5min")
+
         processor.import_standard(frequency="15min", infer_frequency=False)
 
         assert processor.frequency == "5min"
         assert processor.infer_frequency is True
-

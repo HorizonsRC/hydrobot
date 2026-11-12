@@ -1,5 +1,4 @@
 """Processor class."""
-from pandas.tseries.api import infer_freq
 
 import copy
 import dataclasses
@@ -235,6 +234,9 @@ class Processor:
             self.archive_standard_measurement_name
         )
 
+        # With no check measurement of its own, the check item is named after
+        # the standard one, as it always has been. Whether check data is read
+        # at all depends on ``check_measurement_name`` being given.
         (
             self.check_item_name,
             self.check_data_source_name,
@@ -425,7 +427,6 @@ class Processor:
         Raises
         ------
         DataProviderError
-            If the provider fails, or finds data but not this measurement.
             If the server does not know the site, or the site has no data
             source of this name (a typo, usually), or the provider otherwise
             fails. An empty RANGE is not an error: it is the empty frame above.

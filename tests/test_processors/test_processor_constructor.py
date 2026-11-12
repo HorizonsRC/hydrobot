@@ -11,9 +11,6 @@ longer touches a server. It used to open Hilltop connections and fetch all the
 data before returning; now ``load_data()`` does that, as a separate step. So a
 Processor can be built, and tested, without a provider that has any data.
 """
-from hydrobot.data_acquisition import convert_inspection_expiry
-from hydrobot.utils import infer_frequency
-import whurl
 
 import pandas as pd
 import pytest
@@ -113,6 +110,13 @@ class TestAnIncompleteRunConfig:
         with pytest.raises(ValueError, match="from_date"):
             build(from_date="2025-02-01 00:00", to_date="2025-01-01 00:00")
 
+    def test_from_date_equal_to_to_date_is_refused(self):
+        """From date equal to to date is refused."""
+        # An empty window is almost certainly a mistake, and would otherwise
+        # surface later as "no data found"
+        with pytest.raises(ValueError, match="from_date"):
+            build(from_date="2025-01-01 00:00", to_date="2025-01-01 00:00")
+
     def test_an_unknown_data_family_is_an_error(self):
         """An unknown data family is an error."""
         with pytest.raises(KeyError):
@@ -138,6 +142,16 @@ class TestWhatItReads:
 
         assert isinstance(processor.from_date, pd.Timestamp)
         assert isinstance(processor.to_date, pd.Timestamp)
+
+    def test_optional_settings_have_sensible_defaults(self):
+        """Optional settings have sensible defaults."""
+        processor = build()
+
+        assert processor.frequency is None
+        assert processor.infer_frequency is True
+        assert processor.defaults == {}
+        assert processor.export_file_name is None
+        assert processor.layer is None
 
     def test_optional_settings_are_taken_from_the_config(self):
         """Optional settings are taken from the config."""
@@ -275,6 +289,16 @@ class TestStartingState:
 
     def test_the_constant_check_shift_is_applied_to_it(self):
         """The constant check shift is applied to it."""
+        processor = build(constant_check_shift=0.5)
+
+        assert processor.quality_code_evaluator.constant_check_shift == 0.5
+
+    def test_the_constant_check_shift_defaults_to_zero(self):
+        """The constant check shift defaults to zero."""
+        assert build().quality_code_evaluator.constant_check_shift == 0
+
+    def test_item_info_starts_with_the_item_name_and_float_format(self):
+        """Item info starts with the item name and float format."""
         processor = build(standard_measurement_name="Water Temperature [Water Temp]")
 
         assert processor.standard_item_info == {
@@ -282,7 +306,7 @@ class TestStartingState:
             "item_format": "F",
             "divisor": 1,
             "units": "",
-            "number_format": "###.##"
+            "number_format": "###.##",
         }
 
     def test_the_processing_issues_start_with_the_hydrobot_version(self):

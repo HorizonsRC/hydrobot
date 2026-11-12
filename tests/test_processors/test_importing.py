@@ -34,6 +34,7 @@ def build(standard, *, frequency=None, infer_frequency=True):
         infer_frequency=infer_frequency,
     )
 
+
 class TestTheFrame:
     """The frame."""
 
