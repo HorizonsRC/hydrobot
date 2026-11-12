@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 
 import hydrobot.config.horizons_source as source
+from hydrobot.data_acquisition import get_server_dataframe
 from hydrobot.filters import trim_series
 from hydrobot.htmlmerger import HtmlMerger
 from hydrobot.hydrobot_initialiser import initialise_hydrobot_from_yaml
@@ -49,10 +50,43 @@ soe_check = series_rounder(
     ),
     "1min",
 )
-check_data = [
-    atmospheric_pressure_inspections,
-    soe_check,
-]
+
+check_data = [atmospheric_pressure_inspections, soe_check]
+
+if data.site == "Lake Horowhenua at Weir":
+    # Logic for Horowhenua, where AP data is shared across sites
+    nearby_checks = get_server_dataframe(
+        data.base_url,
+        data.check_hts_filename,
+        "Hokio at Lake Horowhenua",
+        "Field Baro Pressure (HRC)",
+        data.from_date,
+        data.to_date,
+    )
+    nearby_checks.index.name = None
+    nearby_checks.index = pd.DatetimeIndex(nearby_checks.index)
+    nearby_checks["Time"] = nearby_checks.index
+    nearby_checks["Value"] = nearby_checks["Value"].astype(np.float64)
+    nearby_checks["Raw"] = nearby_checks["Value"]
+    nearby_checks["Changes"] = ""
+    nearby_checks["Comment"] = ""
+    nearby_checks["Source"] = "SOE"
+    nearby_checks["QC"] = True
+
+    nearby_checks = nearby_checks[
+        [
+            "Time",
+            "Raw",
+            "Value",
+            "Changes",
+            "Comment",
+            "Source",
+            "QC",
+        ]
+    ]
+    nearby_checks = series_rounder(nearby_checks, "1min")
+    check_data.append(nearby_checks)
+
 if [i for i in check_data if not i.empty]:
     data.check_data = pd.concat([i for i in check_data if not i.empty])
     data.check_data = data.check_data[
