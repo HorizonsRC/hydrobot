@@ -400,7 +400,7 @@ def dissolved_oxygen_hydro_check_data(from_date, to_date, site):
 
 
 def soe_check_data(processor, measurement):
-    """Format water temperature SoE data for use as hydrobot check data."""
+    """Format SoE data for use as hydrobot check data."""
     soe_check = processor.get_measurement_dataframe(measurement, "check")
     soe_check.index.name = None
     soe_check.index = pd.DatetimeIndex(soe_check.index)
