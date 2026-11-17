@@ -15,7 +15,7 @@ from hydrobot.filters import trim_series
 from hydrobot.measurement_specific_functions.dissolved_oxygen import (
     correct_dissolved_oxygen,
 )
-from hydrobot.processor import (
+from hydrobot.processors.processor import (
     EMPTY_QUALITY_DATA,
     EMPTY_STANDARD_DATA,
     Processor,
@@ -333,10 +333,7 @@ class DOProcessor(Processor):
             self.quality_data["Value"], self.ap_quality_data["Value"]
         )
 
-        with pd.option_context("future.no_silent_downcasting", True):
-            qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects(
-                copy=False
-            )
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects()
 
         diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
 
@@ -353,10 +350,7 @@ class DOProcessor(Processor):
             self.quality_data["Value"], self.wt_quality_data["Value"]
         )
 
-        with pd.option_context("future.no_silent_downcasting", True):
-            qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects(
-                copy=False
-            )
+        qc_frame = qc_frame.reindex(qc_data.index, method="ffill").infer_objects()
 
         diff_idxs = qc_frame[qc_frame["Value"] != qc_data].index
 

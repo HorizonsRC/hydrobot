@@ -590,7 +590,7 @@ def list_files_from_dsn(dsn):
     with open(dsn) as file:
         file_list = []
         for line in file:
-            output = re.search('File\d+="(.*)"', line)
+            output = re.search(r'File\d+="(.*)"', line)
             if output is not None:
                 output = output.group(1)
                 if os.path.splitext(output)[1] == ".dsn":

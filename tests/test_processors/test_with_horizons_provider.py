@@ -13,9 +13,6 @@ the HTTP client underneath it, and the fake client returns responses that are:
 So the whole chain, from a Hilltop XML document to the Processor's frame, is
 real except for the network.
 """
-from hydrobot.data_structure import Data
-from pandas.tests.util.test_deprecate_nonkeyword_arguments import i
-
 from datetime import datetime
 
 import pandas as pd

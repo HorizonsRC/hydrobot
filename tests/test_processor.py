@@ -1,4 +1,3 @@
-# pyright: reportUnusedImport=false
 """Test the processor module."""
 
 from xml.etree import ElementTree
@@ -10,9 +9,10 @@ from annalist.annalist import Annalist
 from defusedxml import ElementTree as DefusedElementTree
 from hilltoppy import Hilltop
 
-from hydrobot import data_sources, data_structure, processor, utils
+from hydrobot import data_sources, data_structure, utils
 from hydrobot.data_sources import QualityCodeEvaluator
 from hydrobot.data_structure import parse_xml
+from hydrobot.processors import processor
 
 ann = Annalist()
 

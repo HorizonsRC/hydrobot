@@ -604,18 +604,12 @@ def cap_qc_where_std_high(std_frame, qc_frame, cap_qc, cap_threshold):
     capped_data = std_series > cap_threshold
     capped_qc_changes = capped_data.loc[capped_data.shift() != capped_data]  # noqa
 
-    with pd.option_context("future.no_silent_downcasting", True):
-        potential_new_qc = (
-            capped_qc_changes.replace(True, cap_qc)
-            .replace(False, np.nan)
-            .infer_objects(copy=False)
-        )
+    potential_new_qc = (
+        capped_qc_changes.replace(True, cap_qc).replace(False, np.nan).infer_objects()
+    )
     new_qc = utils.compare_two_qc_take_min(potential_new_qc, qc_frame["Value"])
 
-    with pd.option_context("future.no_silent_downcasting", True):
-        qc_frame = qc_frame.reindex(new_qc.index, method="ffill").infer_objects(
-            copy=False
-        )
+    qc_frame = qc_frame.reindex(new_qc.index, method="ffill").infer_objects()
 
     diff_idxs = qc_frame[qc_frame["Value"] != new_qc].index
 

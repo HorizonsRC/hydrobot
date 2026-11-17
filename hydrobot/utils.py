@@ -148,7 +148,7 @@ def datetime_index_to_mowsecs(index):
     >>> isinstance(mowsecs_index, pd.Index)
     True
     """
-    return (index.astype(np.int64) // 10**9) + MOWSECS_OFFSET
+    return index.as_unit("s").astype(np.int64) + MOWSECS_OFFSET
 
 
 def merge_series(series_a, series_b, tolerance=1e-09):
@@ -328,17 +328,18 @@ def compare_two_qc_take_min(qc_series_1, qc_series_2):
         Combined series
     """
     combined_index = qc_series_1.index.union(qc_series_2.index)
-    with pd.option_context("future.no_silent_downcasting", True):
-        full_index_1 = (
-            qc_series_1.reindex(combined_index, method="ffill")
-            .replace(np.nan, np.Inf)
-            .infer_objects(copy=False)
-        )
-        full_index_2 = (
-            qc_series_2.reindex(combined_index, method="ffill")
-            .replace(np.nan, np.Inf)
-            .infer_objects(copy=False)
-        )
+    # Before a series' first point the reindexed values are NaN. Infinity there
+    # makes ``min`` take the other series.
+    full_index_1 = (
+        qc_series_1.reindex(combined_index, method="ffill")
+        .replace(np.nan, np.inf)
+        .infer_objects()
+    )
+    full_index_2 = (
+        qc_series_2.reindex(combined_index, method="ffill")
+        .replace(np.nan, np.inf)
+        .infer_objects()
+    )
 
     minimised_qc_series_with_dup = np.minimum(full_index_1, full_index_2)
     minimised_qc_series = minimised_qc_series_with_dup.loc[

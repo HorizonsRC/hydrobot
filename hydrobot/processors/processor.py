@@ -1098,24 +1098,19 @@ class Processor:
             )
 
             # Step 2: Replace NaN values in df1 with corresponding values from df2
-            with pd.option_context("future.no_silent_downcasting", True):
-                # This context + infer_objects protects against pandas deprecation + warning
-                merged_df["Value"] = (
-                    merged_df["Value_old"]
-                    .fillna(merged_df["Value_new"])
-                    .infer_objects(copy=False)
-                )
-                merged_df["Code"] = (
-                    merged_df["Code_old"]
-                    .fillna(merged_df["Code_new"])
-                    .infer_objects(copy=False)
-                )
+            # infer_objects restores proper dtypes where fillna leaves object columns
+            merged_df["Value"] = (
+                merged_df["Value_old"].fillna(merged_df["Value_new"]).infer_objects()
+            )
+            merged_df["Code"] = (
+                merged_df["Code_old"].fillna(merged_df["Code_new"]).infer_objects()
+            )
 
-                merged_df["Details"] = (
-                    merged_df["Details_old"]
-                    .fillna(merged_df["Details_new"])
-                    .infer_objects(copy=False)
-                )
+            merged_df["Details"] = (
+                merged_df["Details_old"]
+                .fillna(merged_df["Details_new"])
+                .infer_objects()
+            )
 
             # Step 3: Combine the two dataframes, prioritising non-null values from df2
             self.quality_data = merged_df[["Value", "Code", "Details"]].combine_first(

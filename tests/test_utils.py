@@ -1,7 +1,5 @@
 """Test the filters module."""
 
-import warnings
-
 import numpy as np
 import pandas as pd
 import pytest
@@ -143,6 +141,70 @@ def test_datetime_index_to_mowsecs(mowsecs_data, datetime_data):
     assert dt_to_ms.equals(mowsecs_data.index.astype(np.int64))
 
 
+@pytest.mark.parametrize("unit", ["s", "ms", "us", "ns"])
+def test_datetime_index_to_mowsecs_does_not_depend_on_the_resolution(
+    mowsecs_data, datetime_data, unit
+):
+    """The same moments give the same mowsecs, however the index stores them.
+
+    pandas 3 stores datetimes in microseconds by default (it used to be
+    nanoseconds). The conversion assumed nanoseconds, so on pandas 3 every
+    mowsecs value came out 1000 times too small.
+    """
+    index = datetime_data.index.as_unit(unit)
+
+    result = utils.datetime_index_to_mowsecs(index)
+
+    assert result.equals(mowsecs_data.index.astype(np.int64))
+
+
+@pytest.mark.parametrize("unit", ["ms", "us", "ns"])
+def test_datetime_index_to_mowsecs_drops_fractions_of_a_second(unit):
+    """Mowsecs are whole seconds. Fractions round down, whatever the resolution."""
+    index = pd.DatetimeIndex(["2023-01-01 00:00:00.900", "2023-01-01 00:00:01.100"])
+
+    result = utils.datetime_index_to_mowsecs(index.as_unit(unit))
+
+    first = utils.datetime_index_to_mowsecs(
+        pd.DatetimeIndex(["2023-01-01 00:00:00"]).as_unit(unit)
+    )[0]
+    assert list(result) == [first, first + 1]
+
+
+@pytest.mark.parametrize("unit", ["s", "ms", "us", "ns"])
+def test_mowsecs_survive_a_round_trip(datetime_data, unit):
+    """Converting to mowsecs and back gives the same moments."""
+    index = datetime_data.index.as_unit(unit)
+
+    back = utils.mowsecs_to_datetime_index(utils.datetime_index_to_mowsecs(index))
+
+    assert back.equals(index)
+
+
+def test_datetime_index_to_mowsecs_gives_integers(datetime_data):
+    """The result is an integer index."""
+    result = utils.datetime_index_to_mowsecs(datetime_data.index)
+
+    assert result.dtype == np.int64
+
+
+def test_compare_two_qc_take_min_uses_the_other_series_where_one_has_not_started():
+    """Before a series starts, the other one decides.
+
+    Reindexing leaves NaN before a series' first point. Those are replaced with
+    infinity so that ``min`` takes the other series. (``np.Inf``, which did this
+    before, was removed in numpy 2.)
+    """
+    late = pd.Series({"2021-01-01 05:00": 3})
+    early = pd.Series({"2021-01-01 01:00": 6, "2021-01-01 09:00": 6})
+
+    result = utils.compare_two_qc_take_min(late, early)
+
+    assert list(result.index) == ["2021-01-01 01:00", "2021-01-01 05:00"]
+    assert list(result) == [6, 3]
+    assert result.dtype == np.int64
+
+
 def test_compare_two_qc_take_min():
     """Test compare_two_qc_take_min utility."""
     a = pd.Series(
@@ -260,10 +322,9 @@ def test_series_rounder():
     )
     b.index = pd.DatetimeIndex(b.index)
 
-    with warnings.catch_warnings(record=True) as w:
+    # with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(UserWarning, match="INPUT_WARNING"):
         c = utils.series_rounder(a, "6min")
-        assert len(w) == 1
-        assert "INPUT_WARNING" in str(w[0].message)
 
     assert c.equals(b), "Function doesn't work"
     assert a.equals(a_copy), "Original modified"
@@ -278,10 +339,8 @@ def test_rainfall_six_minute_repacker():
     )
     original = series.copy()
 
-    with warnings.catch_warnings(record=True) as w:
+    with pytest.warns(UserWarning, match="INPUT_WARNING"):
         repacked = rf.rainfall_six_minute_repacker(series)
-        assert len(w) == 1, "Incorrect number of warnings"
-        assert "INPUT_WARNING" in str(w[0].message), "Wrong kind of warning"
     assert original.equals(series), "Original modified"
 
     expected = pd.Series(

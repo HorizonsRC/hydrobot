@@ -10,7 +10,7 @@ from annalist.decorators import ClassLogger
 
 import hydrobot.measurement_specific_functions.rainfall as rf
 from hydrobot import filters, plotter
-from hydrobot.processor import Processor, data_structure, evaluator, utils
+from hydrobot.processors.processor import Processor, data_structure, evaluator, utils
 
 annalizer = Annalist()
 
@@ -335,7 +335,7 @@ class RFProcessor(Processor):
                 else None
             )
         if max_qc is None:
-            max_qc = self._defaults["max_qc"] if "max_qc" in self._defaults else np.NaN
+            max_qc = self._defaults.get("max_qc", np.nan)
         if manual_additional_points is None:
             manual_additional_points = pd.Series({})
         if backup_replacement_times is None:
