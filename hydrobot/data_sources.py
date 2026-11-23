@@ -10,8 +10,8 @@ DATA_FAMILY_DICT = {
         "depth_unit": "mm",
     },
     "water_temperature": {
-        "QC_evaluator_type": "Base",
-        "QC_evaluator_values": [1.2, 0.8],
+        "QC_evaluator_type": "BaseWith200",
+        "QC_evaluator_values": [0.8, 0.5, 1.0],
         "depth_unit": "mm",
     },
     "atmospheric_pressure": {
